@@ -333,7 +333,7 @@ class PermissionsViewSetMixin(object):
             access = None
             if request_method == 'get':
                 access = permissions.read
-            elif request_method == 'put':
+            elif request_method == 'put' or request_method == 'patch':
                 access = permissions.update
             elif request_method == 'delete':
                 access = permissions.delete
