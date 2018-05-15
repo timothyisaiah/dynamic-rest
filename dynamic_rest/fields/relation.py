@@ -448,4 +448,5 @@ class DynamicCreatorField(DynamicRelationField):
         if 'read_only' not in kwargs:
             # default to read_only
             kwargs['read_only'] = True
+        kwargs['create'] = False
         super(DynamicCreatorField, self).__init__(*args, **kwargs)
