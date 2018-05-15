@@ -51,7 +51,7 @@ def nested_update(instance, key, value, objects=None):
         try:
             field = get_model_field(instance, key)
             related_model = get_related_model(field)
-        except:
+        except AttributeError:
             raise exceptions.ValidationError(
                 'Invalid relationship: %s' % key
             )
@@ -427,7 +427,7 @@ class WithDynamicSerializerMixin(
         try:
             field = self.get_field('pk')
             return field.field_name
-        except:
+        except AttributeError:
             pass
         return 'pk'
 
@@ -487,7 +487,7 @@ class WithDynamicSerializerMixin(
 
         try:
             api_field = serializer.get_field(api_name)
-        except:
+        except AttributeError:
             api_field = None
 
         if other:
@@ -560,7 +560,7 @@ class WithDynamicSerializerMixin(
                         try:
                             model_field = meta.get_field(field)
                             related_model = model_field.related_model
-                        except:
+                        except AttributeError:
                             pass
 
                         if not related_model:
@@ -579,7 +579,7 @@ class WithDynamicSerializerMixin(
                     field = fields[-1]
                     try:
                         model_field = meta.get_field(field)
-                    except:
+                    except AttributeError:
                         raise ValidationError({
                             api_name:
                             'Could not resolve: "%s", '
@@ -593,7 +593,7 @@ class WithDynamicSerializerMixin(
                 else:
                     try:
                         model_field = meta.get_field(source)
-                    except:
+                    except AttributeError:
                         raise ValidationError({
                             api_name:
                             'Could not resolve "%s": '
@@ -651,7 +651,7 @@ class WithDynamicSerializerMixin(
                         if model_field.primary_key:
                             field = f
                             break
-                    except:
+                    except AttributeError:
                         pass
 
             if not field:

@@ -26,6 +26,10 @@ class Meta(object):
         return getattr(self.model, '_meta', None)
 
     @classmethod
+    def get_inverse_field(cls, field):
+        return field.remote_field
+
+    @classmethod
     def get_related_model(cls, field):
         return field.related_model if field else None
 

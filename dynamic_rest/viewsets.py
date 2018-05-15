@@ -267,9 +267,10 @@ class WithDynamicViewSetBase(object):
         include_fields = self.get_request_feature(self.INCLUDE)
         exclude_fields = self.get_request_feature(self.EXCLUDE)
         request_fields = {}
-        for fields, include in(
-                (include_fields, True),
-                (exclude_fields, False)):
+        for fields, include in (
+            (include_fields, True),
+            (exclude_fields, False)
+        ):
             if fields is None:
                 continue
             for field in fields:
@@ -311,6 +312,16 @@ class WithDynamicViewSetBase(object):
             return True
         else:
             return False
+
+    def is_get(self):
+        if (
+            self.request and
+            self.request.method.upper() == 'GET' and
+            (self.lookup_url_kwarg or self.lookup_field)
+            in self.kwargs
+        ):
+            return True
+        return False
 
     def is_list(self):
         if (
@@ -390,57 +401,100 @@ class WithDynamicViewSetBase(object):
         )
 
     def create_related(self, request, pk=None, field_name=None):
-        """Create an instance of a related object.
+        """Create an instance of a related object through a related field.
 
         This is only possible if:
-        - The related field has an inverse relation on the related serializer
-        - The user has permission to create on the given serializer
+        - The user has permission to create on the given serializer, AND
+        - The related field has a source
 
         The signature of the endpoint is taken from the serializer, except the
         inverse field is filled with the PK value of the current record.
         """
 
         primary_serializer = self.get_serializer(include_fields='*')
+        instance = self.get_queryset().get(pk=pk)
         related_field = primary_serializer.fields.get(field_name)
         if not related_field:
             raise exceptions.ValidationError(
                 '"%s" is not a valid field' % field_name
             )
-        if related_field.source == '*':
+
+        model_field = getattr(related_field, 'model_field', None)
+        if not model_field:
             raise exceptions.ValidationError(
                 '"%s" is not a model-bound field' % field_name
-            )
-        inverse_field_name = related_field.get_inverse_field_name()
-        if not inverse_field_name:
-            raise exceptions.ValidationError(
-                '"%s" has no inverse field' % field_name
             )
 
         related_serializer = related_field.serializer
         related_serializer_name = related_serializer.get_name()
-        inverse_field = related_serializer.get_field(inverse_field_name)
-        data = request.data
-        if hasattr(data, '_mutable'):
-            data._mutable = True
+        remote_field = model_field.remote_field
+        update_after = True
 
-        if len(data.keys()) == 1 and data.keys()[0] == related_serializer_name:
-            data = data[related_serializer_name]
+        if remote_field.null:
+            # use the hybrid API method
 
-        # set the current record as the related object using the inverse field
-        data[inverse_field_name] = [pk] if inverse_field.many else pk
-        # make sure the inverse field is included
-        related_serializer = related_field.get_serializer(
-            data=data,
-            request_fields=None,
-            include_fields=[inverse_field_name],
-            envelope=True,
-            many=False
-        )
-        # set the inverse field to allow writes
-        inverse_field = related_serializer.fields.get(inverse_field_name)
-        inverse_field.read_only = False
+            related_serializer = related_field.get_serializer(
+                data=request.data,
+                request_fields=None,
+                include_fields='*',
+                envelope=True,
+                many=False
+            )
+        else:
+            # use the full API method (must explicitly define an inverse field)
+            update_after = False
+            inverse_field_name = related_field.get_inverse_field_name()
+            if inverse_field_name:
+                # save by setting the inverse field
+                inverse_field = related_serializer.get_field(
+                    inverse_field_name
+                )
+                data = request.data
+                if hasattr(data, '_mutable'):
+                    data._mutable = True
+
+                if (
+                    len(data.keys()) == 1 and
+                    data.keys()[0] == related_serializer_name
+                ):
+                    data = data[related_serializer_name]
+
+                # set the current record as the related object
+                # using the inverse field
+                data[inverse_field_name] = [pk] if inverse_field.many else pk
+                # make sure the inverse field is included
+                related_serializer = related_field.get_serializer(
+                    data=data,
+                    request_fields=None,
+                    include_fields='*',
+                    envelope=True,
+                    many=False
+                )
+                # set the inverse field to allow writes
+                inverse_field = related_serializer.fields.get(
+                    inverse_field_name
+                )
+                inverse_field.read_only = False
+
+            else:
+                raise exceptions.ValidationError(
+                    '"%s" has no inverse field' % field_name
+                )
+
         related_serializer.is_valid(raise_exception=True)
         self.perform_create(related_serializer)
+
+        if update_after:
+            related_instance = related_serializer.instance
+            if model_field.one_to_many:
+                setattr(related_instance, remote_field.name, instance)
+                related_instance.save()
+            elif model_field.many_to_many:
+                getattr(instance, model_field.name).add(related_instance)
+            else:  # o2o or m2o
+                setattr(instance, model_field.name, related_instance)
+                instance.save()
+
         headers = self.get_success_headers(related_serializer.data)
         return Response(related_serializer.data, status=201, headers=headers)
 

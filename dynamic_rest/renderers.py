@@ -106,7 +106,7 @@ class DynamicAdminRenderer(AdminRenderer):
                     instance_name = getattr(
                         instance, name_source, str(instance.pk)
                     )
-                except:
+                except AttributeError:
                     instance_name = None
                 for related_name, field in serializer.get_link_fields(
                 ).items():
@@ -120,11 +120,13 @@ class DynamicAdminRenderer(AdminRenderer):
                         not getattr(related_serializer, 'permissions', None) or
                         related_serializer.permissions.create
                     )
-                    can_add_more = field.many or not results.get(related_name)
+                    can_create = field.create and (
+                        field.many or not results.get(related_name)
+                    )
                     has_source = field.source != '*'
                     if (
                         has_source and
-                        can_add_more and
+                        can_create and
                         bool(inverse_field_name) and
                         has_permission
                     ):
@@ -243,15 +245,36 @@ class DynamicAdminRenderer(AdminRenderer):
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )
+        allowed = set()
+        if 'put' in allowed_methods:
+            allowed.add('update')
+        if 'post' in allowed_methods:
+            allowed.add('create')
+        if 'delete' in allowed_methods:
+            allowed.add('delete')
+        if 'get' in allowed_methods:
+            allowed.add('list')
+            allowed.add('read')
+
         if permissions:
             if not permissions.delete:
-                allowed_methods.discard('delete')
+                allowed.discard('delete')
+            else:
+                if instance and not instance._meta.model.objects.filter(
+                    permissions.delete.filters
+                ).filter(pk=instance.pk).exists():
+                    allowed.discard('delete')
             if not permissions.update:
-                allowed_methods.discard('patch')
-                allowed_methods.discard('put')
+                allowed.discard('update')
+            elif instance:
+                if instance and not instance._meta.model.objects.filter(
+                    permissions.update.filters
+                ).filter(pk=instance.pk).exists():
+                    allowed.discard('update')
             if not permissions.create:
-                allowed_methods.discard('post')
+                allowed.discard('create')
             if not permissions.list:
+                allowed.discard('list')
                 back = None
 
         from dynamic_rest.routers import get_directory
@@ -306,19 +329,19 @@ class DynamicAdminRenderer(AdminRenderer):
         context['api_name'] = settings.API_NAME
         context['url'] = request.get_full_path()
         context['allow_filter'] = (
-            'get' in allowed_methods and style == 'list'
+            'read' in allowed and style == 'list'
         ) and bool(filters)
         context['allow_delete'] = (
-            'delete' in allowed_methods and style == 'detail'
+            'delete' in allowed and style == 'detail'
             and bool(instance)
         )
         context['allow_edit'] = (
-            'put' in allowed_methods and
+            'update' in allowed and
             style == 'detail' and
             bool(instance)
         )
         context['allow_create'] = (
-            'post' in allowed_methods and style == 'list'
+            'create' in allowed and style == 'list'
         )
         context['alert'] = alert
         context['alert_class'] = alert_class

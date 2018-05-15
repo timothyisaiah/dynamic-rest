@@ -263,8 +263,10 @@ class PermissionsSerializerMixin(object):
                     PermissionsSerializerMixin, self
                 ).create(data, **kwargs)
                 if access.full_access:
+                    # grant full create
                     return instance
                 else:
+                    # check filters
                     model = self.serializer_class.get_model()
                     if model:
                         if not model.objects.filter(access.filters).filter(
@@ -326,16 +328,17 @@ class PermissionsViewSetMixin(object):
 
     def get_queryset(self):
         permissions = self.permissions
-        request_method = self.request.method.lower()
         queryset = super(PermissionsViewSetMixin, self).get_queryset()
 
         if permissions:
             access = None
-            if request_method == 'get':
+            if self.is_list():
+                access = permissions.list
+            elif self.is_get():
                 access = permissions.read
-            elif request_method == 'put' or request_method == 'patch':
+            elif self.is_update():
                 access = permissions.update
-            elif request_method == 'delete':
+            elif self.is_delete():
                 access = permissions.delete
             else:
                 return queryset

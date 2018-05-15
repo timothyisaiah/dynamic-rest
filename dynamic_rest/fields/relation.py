@@ -46,6 +46,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             sideloading=None,
             debug=False,
             inverse=None,
+            create=True,
             **kwargs
     ):
         """
@@ -64,11 +65,13 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 This can be used to support `create_related` functionality
             embed: If True, always embed related object(s). Will not sideload,
                 and will include the full object unless specifically excluded.
+            create: if True, creation will be allowed through this field
         """
         self._serializer_class = serializer_class
         self.queryset = queryset
         self.sideloading = sideloading
         self.debug = debug
+        self.create = create
         self.inverse = inverse
         self.embed = embed if sideloading is None else not sideloading
         if 'link' in kwargs:
@@ -190,7 +193,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         }
         try:
             cache_key = hash(pickle.dumps(key_dict))
-        except:
+        except AttributeError:
             # uncachable data like file streams
             if 'context' not in init_args:
                 init_args['context'] = self.context

@@ -1031,7 +1031,9 @@ class TestRelationsAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def test_create_related(self):
+    def test_create_related_m2o(self):
+        # many-to-one FK
+        # user.location
         data = {
             'name': 'Foo'
         }
@@ -1041,9 +1043,32 @@ class TestRelationsAPI(APITestCase):
             format='json'
         )
         self.assertEqual(201, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertIsNotNone(content['location']['id'])
+        self.assertEquals(content['location']['user_count'], 1)
+        self.assertEquals(content['location']['users'][0], 1)
+
         user = User.objects.get(pk=1)
         self.assertIsNotNone(user.location)
         self.assertEquals(user.location.name, 'Foo')
+
+    def test_create_related_o2m(self):
+        data = {
+            'name': 'Foo',
+            'last_name': 'Bar'
+        }
+        response = self.client.post(
+            '/locations/1/users/',
+            data=data,
+            format='json'
+        )
+        self.assertEqual(201, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        pk = content['user']['id']
+        self.assertIsNotNone(pk)
+
+        location = Location.objects.get(pk=1)
+        self.assertTrue(location.user_set.filter(pk=pk).exists())
 
     def test_generated_relation_fields(self):
         r = self.client.get('/users/1/location/')
