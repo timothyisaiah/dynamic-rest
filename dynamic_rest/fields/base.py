@@ -210,7 +210,8 @@ class DynamicField(fields.Field, DynamicBase):
 
         tag = 'a' if url else 'span'
         result = label or value
-
+        if result is None:
+            result = '<span class="text-muted">N/A</span>'
         if icon:
             result = """
                 <span>

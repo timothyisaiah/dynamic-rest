@@ -430,7 +430,7 @@ class WithDynamicViewSetBase(object):
         remote_field = model_field.remote_field
         update_after = True
 
-        if remote_field.null:
+        if remote_field.null and not related_field.inverse:
             # use the hybrid API method
 
             related_serializer = related_field.get_serializer(
@@ -496,6 +496,7 @@ class WithDynamicViewSetBase(object):
                 instance.save()
 
         headers = self.get_success_headers(related_serializer.data)
+        headers['Location'] = primary_serializer.get_url(pk)
         return Response(related_serializer.data, status=201, headers=headers)
 
     def list_related(self, request, pk=None, field_name=None):

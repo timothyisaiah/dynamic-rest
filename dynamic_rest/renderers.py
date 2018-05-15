@@ -110,11 +110,11 @@ class DynamicAdminRenderer(AdminRenderer):
                     instance_name = None
                 for related_name, field in serializer.get_link_fields(
                 ).items():
+                    kwargs = {'request_fields': None}
                     inverse_field_name = field.get_inverse_field_name()
-                    related_serializer = field.get_serializer(
-                        request_fields=None,
-                        exclude_fields=[inverse_field_name]
-                    )
+                    if inverse_field_name:
+                        kwargs['exclude_fields'] = [inverse_field_name]
+                    related_serializer = field.get_serializer(**kwargs)
                     related_serializer.set_request_method('POST')
                     has_permission = (
                         not getattr(related_serializer, 'permissions', None) or
@@ -127,7 +127,6 @@ class DynamicAdminRenderer(AdminRenderer):
                     if (
                         has_source and
                         can_create and
-                        bool(inverse_field_name) and
                         has_permission
                     ):
                         create_related_forms[related_name] = (
@@ -259,14 +258,14 @@ class DynamicAdminRenderer(AdminRenderer):
         if permissions:
             if not permissions.delete:
                 allowed.discard('delete')
-            else:
+            elif not permissions.delete.no_access:
                 if instance and not instance._meta.model.objects.filter(
                     permissions.delete.filters
                 ).filter(pk=instance.pk).exists():
                     allowed.discard('delete')
             if not permissions.update:
                 allowed.discard('update')
-            elif instance:
+            elif not permissions.update.no_access:
                 if instance and not instance._meta.model.objects.filter(
                     permissions.update.filters
                 ).filter(pk=instance.pk).exists():
@@ -375,7 +374,10 @@ class DynamicAdminRenderer(AdminRenderer):
             and serializer
         ):
             location = '%s?alert=Created+successfully&alert-class=success' % (
-                serializer.get_url(pk=serializer.instance.pk)
+                response.get(
+                    'Location',
+                    serializer.get_url(pk=serializer.instance.pk)
+                )
             )
 
         result = super(DynamicAdminRenderer, self).render(
