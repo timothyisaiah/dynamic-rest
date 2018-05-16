@@ -201,6 +201,7 @@ class DynamicField(fields.Field, DynamicBase):
         # list of classes or None
         classes = self.admin_get_classes(instance, value) or []
         classes.append('drest-value')
+        classes = [x for x in classes if x]
         # name of an icon or None
         icon = self.admin_get_icon(instance, value)
         # label or None
