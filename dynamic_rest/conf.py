@@ -31,6 +31,9 @@ DYNAMIC_REST = {
     # ADMIN_LOGOUT_URL: the logout URL, defaults to reverse-URL lookup
     'ADMIN_LOGOUT_URL': '',
 
+    # ADMIN_ICON_PACK: the admin icon pack, either fa or mdi
+    'ADMIN_ICON_PACK': 'fa',
+
     # DEBUG: enable/disable internal debugging
     'DEBUG': False,
 

@@ -6,6 +6,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericForeignKey
 from dynamic_rest.meta import get_model_field, is_field_remote
 from dynamic_rest.base import DynamicBase
+from dynamic_rest.conf import settings
 from rest_framework.fields import ListField
 
 
@@ -219,7 +220,11 @@ class DynamicField(fields.Field, DynamicBase):
                     <span class="{0} {0}-{1}"></span>
                     <span>{2}</span>
                 </span>
-            """.format('fa', icon, result)
+            """.format(
+                settings.ADMIN_ICON_PACK,
+                icon,
+                result
+            )
 
         if url:
             url = 'href="%s"' % url
@@ -265,7 +270,7 @@ class DynamicField(fields.Field, DynamicBase):
                     self.parent_model,
                     source
                 )
-            except:
+            except AttributeError:
                 self._model_field = None
         return self._model_field
 
