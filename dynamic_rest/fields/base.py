@@ -214,7 +214,7 @@ class DynamicField(fields.Field, DynamicBase):
         if result is None:
             result = ''
         if icon:
-            result = """
+            result = u"""
                 <span>
                     <span class="{0} {0}-{1}"></span>
                     <span>{2}</span>
@@ -226,7 +226,7 @@ class DynamicField(fields.Field, DynamicBase):
         else:
             url = ''
 
-        result = '<{0} {3} class="{1}">{2}</{0}>'.format(
+        result = u'<{0} {3} class="{1}">{2}</{0}>'.format(
             tag,
             ' '.join(classes),
             result,
