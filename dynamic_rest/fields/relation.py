@@ -258,8 +258,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         )
 
         serializer.parent = self
-        if hasattr(serializer, 'after_bind'):
-            serializer.after_bind()
+        serializer.field_name = self.field_name
+        if hasattr(serializer, 'initialized'):
+            serializer.initialized()
 
         return serializer
 

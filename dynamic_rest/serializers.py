@@ -222,7 +222,6 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
 
 class WithDynamicSerializerMixin(
     DynamicBase,
-    PermissionsSerializerMixin,
     WithResourceKeyMixin,
 ):
     """Base class for DREST serializers.
@@ -338,6 +337,9 @@ class WithDynamicSerializerMixin(
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
         self.enable_optimization = settings.ENABLE_SERIALIZER_OPTIMIZATIONS
+
+    def initialized(self):
+        return
 
     def _dynamic_init(self, only_fields, include_fields, exclude_fields):
         """
@@ -1215,6 +1217,7 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
 
 class DynamicModelSerializer(
+    PermissionsSerializerMixin,
     WithDynamicModelSerializerMixin,
     serializers.ModelSerializer
 ):

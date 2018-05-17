@@ -372,6 +372,8 @@ class WithDynamicViewSetBase(object):
         ).get_serializer(
             *args, **kwargs
         )
+        if hasattr(serializer, 'initialized'):
+            serializer.initialized()
         return serializer
 
     def paginate_queryset(self, *args, **kwargs):

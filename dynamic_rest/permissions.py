@@ -234,7 +234,12 @@ class Permissions(object):
 
 
 class PermissionsSerializerMixin(object):
-    def after_bind(self):
+    def initialized(self):
+        super(
+            PermissionsSerializerMixin,
+            self
+        ).initialized()
+
         full_permissions = self.full_permissions
 
         if full_permissions and (
@@ -306,15 +311,6 @@ class PermissionsSerializerMixin(object):
 
 
 class PermissionsViewSetMixin(object):
-    def get_serializer(self, *args, **kwargs):
-        serializer = super(PermissionsViewSetMixin, self).get_serializer(
-            *args,
-            **kwargs
-        )
-        if hasattr(serializer, 'after_bind'):
-            serializer.after_bind()
-        return serializer
-
     @classmethod
     def get_user_permissions(cls, user, even_if_superuser=False):
         if not user or (not even_if_superuser and user.is_superuser):
