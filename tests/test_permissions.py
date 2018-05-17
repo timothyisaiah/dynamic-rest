@@ -36,6 +36,8 @@ class TestPermissionsUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         content = json.loads(response.content)
         self.assertTrue(len(content['user']), 1)
+        # superuser flag is hidden
+        self.assertTrue('is_superuser' not in content['user'])
         # no update
         data = content['user']
         data['last_name'] = 'joe'

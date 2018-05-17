@@ -221,9 +221,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
 
 
 class WithDynamicSerializerMixin(
+    DynamicBase,
     PermissionsSerializerMixin,
     WithResourceKeyMixin,
-    DynamicBase
 ):
     """Base class for DREST serializers.
 
@@ -321,6 +321,8 @@ class WithDynamicSerializerMixin(
         if kwargs.pop('sideload', False):
             # if "sideload=True" is passed, turn on the envelope
             envelope = True
+
+        self.parent = None
 
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
@@ -898,6 +900,7 @@ class WithDynamicSerializerMixin(
             'read_only',
             value=method in ('PUT', 'PATCH')
         )
+
         # Toggle read_only for only-update fields
         only_update_field_names = self._get_flagged_field_names(
             serializer_fields,
@@ -908,6 +911,20 @@ class WithDynamicSerializerMixin(
             only_update_field_names,
             'read_only',
             value=method in ('POST')
+        )
+
+        hidden_fields = getattr(meta, 'hidden_fields', [])
+        self.flag_fields(
+            serializer_fields,
+            hidden_fields,
+            'read_only',
+            True
+        )
+        self.flag_fields(
+            serializer_fields,
+            hidden_fields,
+            'write_only',
+            True
         )
         return serializer_fields
 

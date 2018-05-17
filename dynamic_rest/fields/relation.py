@@ -252,7 +252,16 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if self.embed and self._is_dynamic:
             init_args['embed'] = True
 
-        return self._get_cached_serializer(args, init_args)
+        serializer = self._get_cached_serializer(
+            args,
+            init_args
+        )
+
+        serializer.parent = self
+        if hasattr(serializer, 'after_bind'):
+            serializer.after_bind()
+
+        return serializer
 
     @property
     def serializer(self):
@@ -260,7 +269,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             return self._serializer
 
         serializer = self.get_serializer()
-        serializer.parent = self
         self._serializer = serializer
         return serializer
 

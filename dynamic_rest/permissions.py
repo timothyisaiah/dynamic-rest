@@ -234,22 +234,47 @@ class Permissions(object):
 
 
 class PermissionsSerializerMixin(object):
-    @cached_property
-    def permissions(self):
-        user = self.get_request_attribute('user')
-        if not user or user.is_superuser:
+    def after_bind(self):
+        full_permissions = self.full_permissions
+
+        if full_permissions and (
+            full_permissions.write_fields or
+            full_permissions.read_fields
+        ):
+            write_fields = full_permissions.write_fields.filters
+            read_fields = full_permissions.read_fields.filters
+            for name, field in self.fields.items():
+                if name in write_fields:
+                    field.read_only = False
+                if name in read_fields:
+                    field.write_only = False
+
+    @classmethod
+    def get_user_permissions(cls, user, even_if_superuser=False):
+        if not user or (not even_if_superuser and user.is_superuser):
             return None
 
         permissions = getattr(
-            self.get_meta(), 'permissions', None
+            cls.get_meta(), 'permissions', None
         )
         if permissions:
             return Permissions(
                 permissions,
-                user
+                user,
             )
 
         return None
+
+    @cached_property
+    def permissions(self):
+        return self.get_user_permissions(self.get_request_attribute('user'))
+
+    @cached_property
+    def full_permissions(self):
+        return self.get_user_permissions(
+            self.get_request_attribute('user'),
+            True
+        )
 
     def create(self, data, **kwargs):
         permissions = self.permissions
@@ -281,6 +306,15 @@ class PermissionsSerializerMixin(object):
 
 
 class PermissionsViewSetMixin(object):
+    def get_serializer(self, *args, **kwargs):
+        serializer = super(PermissionsViewSetMixin, self).get_serializer(
+            *args,
+            **kwargs
+        )
+        if hasattr(serializer, 'after_bind'):
+            serializer.after_bind()
+        return serializer
+
     @classmethod
     def get_user_permissions(cls, user, even_if_superuser=False):
         if not user or (not even_if_superuser and user.is_superuser):
@@ -301,30 +335,16 @@ class PermissionsViewSetMixin(object):
     def permissions(self):
         return self.get_user_permissions(self.request.user)
 
+    @cached_property
+    def full_permissions(self):
+        return self.get_user_permissions(self.request.user, True)
+
     def list(self, request, **kwargs):
         permissions = self.permissions
         if not permissions or permissions.list:
             return super(PermissionsViewSetMixin, self).list(request, **kwargs)
         else:
             raise exceptions.PermissionDenied()
-
-    def get_serializer(self, *args, **kwargs):
-        permissions = self.get_user_permissions(
-            self.request.user,
-            even_if_superuser=True
-        )
-        serializer = super(PermissionsViewSetMixin, self).get_serializer(
-            *args,
-            **kwargs
-        )
-        if permissions:
-            write_fields = permissions.write_fields
-            if write_fields.spec:
-                for field_name in write_fields.spec:
-                    field = serializer.fields.get(field_name)
-                    if field:
-                        field.read_only = False
-        return serializer
 
     def get_queryset(self):
         permissions = self.permissions

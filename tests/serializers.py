@@ -250,7 +250,7 @@ class PermissionsUserSerializer(
             'username',
             'is_superuser'
         )
-        read_only_fields = (
+        hidden_fields = (
             'is_superuser',
         )
         filters = {
@@ -275,6 +275,9 @@ class PermissionsUserSerializer(
             },
             'is_superuser': {
                 'write_fields': (
+                    'is_superuser',
+                ),
+                'read_fields': (
                     'is_superuser',
                 )
             },
