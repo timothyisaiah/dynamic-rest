@@ -158,7 +158,8 @@ class DynamicAdminRenderer(AdminRenderer):
 
             title = header
             if icon:
-                header = mark_safe('<span class="fa fa-%s"></span>&nbsp;%s' % (
+                header = mark_safe('<span class="{0} {0}-{1}"></span>&nbsp;{2}'.format(  # noqa
+                    settings.ADMIN_ICON_PACK,
                     icon,
                     header
                 ))

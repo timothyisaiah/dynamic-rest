@@ -4,8 +4,18 @@
 .drest-no-margin {
     margin: 0 !important;
 }
+.drest-menu-btn {
+    position: absolute;
+    left: -5px;
+    margin-top: -8px;
+    color: white;
+    top: 50%;
+}
 .drest-no-padding {
     padding: 0 !important;
+}
+.drest-link {
+    cursor: pointer;
 }
 .drest-column-header {
     font-size: 11px;
@@ -16,7 +26,7 @@
 }
 .drest-content-container {
     display: none;
-    position: fixed;
+    /* position: fixed; */
     top: 50px;
     bottom: 50px;
     right: 0;
@@ -26,11 +36,14 @@
 }
 .drest-content {
     position: relative;
+    margin-top: 55px;
     width: 100%;
     height: 100%;
-    padding: 20px;
     overflow-x: hidden;
-    overflow-y: scroll;
+    overflow-y: auto;
+}
+.drest-content.padded {
+    padding: 20px;
 }
 .drest-content > .container {
     padding: 0;
@@ -89,22 +102,20 @@
         padding: 0;
     }
 }
-.drest-content .table {
-    border: 0px;
-}
-.drest-content .table th {
-    border-top: 0px;
-}
-.drest-content .stacktable.small-only {
-    border: 1px solid #999;
+.table.drest-table-list {
+    border-spacing: 0px;
 }
 .navbar-brand.drest-nav-left {
     margin-right: 0;
 }
-.drest-content .stacktable tr:first-child td {
-    border-top: 0px;
+.drest-table-list.table tr:first-child td {
+    border-top: 0;
 }
-.drest-content .st-key, .drest-content th, .modal .form-control-label, .drest-field .drest-field-label {
+.drest-table-list.dataTable.table {
+    margin-top: 0px !important;
+    margin-bottom: 0px !important;
+}
+.drest-content .st-key, .drest-table-list.table th, .drest-content th, .modal .form-control-label, .drest-field .drest-field-label {
     font-weight: 600;
     font-size: 11px;
     text-align: inherit;
@@ -114,9 +125,6 @@
 }
 .drest-field > td {
     vertical-align: middle;
-}
-.drest-content-container .drest-content th {
-    border-bottom: 1px solid #999;
 }
 .drest-content th:last-child {
     border-right: 0px;
@@ -138,7 +146,7 @@
 .drest-field:last-child {
     border-bottom: 0px;
 }
-.navbar-nav .drest-has-tooltip {
+.navbar .drest-has-tooltip {
     border-bottom: 0px;
 }
 .modal-dialog.modal-dialog {
@@ -189,10 +197,10 @@
 .drest-has-tooltip {
     border-bottom: 1px dotted #999;
 }
-.drest-table-details {
+.table.drest-table-detail td, .table.drest-table-detail th {
     border: 0;
 }
-.table.drest-table-details td, .table.drest-table-details th {
+.table.drest-table-directory td, .table.drest-table-directory th {
     border: 0;
 }
 .select2-search__field {
