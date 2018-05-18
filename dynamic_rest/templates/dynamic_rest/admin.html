@@ -44,9 +44,12 @@
             {% block header %}
                 <nav class="navbar navbar-inverse align-items-center flex-row bg-primary fixed-top">
                     <span class="navbar-brand ml-1" {% if style != 'directory' %}data-toggle="modal" data-target="#directoryModal"{% endif %}>
-                        {% if header %}
-                            <span>{{ header }}</span>
-                        {% endif %}
+                        {% block header_content %}
+                            {% if header %}
+                                <span>{{ header }}</span>
+                            {% endif %}
+                        {% endblock %}
+
                     </span>
                     <div class="navbar-nav ml-auto">
                         <span class="nav-item">

@@ -3,9 +3,14 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
+{% block header_content %}
+    <span class="fa fa-unlock"></span>
+    <span>{% drest_settings 'API_NAME' %}</span>
+{% endblock %}
+
 {% block content %}
     <div class="drest-content-container">
-        <div class="drest-content">
+        <div class="drest-content padded">
             <form class="container mr-auto" action="{% url 'dynamic_rest:login' %}" role="form" method="post">
               {% csrf_token %}
               <input type="hidden" name="next" value="{{ next }}">
