@@ -43,20 +43,15 @@
         <body>
             {% block header %}
                 <nav class="navbar navbar-inverse align-items-center flex-row bg-primary fixed-top">
-                    <span {% if style != 'directory' %}data-toggle="modal" data-target="#directoryModal"{% endif %} class="drest-menu-btn fa fa-list"></span>
-                    <span class="navbar-brand ml-1">
+                    <span class="navbar-brand ml-1" {% if style != 'directory' %}data-toggle="modal" data-target="#directoryModal"{% endif %}>
                         {% if header %}
-                            {% if description %}
-                                <span class="drest-has-tooltip" data-trigger="click" data-toggle="tooltip" data-placement="right" title="{{ description }}">{{ header }}</span>
-                            {% else %}
-                                <span>{{ header }}</span>
-                            {% endif %}
+                            <span>{{ header }}</span>
                         {% endif %}
                     </span>
                     <div class="navbar-nav ml-auto">
                         <span class="nav-item">
                             {% if allow_filter %}
-                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn {% if num_filters %}active{% endif %}">
+                                <div data-toggle="modal" data-target="#filtersModal" class="nav-link drest-btn {% if num_filters %}active{% endif %}">
                                     <span class="fa fa-search drest-btn-icon"></span>
                                     <span class="drest-btn-label">{% if num_filters %}{{ num_filters }}{% else %}Find{% endif %}</span>
                                 </div>
@@ -147,10 +142,10 @@
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header bg-info">
-                                    <h4 class="modal-title">
+                                    <h5 class="modal-title">
                                         <span class="fa fa-plus"></span>
                                         <span>Create {{ serializer_and_form.0.get_name | humanize }}</span>
-                                    </h4>
+                                    </h5>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                         <span aria-hidden="true">&times;</span>
                                     </button>
@@ -185,9 +180,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
-                                <h4 class="modal-title">
+                                <h5 class="modal-title">
+                                    <span class="fa fa-list"></span>
                                     <span>{{ api_name }}</span>
-                                <h4>
+                                <h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -205,10 +201,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
-                                <h4 class="modal-title">
+                                <h5 class="modal-title">
                                     <span class="fa fa-plus"></span>
                                     <span>Create {{ singular_name }}</span>
-                                </h4>
+                                </h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -235,10 +231,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-danger">
-                                <h4 class="modal-title">
+                                <h5 class="modal-title">
                                     <span class="fa fa-remove"></span>
                                     <span>Delete {{ title }}</span>
-                                </h4>
+                                </h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -267,10 +263,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
-                                <h4 class="modal-title">
+                                <h5 class="modal-title">
                                     <span class="fa fa-pencil"></span>
                                     <span>Edit {{ title }}</span>
-                                </h4>
+                                </h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -297,7 +293,7 @@
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header bg-info">
-                                    <h4 class="modal-title">{{ error_title }}</h4>
+                                    <h5 class="modal-title">{{ error_title }}</h5>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                         <span aria-hidden="true">&times;</span>
                                     </button>
@@ -324,12 +320,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
-                                <div class="modal-title">
-                                    <h4>
-                                        <span class="fa fa-search"></span>
-                                        <span>Find {{plural_name}}</span>
-                                    </h4>
-                                </div>
+                                <h5 class="modal-title">
+                                    <span class="fa fa-search"></span>
+                                    <span>Find {{plural_name}}</span>
+                                </h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>

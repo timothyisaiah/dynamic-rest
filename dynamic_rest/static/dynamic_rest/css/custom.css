@@ -79,6 +79,7 @@
     flex-direction: row;
     align-items: center;
     justify-content: center;
+    cursor: pointer;
 }
 .drest-btn-label {
     display: inline-block;
