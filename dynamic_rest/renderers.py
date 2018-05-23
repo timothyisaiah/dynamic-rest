@@ -241,7 +241,7 @@ class DynamicAdminRenderer(AdminRenderer):
             alert_class = 'info'
 
         #
-        permissions = getattr(view, 'permissions', None)
+        permissions = getattr(serializer, 'permissions', None)
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )

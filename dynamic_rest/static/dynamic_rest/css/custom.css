@@ -112,9 +112,9 @@
 .drest-table-list.table tr:first-child td {
     border-top: 0;
 }
-.drest-table-list.dataTable.table {
-    margin-top: 0px !important;
-    margin-bottom: 60px !important;
+.table.drest-table-detail, .table.drest-table-list {
+    margin-bottom: 60px;
+    margin-top: 0px;
 }
 .drest-content .st-key, .drest-table-list.table th, .drest-content th, .modal .form-control-label, .drest-field .drest-field-label {
     font-weight: 600;
