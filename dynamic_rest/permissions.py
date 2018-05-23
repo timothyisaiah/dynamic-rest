@@ -352,6 +352,8 @@ class PermissionsViewSetMixin(object):
                 access = permissions.list
             elif self.is_get():
                 access = permissions.read
+            elif self.is_create():
+                access = permissions.read
             elif self.is_update():
                 access = permissions.update
             elif self.is_delete():

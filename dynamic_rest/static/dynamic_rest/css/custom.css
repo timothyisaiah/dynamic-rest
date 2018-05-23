@@ -114,7 +114,7 @@
 }
 .drest-table-list.dataTable.table {
     margin-top: 0px !important;
-    margin-bottom: 0px !important;
+    margin-bottom: 60px !important;
 }
 .drest-content .st-key, .drest-table-list.table th, .drest-content th, .modal .form-control-label, .drest-field .drest-field-label {
     font-weight: 600;

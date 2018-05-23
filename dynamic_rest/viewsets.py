@@ -304,6 +304,15 @@ class WithDynamicViewSetBase(object):
         sideloading = self.get_request_feature(self.SIDELOADING)
         return is_truthy(sideloading) if sideloading is not None else None
 
+    def is_create(self):
+        if (
+            self.request and
+            self.request.method.upper() == 'POST'
+        ):
+            return True
+        else:
+            return False
+
     def is_update(self):
         if (
             self.request and
