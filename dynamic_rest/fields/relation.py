@@ -421,11 +421,18 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         """
         serializer_class = self._serializer_class
         if serializer_class is None:
-            from dynamic_rest.routers import DynamicRouter
-            serializer_class = DynamicRouter.get_canonical_serializer(
-                None,
-                model=get_related_model(self.model_field)
-            )
+            router = getattr(self.root_serializer, '_router', None)
+            related_model = get_related_model(self.model_field)
+            if settings.ONE_SERIALIZER_PER_MODEL and router:
+                serializer_class = router.get_serializer_class(
+                    model=related_model
+                )
+            if serializer_class is None:
+                from dynamic_rest.routers import DynamicRouter
+                serializer_class = DynamicRouter.get_canonical_serializer(
+                    None,
+                    model=related_model
+                )
 
         if not isinstance(serializer_class, six.string_types):
             return serializer_class

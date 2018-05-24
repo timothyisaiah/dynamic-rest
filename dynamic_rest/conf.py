@@ -72,6 +72,10 @@ DYNAMIC_REST = {
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,
 
+    # ONE_SERIALIZER_PER_MODEL: setting to True will cause
+    # internal serializer/model lookups to defer to the local serializer
+    'ONE_SERIALIZER_PER_MODEL': False,
+
     # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
     # Can be overriden at the viewset level.
     'PAGE_QUERY_PARAM': 'page',

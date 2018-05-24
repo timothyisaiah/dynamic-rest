@@ -47,6 +47,7 @@ class DynamicRouter(DefaultRouter):
 
     def __init__(self, *args, **kwargs):
         optional_trailing_slash = kwargs.pop('optional_trailing_slash', True)
+        self._serializer_classes = {}
         super(DynamicRouter, self).__init__(*args, **kwargs)
         if optional_trailing_slash:
             self.trailing_slash = '/?'
@@ -110,6 +111,9 @@ class DynamicRouter(DefaultRouter):
 
         url_name = self.routes[0].name.format(basename=base_name)
         serializer_class = getattr(viewset, 'serializer_class', None)
+
+        assert(getattr(viewset, '_router', None) in [None, self])
+
         viewset._router = self
         if serializer_class:
             # Set URL on the serializer class so that it can determine its
@@ -117,10 +121,16 @@ class DynamicRouter(DefaultRouter):
             # If a serializer class is associated with multiple views,
             # it will take on the URL of the last view.
             # TODO: is this a problem?
+            model = serializer_class.get_meta().model
+            self.add_serializer_class(model, serializer_class)
             serializer_class._router = self
             serializer_class._url = url_name
 
         return result
+
+    def add_serializer_class(self, model, serializer_class):
+        key = get_model_table(model)
+        self._serializer_classes[key] = serializer_class
 
     def register_resource(self, viewset, namespace=None):
         """
@@ -213,6 +223,13 @@ class DynamicRouter(DefaultRouter):
             return '%s/%s/' % (base_path, pk)
         else:
             return base_path
+
+    def get_serializer_class(
+        self,
+        model
+    ):
+        key = get_model_table(model)
+        return self._serializer_classes.get(key, None)
 
     @staticmethod
     def get_canonical_serializer(
