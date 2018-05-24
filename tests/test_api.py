@@ -916,6 +916,7 @@ class TestLocationsAPI(APITestCase):
             'properties': {
                 'name': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Name',
                     'nullable': False,
                     'read_only': False,

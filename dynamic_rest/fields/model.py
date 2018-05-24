@@ -36,7 +36,7 @@ for cls_name in (
 
 
 class DynamicMethodField(
-    serializers.SerializerMethodField,
-    DynamicField
+    DynamicField,
+    serializers.SerializerMethodField
 ):
     pass

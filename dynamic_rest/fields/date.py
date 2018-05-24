@@ -20,8 +20,11 @@ class DynamicDateField(
         value = super(DynamicDateField, self).prepare_value(
             instance
         )
-        timezone = getattr(instance, 'timezone', None)
-        value = arrow.get(value)
-        if timezone:
-            value = value.to(timezone)
-        return value.format(self.ADMIN_FORMAT)
+        if value:
+            timezone = getattr(instance, 'timezone', None)
+            value = arrow.get(value)
+            if timezone:
+                value = value.to(timezone)
+            return value.format(self.ADMIN_FORMAT)
+        else:
+            return None
