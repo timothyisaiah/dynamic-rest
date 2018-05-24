@@ -1,13 +1,29 @@
 from __future__ import absolute_import
 
-from rest_framework.serializers import DecimalField
+from rest_framework.serializers import DecimalField, IntegerField
 from dynamic_rest.utils import money_format
 from .base import DynamicField
 
 
+class DynamicMoneyFieldBase(
+    DynamicField
+):
+    def admin_get_icon(self, instance, value):
+        return 'cash-usd'
+
+    def prepare_value(self, instance):
+        value = super(DynamicMoneyFieldBase, self).prepare_value(
+            instance
+        )
+        value = money_format(
+            value,
+        )
+        return value
+
+
 class DynamicMoneyField(
     DecimalField,
-    DynamicField
+    DynamicMoneyFieldBase
 ):
     def __init__(self, *args, **kwargs):
         if len(args) != 2:
@@ -20,14 +36,9 @@ class DynamicMoneyField(
             self,
         ).__init__(*args, **kwargs)
 
-    def admin_get_icon(self, instance, value):
-        return 'cash-usd'
 
-    def prepare_value(self, instance):
-        value = super(DynamicMoneyField, self).prepare_value(
-            instance
-        )
-        value = money_format(
-            value,
-        )
-        return value
+class DynamicMoneyIntegerField(
+    IntegerField,
+    DynamicMoneyFieldBase
+):
+    pass

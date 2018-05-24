@@ -22,7 +22,7 @@ ONE_BILLION = Decimal('1000000000.00')
 def money_format(
     number
 ):
-    if number is None or number == '':
+    if not number:
         return '0'
     number = Decimal(number)
     ext = ''

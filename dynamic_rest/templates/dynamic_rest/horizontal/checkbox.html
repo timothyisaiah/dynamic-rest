@@ -10,7 +10,7 @@
     {% endif %}
 
     <div class="float-sm-right col-sm-10">
-        <input type="checkbox" name="{{ field.name }}" value="true" {% if field.value %}checked{% endif %}>
+        <input type="checkbox" name="{{ field.name }}" value="True" {% if field.value %}checked{% endif %}>
         {% if field.errors %}
             {% for error in field.errors %}
                 <span class="text-danger">{{ error }}</span>

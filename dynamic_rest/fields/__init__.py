@@ -11,6 +11,6 @@ from .choice import DynamicChoiceField
 from .json import DynamicJSONField
 from .datetime import DynamicDateTimeField
 from .phone import DynamicPhoneField
-from .money import DynamicMoneyField
+from .money import DynamicMoneyField, DynamicMoneyIntegerField
 from .date import DynamicDateField
 from .model import *

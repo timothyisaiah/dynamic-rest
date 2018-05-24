@@ -245,17 +245,14 @@ class DynamicField(fields.Field, DynamicBase):
 
     def get_attribute(self, instance):
         if self.getter:
-            return instance
+            return getattr(self.parent, self.getter)(instance)
         else:
             return super(DynamicField, self).get_attribute(instance)
 
     def to_representation(self, value):
         try:
-            if self.getter:
-                return self.prepare_value(value)
-            else:
-                return super(DynamicField, self).to_representation(value)
-        except Exception:
+            return super(DynamicField, self).to_representation(value)
+        except NotImplementedError:
             return value
 
     @property
