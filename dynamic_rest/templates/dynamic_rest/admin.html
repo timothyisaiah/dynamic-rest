@@ -403,7 +403,16 @@
                                 };
                                 var spinner = new Spinner(opts).spin(document.body);
                       };
-                      $('a').not('.no-spin').not('.disclosure').click(spin);
+                      $('a').filter(function() {
+                        if ($(this).closest('.renderjson').length) {
+                            return false;
+                        }
+                        if (this.target === "_blank") {
+                            return false;
+                        }
+                        return this.href && !this.href.match(/^\s*(mailto:|#|tel:)/);
+                      })
+                      .click(spin);
                       $('button[type="submit"]').click(spin);
                       $('.drest-link').click(spin);
                       var table = $('#results-table').DataTable({
