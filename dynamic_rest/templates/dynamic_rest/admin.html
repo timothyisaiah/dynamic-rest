@@ -35,7 +35,8 @@
             {% block jquery %}
                 <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
             {% endblock %}
- <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.16/cr-1.4.1/fh-3.1.3/r-2.2.1/sc-1.4.4/datatables.min.js"></script>
+            <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/dt-1.10.16/cr-1.4.1/fh-3.1.3/r-2.2.1/sc-1.4.4/datatables.min.js"></script>
+            <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/renderjson@1.3.1/renderjson.min.js"></script>
         </head>
     {% endblock %} <!-- /head -->
 
@@ -402,7 +403,7 @@
                                 };
                                 var spinner = new Spinner(opts).spin(document.body);
                       };
-                      $('a').not('.no-spin').click(spin);
+                      $('a').not('.no-spin').not('.disclosure').click(spin);
                       $('button[type="submit"]').click(spin);
                       $('.drest-link').click(spin);
                       var table = $('#results-table').DataTable({
@@ -417,6 +418,12 @@
                             "details": false
                         },
                       });
+                    });
+                    $('.drest-json').each(function(index){
+                        var json = $(this).data('json');
+                        if (json) {
+                            $(this)[0].appendChild(renderjson(json));
+                        }
                     });
                 </script>
             {% endblock %} <!-- /script -->

@@ -76,6 +76,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self.embed = embed if sideloading is None else not sideloading
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
+        if 'to_field' in kwargs:
+            # TODO: support this properly
+            self.to_field = kwargs.pop('to_field')
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 
@@ -421,7 +424,10 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         """
         serializer_class = self._serializer_class
         if serializer_class is None:
-            router = getattr(self.root_serializer, '_router', None)
+            router = getattr(
+                self.root_serializer,
+                'get_router', lambda *x: None
+            )()
             related_model = get_related_model(self.model_field)
             if settings.ONE_SERIALIZER_PER_MODEL and router:
                 serializer_class = router.get_serializer_class(
@@ -434,6 +440,10 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                     model=related_model
                 )
 
+        if serializer_class is None:
+            raise Exception(
+                'Cannot resolve a serializer class'
+            )
         if not isinstance(serializer_class, six.string_types):
             return serializer_class
 

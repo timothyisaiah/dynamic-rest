@@ -3,7 +3,7 @@ from rest_framework.serializers import ChoiceField
 from dynamic_rest.meta import Meta
 
 
-class DynamicChoicesField(
+class DynamicChoiceField(
     DynamicField,
     ChoiceField,
 ):

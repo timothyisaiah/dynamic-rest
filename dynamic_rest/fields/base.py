@@ -7,7 +7,6 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from dynamic_rest.meta import get_model_field, is_field_remote
 from dynamic_rest.base import DynamicBase
 from dynamic_rest.conf import settings
-from rest_framework.fields import ListField
 
 
 class DynamicField(fields.Field, DynamicBase):
@@ -48,6 +47,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.only_update = kwargs.pop('only_update', False)
         self.get_classes = kwargs.pop('get_classes', None)
         self.getter = kwargs.pop('getter', None)
+        self.method_name = self.getter
         self.setter = kwargs.pop('setter', None)
         self.bound = False
         if self.getter or self.setter:
@@ -243,17 +243,26 @@ class DynamicField(fields.Field, DynamicBase):
     def to_internal_value(self, value):
         return value
 
+    def get_attribute(self, instance):
+        if self.getter:
+            return instance
+        else:
+            return super(DynamicField, self).get_attribute(instance)
+
     def to_representation(self, value):
         try:
-            return super(DynamicField, self).to_representation(value)
-        except:
+            if self.getter:
+                return self.prepare_value(value)
+            else:
+                return super(DynamicField, self).to_representation(value)
+        except Exception:
             return value
 
     @property
     def parent_model(self):
         if not hasattr(self, '_parent_model'):
             parent = self.parent
-            if isinstance(parent, ListField):
+            if isinstance(parent, fields.ListField):
                 parent = parent.parent
             if parent:
                 self._parent_model = getattr(parent.Meta, 'model', None)
@@ -307,7 +316,7 @@ class CountField(DynamicComputedField):
         source = self.serializer_source
         try:
             field = self.parent.fields[source]
-        except:
+        except Exception:
             return None
 
         value = field.get_attribute(obj)

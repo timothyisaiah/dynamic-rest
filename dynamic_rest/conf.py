@@ -22,6 +22,12 @@ DYNAMIC_REST = {
     # Override this to add custom styling or UI
     'ADMIN_TEMPLATE': 'dynamic_rest/admin.html',
 
+    # ADMIN_DATETIME_FORMAT: controls datetime field render
+    'ADMIN_DATETIME_FORMAT': 'YYYY-MM-DD HH:mm',
+
+    # ADMIN_DATE_FORMAT: controls date field render
+    'ADMIN_DATE_FORMAT': 'YYYY-MM-DD',
+
     # ADMIN_LOGIN_TEMPLATE: the login template used to render login UI
     'ADMIN_LOGIN_TEMPLATE': 'dynamic_rest/login.html',
 

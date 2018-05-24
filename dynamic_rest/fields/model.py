@@ -3,10 +3,9 @@ from .base import DynamicField
 from rest_framework import serializers
 
 for cls_name in (
-    'BooleanField',
     'CharField',
-    'DateField',
-    'DateTimeField',
+    'BooleanField',
+    'NullBooleanField',
     'DecimalField',
     'DictField',
     'EmailField',
@@ -16,7 +15,6 @@ for cls_name in (
     'IPAddressField',
     'ImageField',
     'IntegerField',
-    'JSONField',
     'ListField',
     'RegexField',
     'SlugField',

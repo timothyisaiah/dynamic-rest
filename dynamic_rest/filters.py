@@ -70,7 +70,7 @@ class Filter(object):
         self.resolve()
 
     def get_type_for(self, field):
-        if isinstance(field, dfields.DynamicChoicesField):
+        if isinstance(field, dfields.DynamicChoiceField):
             return "select"
         elif isinstance(field, dfields.DynamicIntegerField):
             return 'integer'

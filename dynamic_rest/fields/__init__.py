@@ -7,5 +7,10 @@ from .base import (
 from .file import DynamicFileField
 from .relation import DynamicRelationField, DynamicCreatorField
 from .generic import DynamicGenericRelationField
-from .choices import DynamicChoicesField
+from .choice import DynamicChoiceField
+from .json import DynamicJSONField
+from .datetime import DynamicDateTimeField
+from .phone import DynamicPhoneField
+from .money import DynamicMoneyField
+from .date import DynamicDateField
 from .model import *

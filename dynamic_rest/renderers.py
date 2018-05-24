@@ -20,6 +20,9 @@ mapping[DynamicRelationField] = {
 mapping[fields.DynamicListField] = {
     'base_template': 'list.html'
 }
+mapping[fields.DynamicJSONField] = {
+    'base_template': 'json.html'
+}
 
 
 class DynamicHTMLFormRenderer(HTMLFormRenderer):

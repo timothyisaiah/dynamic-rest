@@ -8,8 +8,8 @@ from django.db import models, transaction
 from django.utils import six
 from django.db.models.fields.files import FieldFile
 from django.utils.functional import cached_property
-from rest_framework import exceptions, fields, serializers
-from rest_framework.fields import SkipField, JSONField
+from rest_framework import exceptions, serializers
+from rest_framework.fields import SkipField, JSONField, empty
 from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
@@ -17,7 +17,7 @@ from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from dynamic_rest.filters import Filter
 from dynamic_rest.permissions import PermissionsSerializerMixin
 from dynamic_rest.conf import settings
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest import fields as _fields
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.bound import DynamicJSONBoundField, DynamicBoundField
 from dynamic_rest.meta import (
@@ -93,6 +93,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def __init__(self, *args, **kwargs):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
+
+    def get_router(self):
+        return self.child.get_router()
 
     def set_request_method(self, method):
         return self.child.set_request_method(method)
@@ -265,7 +268,7 @@ class WithDynamicSerializerMixin(
     def __init__(
             self,
             instance=None,
-            data=fields.empty,
+            data=empty,
             only_fields=None,
             include_fields=None,
             exclude_fields=None,
@@ -298,10 +301,10 @@ class WithDynamicSerializerMixin(
                 If False, do not use an envelope.
         """
         name = self.get_name()
-        if data is not fields.empty and name in data and len(data) == 1:
+        if data is not empty and name in data and len(data) == 1:
             # support POST/PUT key'd by resource name
             data = data[name]
-        if data is not fields.empty:
+        if data is not empty:
             # if a field is nullable but not required and the implementation
             # passes null as a value, remove the field from the data
             # this addresses the frontends that send
@@ -337,6 +340,9 @@ class WithDynamicSerializerMixin(
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
         self.enable_optimization = settings.ENABLE_SERIALIZER_OPTIMIZATIONS
+
+    def get_router(self):
+        return getattr(self, '_router', None)
 
     def initialized(self):
         return
@@ -497,7 +503,7 @@ class WithDynamicSerializerMixin(
         if other:
             if not (
                 api_field and
-                isinstance(api_field, DynamicRelationField)
+                isinstance(api_field, _fields.DynamicRelationField)
             ):
                 raise ValidationError({
                     api_name:
@@ -945,7 +951,7 @@ class WithDynamicSerializerMixin(
                 all_fields = self.get_all_fields()
                 self._link_fields = {
                     name: field for name, field in six.iteritems(all_fields)
-                    if isinstance(field, DynamicRelationField) and
+                    if isinstance(field, _fields.DynamicRelationField) and
                     getattr(field, 'link', True) and
                     not (
                         # Skip sideloaded fields
@@ -1221,8 +1227,44 @@ class DynamicModelSerializer(
     WithDynamicModelSerializerMixin,
     serializers.ModelSerializer
 ):
-
     """DREST-compatible model-based serializer."""
+    serializer_choice_field = _fields.DynamicChoiceField
+    serializer_related_field = _fields.DynamicRelationField
+
+
+for field in (
+    'BooleanField',
+    'NullBooleanField',
+    'CharField',
+    'DateField',
+    'DateTimeField',
+    'DecimalField',
+    'EmailField',
+    'FilePathField',
+    'FloatField',
+    'ImageField',
+    'IntegerField',
+    'SlugField',
+    'TimeField',
+    'URLField',
+    'UUIDField',
+):
+    model_field = getattr(models, field, None)
+    if model_field:
+        serializer_field = getattr(_fields, 'Dynamic%s' % field)
+        DynamicModelSerializer.serializer_field_mapping[
+            model_field
+        ] = serializer_field
+
+try:
+    from django.contrib.postgres import fields as postgres_fields
+    DynamicModelSerializer.serializer_field_mapping[
+        postgres_fields.ArrayField
+    ] = _fields.DynamicListField
+    DynamicModelSerializer.serializer_field_mapping[
+        postgres_fields.JSONField
+    ] = _fields.DynamicJSONField
+except ImportError:
     pass
 
 

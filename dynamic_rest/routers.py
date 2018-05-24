@@ -121,7 +121,7 @@ class DynamicRouter(DefaultRouter):
             # If a serializer class is associated with multiple views,
             # it will take on the URL of the last view.
             # TODO: is this a problem?
-            model = serializer_class.get_meta().model
+            model = serializer_class.Meta.model
             self.add_serializer_class(model, serializer_class)
             serializer_class._router = self
             serializer_class._url = url_name
