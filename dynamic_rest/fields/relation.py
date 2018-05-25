@@ -196,7 +196,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         }
         try:
             cache_key = hash(pickle.dumps(key_dict))
-        except (AttributeError, TypeError):
+        except Exception:
             # uncachable data like file streams
             if 'context' not in init_args:
                 init_args['context'] = self.context
