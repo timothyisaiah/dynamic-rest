@@ -249,7 +249,10 @@ class DynamicField(fields.Field, DynamicBase):
         return result
 
     def to_internal_value(self, value):
-        return value
+        try:
+            return super(DynamicField, self).to_internal_value(value)
+        except NotImplementedError:
+            return value
 
     def get_attribute(self, instance):
         if self.getter and not hasattr(self, 'method_name'):
