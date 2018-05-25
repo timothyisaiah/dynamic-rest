@@ -1243,6 +1243,9 @@ for field in (
     'FilePathField',
     'FloatField',
     'ImageField',
+    'BigIntegerField',
+    'PositiveIntegerField',
+    'PositiveSmallIntegerField',
     'IntegerField',
     'SlugField',
     'TimeField',
@@ -1251,7 +1254,10 @@ for field in (
 ):
     model_field = getattr(models, field, None)
     if model_field:
-        serializer_field = getattr(_fields, 'Dynamic%s' % field)
+        serializer_field = 'Dynamic%s' % (
+            field if 'IntegerField' not in field else 'IntegerField'
+        )
+        serializer_field = getattr(_fields, serializer_field)
         DynamicModelSerializer.serializer_field_mapping[
             model_field
         ] = serializer_field

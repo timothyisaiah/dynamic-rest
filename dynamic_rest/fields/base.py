@@ -47,16 +47,18 @@ class DynamicField(fields.Field, DynamicBase):
         self.only_update = kwargs.pop('only_update', False)
         self.get_classes = kwargs.pop('get_classes', None)
         self.getter = kwargs.pop('getter', None)
-        self.method_name = self.getter
         self.setter = kwargs.pop('setter', None)
         self.bound = False
         if self.getter or self.setter:
             # dont bind to fields
             kwargs['source'] = '*'
+            if self.getter and not self.setter:
+                kwargs['read_only'] = True
         elif source == '*':
             # use default getter/setter
             self.getter = self.getter or '*'
             self.setter = self.setter or '*'
+
         self.kwargs = kwargs
         super(DynamicField, self).__init__(*args, **kwargs)
 
@@ -87,6 +89,12 @@ class DynamicField(fields.Field, DynamicBase):
                 self.getter = 'get_%s' % self.field_name
             if self.setter == '*':
                 self.setter = 'set_%s' % self.field_name
+
+            if hasattr(self, 'method_name'):
+                if self.getter is None:
+                    self.getter = self.method_name
+                else:
+                    self.method_name = self.getter
             return
 
         parent_model = self.parent_model
@@ -244,7 +252,7 @@ class DynamicField(fields.Field, DynamicBase):
         return value
 
     def get_attribute(self, instance):
-        if self.getter:
+        if self.getter and not hasattr(self, 'method_name'):
             return getattr(self.parent, self.getter)(instance)
         else:
             return super(DynamicField, self).get_attribute(instance)
