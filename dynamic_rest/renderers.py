@@ -20,6 +20,12 @@ mapping[DynamicRelationField] = {
 mapping[fields.DynamicListField] = {
     'base_template': 'list.html'
 }
+mapping[fields.DynamicFileField] = {
+    'base_template': 'file.html'
+}
+mapping[fields.DynamicImageField] = {
+    'base_template': 'file.html'
+}
 
 
 class DynamicHTMLFormRenderer(HTMLFormRenderer):
