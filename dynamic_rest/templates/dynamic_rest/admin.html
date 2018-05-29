@@ -117,7 +117,7 @@
                         <div class="nav-item drest-nav-left">
                             {% if allow_delete %}
                                 <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
-                                    <span class="drest-btn-icon mdi mdi-remove" aria-hidden="true"></span>
+                                    <span class="drest-btn-icon mdi mdi-delete" aria-hidden="true"></span>
                                     <span class="drest-btn-label">Delete</span>
                                 </div>
                             {% endif %}
@@ -324,7 +324,7 @@
             {% endblock %} <!-- /error_form -->
 
             {% block filter_form %}
-                <div class="modal fade" id="filtersModal">
+                <div class="drest modal fade" id="filtersModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
