@@ -117,7 +117,7 @@
                         <div class="nav-item drest-nav-left">
                             {% if allow_delete %}
                                 <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
-                                    <span class="drest-btn-icon fa fa-remove" aria-hidden="true"></span>
+                                    <span class="drest-btn-icon mdi mdi-remove" aria-hidden="true"></span>
                                     <span class="drest-btn-label">Delete</span>
                                 </div>
                             {% endif %}
@@ -130,13 +130,13 @@
                         <div class="nav-item drest-nav-right">
                             {% if allow_create %}
                                 <div class="drest-btn btn btn-primary" data-toggle="modal" data-target="#createModal">
-                                    <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                                    <span class="drest-btn-icon mdi mdi-plus" aria-hidden="true"></span>
                                     <span class="drest-btn-label">Create</span>
                                 </div>
                             {% endif %}
                             {% if allow_edit %}
                                 <div class="btn btn-primary drest-btn" data-toggle="modal" data-target="#editModal">
-                                    <span class="drest-btn-icon fa fa-pencil" aria-hidden="true"></span>
+                                    <span class="drest-btn-icon mdi mdi-pencil" aria-hidden="true"></span>
                                     <span class="drest-btn-label">Edit</span>
                                 </div>
                             {% endif %}
@@ -151,7 +151,7 @@
                             <div class="modal-content">
                                 <div class="modal-header bg-info">
                                     <h5 class="modal-title">
-                                        <span class="fa fa-plus"></span>
+                                        <span class="mdi mdi-plus"></span>
                                         <span>Create {{ serializer_and_form.0.get_name | humanize }}</span>
                                     </h5>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -189,7 +189,7 @@
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
                                 <h5 class="modal-title">
-                                    <span class="fa fa-list"></span>
+                                    <span class="mdi mdi-account"></span>
                                     <span>{{ api_name }}</span>
                                 <h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -210,7 +210,7 @@
                         <div class="modal-content">
                             <div class="modal-header bg-info">
                                 <h5 class="modal-title">
-                                    <span class="fa fa-plus"></span>
+                                    <span class="mdi mdi-plus"></span>
                                     <span>Create {{ singular_name }}</span>
                                 </h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -240,7 +240,7 @@
                         <div class="modal-content">
                             <div class="modal-header bg-danger">
                                 <h5 class="modal-title">
-                                    <span class="fa fa-remove"></span>
+                                    <span class="mdi mdi-delete"></span>
                                     <span>Delete {{ title }}</span>
                                 </h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
@@ -251,7 +251,7 @@
                                 <div class="modal-body">
                                     <p>Are you sure you want to delete?</p>
                                     <p class="text-danger">
-                                        <span class="fa fa-exclamation-triangle"></span>
+                                        <span class="mdi mdi-alert"></span>
                                         <span>This operation cannot be undone!</span>
                                     </p>
 

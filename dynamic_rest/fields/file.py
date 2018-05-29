@@ -1,5 +1,6 @@
 from .base import DynamicField
 from rest_framework.serializers import FileField
+from dynamic_rest.conf import settings
 
 
 class DynamicFileField(
@@ -7,9 +8,11 @@ class DynamicFileField(
     FileField,
 ):
     def admin_render(self, instance=None, value=None):
-        return '<a class="no-spin" target="_blank" href="%s">%s%s</a>' % (
+        return '<a target="_blank" href="%s">%s%s</a>' % (
             value.url,
-            '<span class="fa fa-download"></span>',
+            '<span class="%s %s-download"></span>'.format(
+                settings.ADMIN_ICON_PACK
+            ),
             str(value)
         )
 
