@@ -136,7 +136,7 @@
 .drest-table-list.table tr:first-child td {
     border-top: 0;
 }
-.dataTable.drest-table-detail, .dataTable.drest-table-list {
+.table.drest-table-detail, .table.drest-table-list {
     margin-bottom: 60px !important;
     margin-top: 0px !important;
 }
