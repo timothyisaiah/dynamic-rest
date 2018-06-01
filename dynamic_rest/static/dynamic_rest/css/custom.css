@@ -1,3 +1,11 @@
+#drestProgressBar {
+    height: 3px;
+    position: fixed;
+    z-index: 10001;
+    top: 0;
+    left: 0;
+    right: 0;
+}
 .file-input .file-upload-indicator {
     display: none;
 }

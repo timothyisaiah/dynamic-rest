@@ -216,8 +216,8 @@ class DynamicAdminRenderer(AdminRenderer):
                 pass
 
         # alerts
-        alert = request.query_params.get('alert', None)
-        alert_class = request.query_params.get('alert-class', None)
+        alert = None
+        alert_class = None
         if is_error:
             error = response.data
             if isinstance(error, dict):
@@ -380,11 +380,9 @@ class DynamicAdminRenderer(AdminRenderer):
             did_create
             and serializer
         ):
-            location = '%s?alert=Created+successfully&alert-class=success' % (
-                response.get(
-                    'Location',
-                    serializer.get_url(pk=serializer.instance.pk)
-                )
+            location = response.get(
+                'Location',
+                serializer.get_url(pk=serializer.instance.pk)
             )
 
         result = super(DynamicAdminRenderer, self).render(
@@ -394,10 +392,7 @@ class DynamicAdminRenderer(AdminRenderer):
         )
 
         if did_delete:
-            location = (
-                response.get('Location', '/') +
-                '?alert=Deleted+successfully&alert-class=success'
-            )
+            location = response.get('Location', '/')
 
         if response and location:
             response['Location'] = location

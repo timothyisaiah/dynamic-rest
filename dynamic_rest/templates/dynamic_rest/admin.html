@@ -29,6 +29,7 @@
                 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.16/cr-1.4.1/fh-3.1.3/r-2.2.1/sc-1.4.4/datatables.min.css"/>
                 <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/css/fileinput.min.css" media="all" rel="stylesheet" type="text/css" />
                 <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
+                <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/mprogress.min.css" %}"/>
             {% endblock %}
 
 
@@ -41,6 +42,7 @@
             <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.11.0/umd/popper.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/js/fileinput.min.js"></script>
             <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-fileinput/4.4.8/themes/fa/theme.min.js"></script>
+            <script type="text/javascript" src="{% static "dynamic_rest/js/mprogress.min.js" %}"/></script>
         </head>
     {% endblock %} <!-- /head -->
 
@@ -112,6 +114,7 @@
             {% endblock %}
 
             {% block footer %}
+                <div id="drestProgressBar"></div>
                 <nav class="navbar bg-faded fixed-bottom">
                     <div class="navbar-nav drest-nav">
                         <div class="nav-item drest-nav-left">
@@ -359,7 +362,6 @@
                 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
                 <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
 
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
 
                 <script>
@@ -383,79 +385,56 @@
                         $('.drest-content-container').show();
 
                         var spin = function() {
-                                var opts = {
-                                  lines: 7,
-                                  length: 0, // The length of each line
-                                  width: 20, // The line thickness
-                                  radius: 25, // The radius of the inner circle
-                                  scale: 0.8, // Scales overall size of the spinner
-                                  corners: 1, // Corner roundness (0..1)
-                                  color: '#000000', // CSS color or array of colors
-                                  fadeColor: 'transparent', // CSS color or array of colors
-                                  opacity: 0, // Opacity of the lines
-                                  rotate: 0, // The rotation offset
-                                  direction: 1, // 1: clockwise, -1: counterclockwise
-                                  speed: 1.5, // Rounds per second
-                                  trail: 95, // Afterglow percentage
-                                  fps: 20, // Frames per second when using setTimeout() as a fallback in IE 9
-                                  zIndex: 2e9, // The z-index (defaults to 2000000000)
-                                  className: 'spinner', // The CSS class to assign to the spinner
-                                  top: '50%', // Top position relative to parent
-                                  left: '50%', // Left position relative to parent
-                                  shadow: null, // Box-shadow for the lines
-                                  position: 'fixed' // Element positioning
-                                };
-                                var spinner = new Spinner(opts).spin(document.body);
-                      };
-                      $('a').filter(function() {
-                        if ($(this).closest('.renderjson').length) {
-                            return false;
-                        }
-                        if (this.target === "_blank") {
-                            return false;
-                        }
-                        return this.href && !this.href.match(/^\s*(mailto:|#|tel:)/);
-                      })
-                      .click(spin);
-                      $('button[type="submit"]').click(spin);
-                      $('.drest-link').click(spin);
-                      var table = $('#results-table').DataTable({
-                        "paging": false,
-                        "ordering": false,
-                        "info": false,
-                        "searching": false,
-                        "fixedHeader": {
-                            "headerOffset": 55,
-                        },
-                        "responsive": {
-                            "details": false
-                        },
-                      });
-                    });
-                    $('.drest-json').each(function(index){
-                        var json = $(this).data('json');
-                        if (json) {
-                            $(this)[0].appendChild(renderjson(json));
-                        }
-                    });
-                    var preview_path = 'https://cdn0.iconfinder.com/data/icons/avatar-vol-2-4/512/9-256.png';
-                    $('input[type="file"]').fileinput({
-                        "theme": "fa",
-                        "showBrowse": false,
-                        "showUpload": false,
-                        "showRemove": false,
-                        "browseOnZoneClick": true,
-                        "showCaption": false,
-                        "dropZoneClickTitle": "",
-                        "defaultPreviewContent": '<h1 class="text-primary mdi mdi-cloud-upload m-auto"></h1>',
-                        "dropZoneTitle": "Select File",
-                        "fileActionSettings": {
+                            var mprogress = new Mprogress({
+                                template: 3,
+                                parent: '#drestProgressBar'
+                            });
+                            mprogress.start();
+                        };
+                        $('a').filter(function() {
+                            if (this.target === "_blank") {
+                                return false;
+                            }
+                            return this.href && !this.href.match(/^\s*(mailto:|#|tel:)/);
+                        }).click(spin);
+                        $('button[type="submit"]').click(spin);
+                        $('.drest-link').click(spin);
+                        var table = $('#results-table').DataTable({
+                            "paging": false,
+                            "ordering": false,
+                            "info": false,
+                            "searching": false,
+                            "fixedHeader": {
+                                "headerOffset": 55,
+                            },
+                            "responsive": {
+                                "details": false
+                            },
+                        });
+                        $('.drest-json').each(function(index){
+                            var json = $(this).data('json');
+                            if (json) {
+                                $(this)[0].appendChild(renderjson(json));
+                            }
+                        });
+                        $('input[type="file"]').fileinput({
+                            "theme": "fa",
+                            "showBrowse": false,
                             "showUpload": false,
-                            "showDownload": false,
-                            "showDrag": false,
-                            "showZoom": false,
-                            "showRemove": true
-                        }
+                            "showRemove": false,
+                            "browseOnZoneClick": true,
+                            "showCaption": false,
+                            "dropZoneClickTitle": "",
+                            "defaultPreviewContent": '<h1 class="text-primary mdi mdi-cloud-upload m-auto"></h1>',
+                            "dropZoneTitle": "Select File",
+                            "fileActionSettings": {
+                                "showUpload": false,
+                                "showDownload": false,
+                                "showDrag": false,
+                                "showZoom": false,
+                                "showRemove": true
+                            }
+                        });
                     });
                 </script>
             {% endblock %} <!-- /script -->
