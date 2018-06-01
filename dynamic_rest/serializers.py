@@ -886,6 +886,9 @@ class WithDynamicSerializerMixin(
         ro_fields = getattr(meta, 'read_only_fields', [])
         self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
 
+        wo_fields = getattr(meta, 'write_only_fields', [])
+        self.flag_fields(serializer_fields, wo_fields, 'write_only', True)
+
         pw_fields = getattr(meta, 'untrimmed_fields', [])
         self.flag_fields(
             serializer_fields,
@@ -1126,33 +1129,34 @@ class WithDynamicSerializerMixin(
     def save(self, *args, **kwargs):
         """Serializer save that addresses prefetch issues."""
         update = getattr(self, 'instance', None) is not None
-        try:
-            instance = super(
-                WithDynamicSerializerMixin,
-                self
-            ).save(
-                *args,
-                **kwargs
-            )
-        except exceptions.APIException as e:
-            if self.debug:
-                import traceback
-                traceback.print_exc()
+        with transaction.atomic():
+            try:
+                instance = super(
+                    WithDynamicSerializerMixin,
+                    self
+                ).save(
+                    *args,
+                    **kwargs
+                )
+                self.do_post_save(instance)
+            except exceptions.APIException as e:
+                if self.debug:
+                    import traceback
+                    traceback.print_exc()
 
-            raise
-        except Exception as e:
-            if self.debug:
-                import traceback
-                traceback.print_exc()
+                raise
+            except Exception as e:
+                if self.debug:
+                    import traceback
+                    traceback.print_exc()
 
-            error = e.args[0] if e.args else str(e)
-            if not isinstance(error, dict):
-                error = {'error': error}
-            self._errors = error
-            raise exceptions.ValidationError(
-                self.errors
-            )
-        self.do_post_save(instance)
+                error = e.args[0] if e.args else str(e)
+                if not isinstance(error, dict):
+                    error = {'error': error}
+                self._errors = error
+                raise exceptions.ValidationError(
+                    self.errors
+                )
 
         view = self._context.get('view')
         if update and view:

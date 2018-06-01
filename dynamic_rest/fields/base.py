@@ -39,7 +39,6 @@ class DynamicField(fields.Field, DynamicBase):
                 saving related objects.
                 If source is '*', this will default to 'set_$FIELD_NAME'.
         """
-        source = kwargs.get('source', None)
         self.requires = kwargs.pop('requires', None)
         self.deferred = kwargs.pop('deferred', None)
         self.field_type = kwargs.pop('field_type', None)
@@ -49,15 +48,11 @@ class DynamicField(fields.Field, DynamicBase):
         self.getter = kwargs.pop('getter', None)
         self.setter = kwargs.pop('setter', None)
         self.bound = False
-        if self.getter or self.setter:
-            # dont bind to fields
+        if self.getter:
+            # dont bind to model
             kwargs['source'] = '*'
-            if self.getter and not self.setter:
+            if not self.setter:
                 kwargs['read_only'] = True
-        elif source == '*':
-            # use default getter/setter
-            self.getter = self.getter or '*'
-            self.setter = self.setter or '*'
 
         self.kwargs = kwargs
         super(DynamicField, self).__init__(*args, **kwargs)
@@ -85,11 +80,6 @@ class DynamicField(fields.Field, DynamicBase):
 
         source = self.source or self.field_name
         if source == '*':
-            if self.getter == '*':
-                self.getter = 'get_%s' % self.field_name
-            if self.setter == '*':
-                self.setter = 'set_%s' % self.field_name
-
             if hasattr(self, 'method_name'):
                 if self.getter is None:
                     self.getter = self.method_name
@@ -155,6 +145,7 @@ class DynamicField(fields.Field, DynamicBase):
 
         if value and many:
             value = list(value)
+
         if isinstance(value, QuerySet):
             value = list(value)
 

@@ -147,9 +147,10 @@ class GroupSerializer(DynamicModelSerializer):
     # Custom getter/setter
     loc1usersGetter = DynamicRelationField(
         'UserSerializer',
-        source='*',
         requires=['users.*'],
         required=False,
+        setter='set_loc1usersGetter',
+        getter='get_loc1usersGetter',
         deferred=True,
         many=True
     )
