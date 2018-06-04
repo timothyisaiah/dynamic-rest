@@ -359,6 +359,10 @@ class DynamicAdminRenderer(AdminRenderer):
             serializer.is_valid()
 
         form_renderer = self.form_renderer_class()
+        if hasattr(serializer, 'child'):
+            # re-initialize the serializer
+            serializer = serializer.child.__class__()
+
         return form_renderer.render(
             serializer.data,
             self.accepted_media_type,
