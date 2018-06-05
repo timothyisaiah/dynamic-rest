@@ -44,6 +44,12 @@ class DynamicBoundField(object):
                 self._rendered_value = self.value
         return self._rendered_value
 
+    def should_render(self):
+        value = self.value
+        if value is None or value == '':
+            return False
+        return True
+
     def as_form_field(self):
         value = '' if (
             self.value is None or self.value is False

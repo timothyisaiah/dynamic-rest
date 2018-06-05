@@ -1,21 +1,20 @@
 {% load rest_framework %}
 
 <div class="form-group row">
-  {% if field.label %}
-    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
-        {% if field.help_text %}
-            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
-        {% else %}
-            {{ field.label }}
-        {% endif %}
-    </label>
-  {% endif %}
+  {% include "./label.html" %}
 
   <div class="col-sm-10">
     <select class="form-control" name="{{ field.name }}">
-      {% if field.allow_null or field.allow_blank %}
-        <option value="" {% if not field.value %}selected{% endif %}>--------</option>
+      {% if field.required and not field.allow_null %}
+        {% if not field.value %}
+            <option value="" selected>--------</option>
+        {% endif %}
+      {% else %}
+        <option value="" {% if not field.value %}selected{% endif %}>
+            --------
+        </option>
       {% endif %}
+
       {% for select in field.iter_options %}
           {% if select.start_option_group %}
             <optgroup label="{{ select.label }}">

@@ -221,12 +221,7 @@ class DynamicAdminRenderer(AdminRenderer):
         if is_error:
             error = response.data
             if isinstance(error, dict):
-                if len(error.keys()) == 1:
-                    error = error[error.keys()[0]]
-                else:
-                    error = ' '.join((
-                        "%s=%s" % (str(k), str(v)) for k, v in error.items()
-                    ))
+                error = 'see above for details'
             alert = 'An error has occurred: %s' % error
             alert_class = 'danger'
         elif is_update:
@@ -352,6 +347,9 @@ class DynamicAdminRenderer(AdminRenderer):
         context['alert'] = alert
         context['alert_class'] = alert_class
         return context
+
+    def get_filter_form(self, *args, **kwargs):
+        return None
 
     def render_form_for_serializer(self, serializer):
         serializer.disable_envelope()

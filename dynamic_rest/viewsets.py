@@ -411,6 +411,10 @@ class WithDynamicViewSetBase(object):
             [prefix + val for val in values]
         )
 
+    def _refresh_query_params(self):
+        if hasattr(self, '_request_fields'):
+            del self._request_fields
+
     def create_related(self, request, pk=None, field_name=None):
         """Create an instance of a related object through a related field.
 
@@ -541,6 +545,8 @@ class WithDynamicViewSetBase(object):
         self.request.query_params.add('filter{pk}', pk)
         self.request.query_params.add(self.INCLUDE, field_prefix)
 
+        self._refresh_query_params()
+
         # Get serializer and field.
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
@@ -572,11 +578,11 @@ class WithDynamicViewSetBase(object):
 
         # create an instance of the related serializer
         # and use it to render the data
-        serializer = field.get_serializer(
+        related_serializer = field.get_serializer(
             instance=related,
             envelope=True,
         )
-        return Response(serializer.data)
+        return Response(related_serializer.data)
 
 
 class WithDynamicViewSetMixin(
