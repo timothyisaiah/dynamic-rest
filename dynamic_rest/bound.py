@@ -1,5 +1,6 @@
 import json
 from rest_framework.compat import unicode_to_repr
+from dynamic_rest.fields import DynamicRelationField
 
 
 class DynamicBoundField(object):
@@ -46,6 +47,11 @@ class DynamicBoundField(object):
 
     def should_render(self):
         value = self.value
+        field = self._field
+
+        if isinstance(field, DynamicRelationField):
+            return True
+
         if value is None or value == '':
             return False
         return True

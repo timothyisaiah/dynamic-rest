@@ -116,7 +116,10 @@ class DynamicAdminRenderer(AdminRenderer):
                     instance_name = None
                 for related_name, field in serializer.get_link_fields(
                 ).items():
-                    kwargs = {'request_fields': None}
+                    kwargs = {
+                        'request_fields': None,
+                        'many': False
+                    }
                     inverse_field_name = field.get_inverse_field_name()
                     if inverse_field_name:
                         kwargs['exclude_fields'] = [inverse_field_name]
