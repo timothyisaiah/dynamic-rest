@@ -225,6 +225,8 @@ class DynamicAdminRenderer(AdminRenderer):
             error = response.data
             if isinstance(error, dict):
                 error = 'see above for details'
+            elif isinstance(error, list) and len(error) == 1:
+                error = error[0]
             alert = 'An error has occurred: %s' % error
             alert_class = 'danger'
         elif is_update:
@@ -244,7 +246,6 @@ class DynamicAdminRenderer(AdminRenderer):
         if alert and not alert_class:
             alert_class = 'info'
 
-        #
         permissions = getattr(serializer, 'permissions', None)
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))

@@ -25,10 +25,12 @@
         var values = {{field.value | to_json | safe}};
         var $el = $("select[name='{{ field.name }}']");
         for (var v in values) {
-            var value = values[v];
-            $el.append(
-                '<option selected="selected">' + value + '</option>'
-            );
+            if (values.hasOwnProperty(v)) {
+                var value = values[v];
+                $el.append(
+                    '<option selected="selected">' + value + '</option>'
+                );
+            }
         }
         $el.select2({
             tags: true,
