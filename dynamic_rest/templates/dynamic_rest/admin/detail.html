@@ -16,7 +16,7 @@
                 <tr class="drest-field">
                     <td>
                         {% if field and field.help_text %}
-                            <span data-placement="right" class="drest-field-label drest-has-tooltip" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
+                            <span data-placement="right" class="drest-field-label drest-has-tooltip" data-tippy-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
                         {% else %}
                             <span class="drest-field-label">{{ field.label }}</span>
                         {% endif %}

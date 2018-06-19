@@ -1,3 +1,4 @@
+from random import randint
 import json
 from rest_framework.compat import unicode_to_repr
 from dynamic_rest.fields import DynamicRelationField
@@ -11,9 +12,11 @@ class DynamicBoundField(object):
     providing an API similar to Django forms and form fields.
     """
 
-    def __init__(self, field, value, errors, prefix='', instance=None):
+    def __init__(self, field, value, errors, prefix='', instance=None,
+                 id=None):
         self._field = field
         self._prefix = prefix
+        self.id = id
         self.value = value
         self.errors = errors
         self.instance = instance
@@ -27,20 +30,16 @@ class DynamicBoundField(object):
         return self._field.__class__
 
     def __repr__(self):
-        return unicode_to_repr('<%s %s value=%s errors=%s instance=%s>' % (
-            self.__class__.__name__,
-            self._field.field_name,
-            self.value,
-            self.errors,
-            self.instance
-        ))
+        return unicode_to_repr(
+            '<%s %s value=%s errors=%s instance=%s>' %
+            (self.__class__.__name__, self._field.field_name, self.value,
+             self.errors, self.instance))
 
     def get_rendered_value(self):
         if not hasattr(self, '_rendered_value'):
             if callable(getattr(self._field, 'admin_render', None)):
                 self._rendered_value = self._field.admin_render(
-                    instance=self.instance, value=self.value
-                )
+                    instance=self.instance, value=self.value)
             else:
                 self._rendered_value = self.value
         return self._rendered_value
@@ -57,16 +56,16 @@ class DynamicBoundField(object):
         return True
 
     def as_form_field(self):
-        value = '' if (
-            self.value is None or self.value is False
-        ) else self.value
-        return self.__class__(
-            self._field,
-            value,
-            self.errors,
-            self._prefix,
-            self.instance
-        )
+        value = '' if (self.value is None
+                       or self.value is False) else self.value
+
+        parent_name = self._field.parent.get_name()
+        rand = ''.join([str(randint(0, 9)) for _ in range(6)])
+        id = '%s-%s-%s' % (parent_name, self.name, rand)
+
+        result = self.__class__(self._field, value, self.errors, self._prefix,
+                                self.instance, id)
+        return result
 
 
 class DynamicJSONBoundField(DynamicBoundField):
@@ -76,6 +75,10 @@ class DynamicJSONBoundField(DynamicBoundField):
             value = json.dumps(self.value, sort_keys=True, indent=4)
         except TypeError:
             pass
-        return self.__class__(
-            self._field, value, self.errors, self._prefix, self.instance
-        )
+
+        parent_name = self._field.parent.get_name()
+        rand = ''.join([str(randint(0, 9)) for _ in range(6)])
+        id = '%s-%s-%s' % (parent_name, self.name, rand)
+        result = self.__class__(self._field, value, self.errors, self._prefix,
+                                self.instance, id)
+        return result

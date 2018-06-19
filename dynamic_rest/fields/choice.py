@@ -7,6 +7,10 @@ class DynamicChoiceField(
     DynamicField,
     ChoiceField,
 ):
+    def __init__(self, *args, **kwargs):
+        self.controls = kwargs.pop('controls', {})
+        super(DynamicChoiceField, self).__init__(*args, **kwargs)
+
     def admin_get_icon(self, instance, value):
         return 'format-list-bulleted'
 

@@ -23,6 +23,11 @@ register = template.Library()
 
 
 @register.filter
+def help_text_format(txt):
+    return txt.strip().replace('\n', '<br/>')
+
+
+@register.filter
 def as_id_to_name(field):
     serializer = field.serializer
     name_field_name = serializer.get_name_field()

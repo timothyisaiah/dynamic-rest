@@ -1,7 +1,8 @@
+{% load dynamic_rest %}
 <div class="form-group row">
     <label class="col-2 form-control-label">
         {% if help_text %}
-            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ help_text | safe }}">{{ label }}</span>
+            <span class="drest-has-tooltip" data-tippy-trigger="click" title="{{ help_text | s/help_text_format | safe }}">{{ label }}</span>
         {% else %}
             {{ label }}
         {% endif %}

@@ -231,3 +231,6 @@
 .select2-search__field {
     width: 100% !important;
 }
+.tippy-tooltip {
+    padding: 20px !important;
+}

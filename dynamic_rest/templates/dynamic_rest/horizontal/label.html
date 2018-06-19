@@ -1,7 +1,9 @@
+{% load dynamic_rest %}
+
 {% if field.label %}
     <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
         {% if field.help_text %}
-            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">
+            <span class="drest-has-tooltip" data-tippy-trigger="click" title="{{ field.help_text | help_text_format | safe}}">
                 {{ field.label }}{% if field.required %}<b>*</b><{% endif %}
             </span>
         {% else %}

@@ -341,6 +341,20 @@ class WithDynamicSerializerMixin(
         self._dynamic_init(only_fields, include_fields, exclude_fields)
         self.enable_optimization = settings.ENABLE_SERIALIZER_OPTIMIZATIONS
 
+    def __getitem__(self, key):
+        field = self.fields[key]
+        value = self.data.get(key)
+        error = self.errors.get(key) if hasattr(self, '_errors') else None
+        if not isinstance(field, serializers.Serializer):
+            return DynamicBoundField(
+                field,
+                value,
+                error,
+                instance=self.instance
+            )
+        else:
+            return super(WithDynamicSerializerMixin, self).__getitem__(key)
+
     def get_router(self):
         return getattr(self, '_router', None)
 

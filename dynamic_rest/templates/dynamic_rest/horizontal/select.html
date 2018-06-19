@@ -1,10 +1,11 @@
 {% load rest_framework %}
+{% load dynamic_rest %}
 
 <div class="form-group row">
   {% include "./label.html" %}
 
   <div class="col-sm-10">
-    <select class="form-control" name="{{ field.name }}">
+    <select id="{{ field.id }}" class="form-control" name="{{ field.name }}">
       {% if field.required and not field.allow_null %}
         {% if not field.value %}
             <option value="" selected>--------</option>
@@ -34,3 +35,35 @@
 
   </div>
 </div>
+
+{% if field.controls %}
+    <script>
+        $(document).ready(function() {
+            var fieldId = "#{{ field.id }}";
+            var controls = {{ field.controls | to_json }};
+            var $field = $(fieldId);
+            var $form = $field.closest('form');
+            var fieldChanged = function() {
+                var value = $field.val();
+                var show = controls[value];
+                $form.find('input, select, radio')
+                .each(function() {
+                    var $f = $(this);
+                    var $target = $f.closest('.form-group');
+                    var name = $f.attr('name');
+                    if (!show || show.length === 0) {
+                        $target.show();
+                    } else {
+                        if (show.indexOf(name) > -1)  {
+                            $target.show();
+                        } else {
+                            $target.hide();
+                        }
+                    }
+                });
+            }
+            $field.on('change', fieldChanged);
+            fieldChanged();
+        });
+    </script>
+{% endif %}
