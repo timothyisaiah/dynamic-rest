@@ -107,6 +107,11 @@ class DynamicField(fields.Field, DynamicBase):
                 ):
                     self.allow_null = True
 
+                help_text = getattr(model_field, 'help_text', None)
+
+                if 'help_text' not in self.kwargs and help_text:
+                    self.help_text = help_text
+
     def get_format(self):
         return self.parent.get_format()
 

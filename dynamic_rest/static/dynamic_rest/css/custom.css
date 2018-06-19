@@ -233,4 +233,5 @@
 }
 .tippy-tooltip {
     padding: 20px !important;
+    text-align: left;
 }

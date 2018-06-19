@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import inflection
+import re
 import os
 import json
 
@@ -24,7 +25,10 @@ register = template.Library()
 
 @register.filter
 def help_text_format(txt):
-    return txt.strip().replace('\n', '<br/>')
+    txt = txt.strip().replace('\n', '<br/>')
+    txt = re.sub(r'\*([A-Za-z ]+)\*', '<b>\\1</b>', txt)
+    txt = re.sub(r'`([A-Za-z ]+)`', '<code>\\1</code>', txt)
+    return txt
 
 
 @register.filter
