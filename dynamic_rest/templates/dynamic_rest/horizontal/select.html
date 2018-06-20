@@ -44,11 +44,14 @@
             var $field = $(fieldId);
             var $form = $field.closest('form');
             var fieldChanged = function() {
-                var value = $field.val();
+                var value = $field.val() || '';
                 var show = controls[value];
-                $form.find('input, select, radio')
+                $form.find('input, select, radio, textarea')
                 .each(function() {
                     var $f = $(this);
+                    if ($f.attr('disabled')) {
+                        return;
+                    }
                     var $target = $f.closest('.form-group');
                     var name = $f.attr('name');
                     if (!show || show.length === 0) {
