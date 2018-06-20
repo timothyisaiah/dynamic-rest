@@ -49,10 +49,12 @@ class DynamicBoundField(object):
         field = self._field
 
         if isinstance(field, DynamicRelationField):
-            return True
+            if field.create:
+                return True
 
         if value is None or value == '':
             return False
+
         return True
 
     def as_form_field(self):

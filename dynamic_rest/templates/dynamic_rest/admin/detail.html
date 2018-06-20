@@ -1,20 +1,21 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
-<table class="table drest-table-detail">
-  <tbody>
+<div class="p-2 mb-5">
     {% for key in details %}
         {% if not results.serializer %}
-            <td class="drest-field-label">
-                {{ key }}
-            </td>
-            <td class="drest-field-value">
-                {% get_value_from_dict results key %}
-            </td>
+            <div class="drest-field row form-group p-2">
+                <label class="col-sm-2 form-control-label">
+                    {{ key }}
+                </label>
+                <div class="col-sm-10 drest-field-value">
+                    {% get_value_from_dict results key %}
+                </div>
+            </div>
         {% else %}
             {% get_field_value results.serializer results.serializer.instance key as field %}
             {% if field.should_render %}
-                <tr class="drest-field">
-                    <td>
+                <div class="drest-field row form-group p-2">
+                    <label class="col-sm-2 form-control-label">
                         {% if field and field.help_text %}
                             <span data-placement="right"
                             class="drest-field-label drest-has-tooltip"
@@ -22,8 +23,8 @@
                         {% else %}
                             <span class="drest-field-label">{{ field.label }}</span>
                         {% endif %}
-                    </td>
-                    <td class="drest-field-value">
+                    </label>
+                    <div class="drest-field-value col-sm-10">
                         <div>
                             {{ field | render_field_value }}
                         </div>
@@ -33,10 +34,9 @@
                                 <span class="drest-btn-label">Create</span>
                             </div>
                         {% endif %}
-                    </td>
-                </tr>
+                    </div>
+                </div>
             {% endif %}
         {% endif %}
     {% endfor %}
-  </tbody>
-</table>
+</div>

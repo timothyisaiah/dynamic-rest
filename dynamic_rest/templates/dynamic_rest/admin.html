@@ -75,7 +75,7 @@
             {% block content %}
                 <div class="drest-content-container">
                     {% if is_auth_error %}
-                        <div class="drest-content padded">
+                        <div class="drest-content p-2">
                             You are not authorized to view
                             this page. Try to login.
                         </div>
@@ -86,11 +86,11 @@
                             </div>
                         {% else %}
                             {% if style == 'directory' %}
-                                <div class="drest-content padded">
+                                <div class="drest-content p-2">
                                     {% include "dynamic_rest/admin/directory.html" %}
                                 </div>
                             {% else %}
-                                <div class="drest-content padded">
+                                <div class="drest-content p-2">
                                     {% include "dynamic_rest/admin/detail.html" %}
                                 </div>
                             {% endif %}
