@@ -39,6 +39,7 @@ class DynamicField(fields.Field, DynamicBase):
                 saving related objects.
                 If source is '*', this will default to 'set_$FIELD_NAME'.
         """
+        self.icon = kwargs.pop('icon', None)
         self.requires = kwargs.pop('requires', None)
         self.deferred = kwargs.pop('deferred', None)
         self.field_type = kwargs.pop('field_type', None)
@@ -181,6 +182,13 @@ class DynamicField(fields.Field, DynamicBase):
         return None
 
     def admin_get_icon(self, instance, value):
+        if self.icon:
+            icon = self.icon
+            if callable(self.icon):
+                return icon(instance, value)
+            else:
+                return icon
+
         serializer = self.parent
         name_field = serializer.get_name_field()
         if name_field == self.field_name:

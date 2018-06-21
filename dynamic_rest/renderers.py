@@ -26,6 +26,9 @@ mapping[fields.DynamicFileField] = {
 mapping[fields.DynamicImageField] = {
     'base_template': 'file.html'
 }
+mapping[fields.DynamicNullBooleanField] = {
+    'base_template': 'checkbox.html'
+}
 
 
 class DynamicHTMLFormRenderer(HTMLFormRenderer):

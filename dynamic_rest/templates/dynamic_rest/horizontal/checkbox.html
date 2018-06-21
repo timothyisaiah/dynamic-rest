@@ -1,8 +1,22 @@
-<div class="form-group row {% if field.errors %}has-error{% endif %}">
-    {% include "./label.html" %}
-
-    <div class="float-sm-right col-sm-10">
-        <input type="checkbox" name="{{ field.name }}" value="True" {% if field.value %}checked{% endif %}>
+<div class="drest-field row">
+    <div class="col-sm-12">
+        <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel">{{ field.label }}</label>
+    </div>
+    <div class="col-sm-12 mdc-checkbox {% if field.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
+        <input
+            class="mdc-checkbox__native-control"
+            type="checkbox"
+            name="{{ field.name }}"
+            {% if field.value == None %}
+                indeterminate=true
+            {% else %}
+                {% if field.value %}
+                    checked=true
+                {% else %}
+                    checked=false
+                {% endif %}
+            {% endif %}
+        >
         {% if field.errors %}
             {% for error in field.errors %}
                 <span class="text-danger">{{ error }}</span>

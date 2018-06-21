@@ -32,6 +32,15 @@ def help_text_format(txt):
 
 
 @register.filter
+def help_text_short_format(txt):
+    txt = txt.strip()
+    txt = txt.split('\n')[0]
+    txt = re.sub(r'\*([0-9A-Za-z ]+)\*', '<b>\\1</b>', txt)
+    txt = re.sub(r'`([0-9A-Za-z ]+)`', '<code>\\1</code>', txt)
+    return txt
+
+
+@register.filter
 def as_id_to_name(field):
     serializer = field.serializer
     name_field_name = serializer.get_name_field()

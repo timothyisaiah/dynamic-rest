@@ -11,9 +11,6 @@ class DynamicChoiceField(
         self.controls = kwargs.pop('controls', {})
         super(DynamicChoiceField, self).__init__(*args, **kwargs)
 
-    def admin_get_icon(self, instance, value):
-        return 'format-list-bulleted'
-
     def prepare_value(self, instance):
         model = self.parent_model
         source = self.source or self.field_name

@@ -1,11 +1,8 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div class="form-group row">
-  {% include "./label.html" %}
-
-  <div class="col-sm-10">
-    <select id="{{ field.id }}" class="form-control" name="{{ field.name }}">
+<div class="drest-field mdc-select" data-mdc-auto-init="MDCSelect">
+    <select id="{{ field.id }}" class="mdc-select__native-control" name="{{ field.name }}">
       {% if field.required and not field.allow_null %}
         {% if not field.value %}
             <option value="" selected>--------</option>
@@ -27,13 +24,17 @@
       {% endfor %}
     </select>
 
+      <label data-mdc-auto-init="MDCFloatingLabel" class="mdc-floating-label" for="{{ field.id }}">
+        {{ field.label }}
+      </label>
+      <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+
     {% if field.errors %}
       {% for error in field.errors %}
         <span class="text-danger">{{ error }}</span>
       {% endfor %}
     {% endif %}
 
-  </div>
 </div>
 
 {% if field.controls %}

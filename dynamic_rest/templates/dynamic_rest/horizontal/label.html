@@ -1,13 +1,13 @@
 {% load dynamic_rest %}
 
 {% if field.label %}
-    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
+    <label for="{{ field.id }}-input" class="mdc-floating-label mdc-floating-label--float-above {% if style.hide_label %}sr-only{% endif %}">
         {% if field.help_text %}
-            <span class="drest-has-tooltip" data-tippy-trigger="click" title="{{ field.help_text | help_text_format | safe}}">
-                {{ field.label }}{% if field.required %}<b>*</b>{% endif %}
+            <span data-tippy-trigger="click" title="{{ field.help_text | help_text_format | safe}}">
+                {{ field.label }}{% if field.required %}*{% endif %}
             </span>
         {% else %}
-            {{ field.label }}{% if field.required %}<b>*</b>{% endif %}
+            {{ field.label }}{% if field.required %}*{% endif %}
         {% endif %}
     </label>
 {% endif %}

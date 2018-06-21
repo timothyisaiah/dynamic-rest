@@ -16,7 +16,8 @@ class DynamicBoundField(object):
                  id=None):
         self._field = field
         self._prefix = prefix
-        self.id = id
+        rand = ''.join([str(randint(0, 9)) for _ in range(6)])
+        self.id = id or rand
         self.value = value
         self.errors = errors
         self.instance = instance

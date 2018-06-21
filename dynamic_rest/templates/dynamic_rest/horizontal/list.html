@@ -4,26 +4,26 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="row form-group {% if field.errors %}has-error{% endif %}">
-  {% include "./label.html" %}
+<div class="drest-field {% if field.errors %}has-error{% endif %}">
+    <label for="{{ field.id }}" class="drest-select-float mdc-floating-label mdc-floating-label--float-above">{{ field.label }}</label>
 
-  <div class="col-sm-10">
-    <select style="width: 100%" multiple="multiple" class="form-control" name="{{ field.name }}">
-    </select>
+    <div class="drest-select">
+        <select id="{{ field.id }}" multiple="multiple" name="{{ field.name }}">
+        </select>
+    </div>
 
     {% if field.errors %}
       {% for error in field.errors %}
         <span class="text-danger">{{ error }}</span>
       {% endfor %}
     {% endif %}
-  </div>
 </div>
 
 <script>
     $(document).ready(function() {
         // set initial values
         var values = {{field.value | to_json | safe}};
-        var $el = $("select[name='{{ field.name }}']");
+        var $el = $("#{{ field.id }}");
         for (var v in values) {
             if (values.hasOwnProperty(v)) {
                 var value = values[v];
@@ -34,6 +34,7 @@
         }
         $el.select2({
             tags: true,
+            theme: 'material',
             minimumInputLength: 1,
         });
     });
