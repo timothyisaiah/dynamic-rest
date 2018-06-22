@@ -4,11 +4,11 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="drest-field {% if field.errors %}has-error{% endif %}">
+<div class="w-100 drest-field {% if field.errors %}has-error{% endif %}">
     <label for="{{ field.id }}" class="drest-select-float mdc-floating-label mdc-floating-label--float-above">{{ field.label }}</label>
 
-    <div class='drest-select'>
-        <select id="{{ field.id }}" {% if field.many %}multiple="multiple"{% endif %} name="{{ field.name }}">
+    <div class='w-100 drest-select'>
+        <select class='w-100' id="{{ field.id }}" {% if field.many %}multiple="multiple"{% endif %} name="{{ field.name }}">
         </select>
     </div>
 
@@ -62,6 +62,7 @@
                     return 'Start typing the name of a ' + resourceName;
                 }
             },
+            width: 'resolve',
             theme: 'material',
             placeholder: {
                 id: "",

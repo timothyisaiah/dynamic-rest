@@ -1,22 +1,31 @@
-<div class="drest-field row">
-    <div class="col-sm-12">
-        <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel">{{ field.label }}</label>
+<div class="drest-field row justify-content-between">
+    <div class="col-4">
+        <label class="form-control-label">{{ field.label }}</label>
     </div>
-    <div class="col-sm-12 mdc-checkbox {% if field.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
+    <div class="col-8 mdc-checkbox {% if field.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
         <input
             class="mdc-checkbox__native-control"
             type="checkbox"
             name="{{ field.name }}"
+            id="{{ field.id }}"
             {% if field.value == None %}
                 indeterminate=true
             {% else %}
                 {% if field.value %}
-                    checked=true
-                {% else %}
-                    checked=false
+                    checked
                 {% endif %}
             {% endif %}
         >
+
+         <div class="mdc-checkbox__background">
+           <svg class="mdc-checkbox__checkmark"
+              viewBox="0 0 24 24">
+             <path class="mdc-checkbox__checkmark-path"
+                fill="none"
+                d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+           </svg>
+            <div class="mdc-checkbox__mixedmark"></div>
+         </div>
         {% if field.errors %}
             {% for error in field.errors %}
                 <span class="text-danger">{{ error }}</span>
@@ -24,3 +33,11 @@
         {% endif %}
     </div>
 </div>
+<script>
+    $(document).ready(function(){
+        $('#{{ field.id }}').on('click', function() {
+            var $t = $(this);
+            $t.attr('value', $t.is(':checked'));
+        });
+    });
+</script>

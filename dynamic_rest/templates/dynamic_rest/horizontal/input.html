@@ -14,7 +14,7 @@
                 {% endif %}
                 value="{{ field.value }}"
             />
-            <label class="mdc-floating-label mdc-floating-label--float-above" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
+            <label class="mdc-floating-label mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
             <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
         </div>
         {% if field.help_text or field.errors %}

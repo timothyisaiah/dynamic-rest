@@ -5,11 +5,10 @@
     <select id="{{ field.id }}" class="mdc-select__native-control" name="{{ field.name }}">
       {% if field.required and not field.allow_null %}
         {% if not field.value %}
-            <option value="" selected>--------</option>
+            <option value="" selected></option>
         {% endif %}
       {% else %}
         <option value="" {% if not field.value %}selected{% endif %}>
-            --------
         </option>
       {% endif %}
 
