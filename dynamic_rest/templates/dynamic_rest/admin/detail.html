@@ -1,42 +1,59 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 <div class="p-2 mb-5">
-    {% for key in details %}
-        {% if not results.serializer %}
-            <div class="drest-field row form-group p-2">
-                <label class="col-sm-2 form-control-label">
-                    {{ key }}
-                </label>
-                <div class="col-sm-10 drest-field-value">
-                    {% get_value_from_dict results key %}
-                </div>
-            </div>
-        {% else %}
-            {% get_field_value results.serializer results.serializer.instance key as field %}
-            {% if field.should_render %}
+    {% if not results.serializer %}
+        {% for key in details %}
                 <div class="drest-field row form-group p-2">
                     <label class="col-sm-2 form-control-label">
-                        {% if field and field.help_text %}
-                            <span data-placement="right"
-                            class="drest-field-label drest-has-tooltip"
-                            data-tippy-trigger="click" title="{{ field.help_text | help_text_format | safe }}">{{ field.label }}</span>
-                        {% else %}
-                            <span class="drest-field-label">{{ field.label }}</span>
-                        {% endif %}
+                        {{ key }}
                     </label>
-                    <div class="drest-field-value col-sm-10">
-                        <div>
-                            {{ field | render_field_value }}
-                        </div>
-                        {% if key in create_related_forms %}
-                            <div class="drest-btn btn btn-primary" data-toggle="modal" data-target="#createModal-{{ key }}">
-                                <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
-                                <span class="drest-btn-label">Create</span>
-                            </div>
-                        {% endif %}
+                    <div class="col-sm-10 drest-field-value">
+                        {% get_value_from_dict results key %}
                     </div>
                 </div>
-            {% endif %}
-        {% endif %}
-    {% endfor %}
+        {% endfor %}
+    {% else %}
+        {% get_sections results.serializers as sections %}
+
+        {% for section in sections %}
+            <div class="mdc-card">
+                {% if section.name %}
+                <div class="mdc-card__title">{{ section.name }}</div>a
+                {% if section.has_action %}
+                    <div class="mdc-card__action">
+                        {{ section.action }}
+                    </div>
+                {% endif %}
+                {% endif %}
+                    <div class="mdc-card__fields">
+                    {% for field in section.fields %}
+                        {% if field.should_render %}
+                            <div class="mdc-card__field {% if field.long %}mdc-card__field--long{% endif %}">
+                                <label class="mdc-card__label">
+                                        <span
+                                            {% if field and field.help_text %}
+                                                data-placement="right"
+                                                data-tippy-trigger="click"
+                                                title="{{ field.help_text | help_text_format | safe }}"
+                                            {% endif %}
+                                        >
+                                            {{ field.label }}
+                                        </span>
+                                </label>
+                                <div class="mdc-card__value">
+                                    {{ field | render_field_value }}
+                                    {% if field.name in create_related_forms %}
+                                        <div class="drest-btn btn btn-primary" data-toggle="modal" data-target="#createModal-{{ field.name }}">
+                                            <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                                            <span class="drest-btn-label">Create</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    </div>
+               </div>
+        {% endfor %}
+    {% endif %}
 </div>
