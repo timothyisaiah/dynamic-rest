@@ -1,5 +1,5 @@
-<div class="drest-field--file drest-field {% if field.errors %}text-danger{% endif %}">
-    <label for="{{ field.id }}-input" class="drest-label">
+<div class="drest-field--file drest-field {% if field.errors %}drest-field--invalid{% endif %}">
+    <label for="{{ field.id }}-input" class="drest-field__label">
         {{ field.label }}
     </label>
     <input

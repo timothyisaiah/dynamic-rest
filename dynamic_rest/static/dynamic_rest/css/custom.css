@@ -150,7 +150,7 @@
     margin-bottom: 60px !important;
     margin-top: 0px !important;
 }
-.drest-content .st-key, .drest-table-list.table th, .drest-content th, .modal .form-control-label, .drest-field .drest-field-label {
+.drest-content .st-key, .drest-table-list.table th, .drest-content th, .modal .form-control-label {
     font-weight: 400;
     font-size: 1rem;
     text-align: inherit;
@@ -211,7 +211,8 @@
 .select2-container--material ::-ms-input-placeholder {
   color: inherit;
 }
-.drest-field.drest-field--invalid {
+.drest-field.drest-field--invalid,
+.drest-field.drest-field--invalid .drest-field__label {
     color: #b00020;
 }
 .mdc-text-field-helper-text.push-up {
@@ -230,6 +231,9 @@
 .drest-field.drest-field--datetime .drest-field__label {
     display: block;
     bottom: 0px;
+}
+.drest-field.drest-field--file .drest-field__label {
+    display: block;
 }
 .drest-field.drest-field--datetime.drest-field--selected .drest-field__label {
     transform: translateY(-100%) scale(0.75);
@@ -514,15 +518,8 @@
   outline: none;
 }
 /* mdc fixes */
-.drest .mdc-text-field--fullwidth:not(.mdc-text-field--textarea) .mdc-text-field__input {
+.drest-field .mdc-text-field--fullwidth:not(.mdc-text-field--textarea) .mdc-text-field__input {
     padding: 20px 0 1px;
-}
-.drest input.drest {
-    border: 0;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 0;
-    padding-top: 2px;
-    -webkit-border-radius: 0;
 }
 .drest-text-field:not(.drest-text-field--disabled) .mdc-floating-label {
     color: rgba(0, 0, 0, 0.6);
@@ -584,21 +581,6 @@
 }
 .drest .mdc-select:not(.mdc-select--disabled) .mdc-select__native-control {
     border-bottom-color: rgba(0,0,0,0.2);
-}
-.drest-label {
-    font-family: Roboto, sans-serif;
-    -moz-osx-font-smoothing: grayscale;
-    -webkit-font-smoothing: antialiased;
-    font-size: 1rem;
-    line-height: 1.75rem;
-    font-weight: 400;
-    letter-spacing: 0.00937em;
-    text-decoration: inherit;
-    text-transform: inherit;
-    position: absolute;
-    top: 0px;
-    left: 0;
-    cursor: text;
 }
 .drest-field .dropify-wrapper {
     top: 30px;

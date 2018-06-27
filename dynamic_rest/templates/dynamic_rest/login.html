@@ -36,6 +36,9 @@
                             {% if form.username.errors %}
                                 invalid
                             {% endif %}
+                            {% if form.username.value %}
+                                value={{ form.username.value }}
+                            {% endif %}
                             required
                         />
                         <label class="mdc-floating-label mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="username-input">Username</label>
@@ -56,6 +59,9 @@
                             name="password"
                             type="password"
                             id="password-input"
+                            {% if form.password.value %}
+                                value={{ form.password.value }}
+                            {% endif %}
                             {% if form.password.errors %}
                                 aria-controls="password-helper"
                                 aria-describedby="password-helper"
