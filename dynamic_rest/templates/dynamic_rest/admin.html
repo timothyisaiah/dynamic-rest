@@ -187,7 +187,7 @@
                                     </h5>
                                 </div>
                                 <form action="{{ serializer | get_related_url:related_name }}/" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
-                                    <div class="modal-body">
+                                    <div class="modal-body p-md-4">
                                         <fieldset>
                                             {% csrf_token %}
                                             <div class="drest-field">
@@ -226,7 +226,7 @@
                                 </h5>
                             </div>
                             <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
-                                <div class="modal-body">
+                                <div class="modal-body p-md-4">
                                     <fieldset>
                                         {% csrf_token %}
                                         {{ post_form }}
@@ -256,7 +256,7 @@
                                 </h5>
                             </div>
                             <form action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="form-horizontal" novalidate>
-                                <div class="modal-body">
+                                <div class="modal-body p-md-4">
                                     <p>Are you sure you want to delete?</p>
                                     <p class="text-danger">
                                         <span class="mdi mdi-alert"></span>
@@ -288,7 +288,7 @@
                                 </h5>
                             </div>
                             <form action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
-                                <div class="modal-body">
+                                <div class="modal-body p-md-4">
                                     <fieldset>
                                         {{ put_form }}
                                     </fieldset>
@@ -315,7 +315,7 @@
                                     <h5 class="modal-title">{{ error_title }}</h5>
                                 </div>
                                 <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
-                                    <div class="modal-body">
+                                    <div class="modal-body p-md-4">
                                         <fieldset>
                                             {{ error_form }}
                                         </fieldset>
@@ -345,7 +345,7 @@
                                 </h5>
                             </div>
                             <form class="filter-form" method="get" action="{{ search_endpoint }}">
-                                <div class="modal-body">
+                                <div class="modal-body p-md-4">
                                     <fieldset>
                                         {% for filter in filters.values %}
                                             {% render_filter filter %}

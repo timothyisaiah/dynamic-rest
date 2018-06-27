@@ -4,7 +4,7 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="drest-field drest-field--many {% if field.errors %}drest-field--invalid{% endif %}">
+<div class="drest-field drest-field--select2 many {% if field.errors %}drest-field--invalid{% endif %}">
     <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
 
     <div class="drest-field__select">
@@ -55,6 +55,8 @@
             var val = $el.val();
             if (!val || typeof val === 'undefined') {
                 $parent.removeClass('drest-field--selected');
+            } else {
+                $parent.addClass('drest-field--selected');
             }
         });
         if ($el.val()) {
@@ -63,6 +65,10 @@
         $el.on('select2:close', function(e){
             $parent.removeClass('drest-field--focused');
             $parent.removeClass('drest-field--invalid');
+        });
+        $el.data('select2').on('results:message', function() {
+            this.dropdown._resizeDropdown();
+            this.dropdown._positionDropdown();
         });
         $el.trigger('change');
     });

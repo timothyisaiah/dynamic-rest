@@ -2,9 +2,8 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div class="drest-field {% if many %}drest-field--many{% endif %}">
+<div class="drest-field drest-field--select2 {% if many %}many{% endif %}">
     <label class="drest-field__label">{{ label }}</label>
-
     <div class="w-100 drest-field__select">
         <select
             class="w-100 filter"
@@ -127,6 +126,10 @@
         $select2.on('select2:close', function(e){
             $parent.removeClass('drest-field--focused');
             $parent.removeClass('drest-field--invalid');
+        });
+        $select2.data('select2').on('results:message', function() {
+            this.dropdown._resizeDropdown();
+            this.dropdown._positionDropdown();
         });
         $(select2).val(selected).trigger('change');
     });

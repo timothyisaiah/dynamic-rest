@@ -49,7 +49,7 @@
                 id="{{ field.id }}-input"
                 name="{{ field.name }}"
                 data-type="{{ style.input_type }}"
-                class="mdc-text-field__input drest"
+                class="mdc-text-field__input"
                 type="{% if style.input_type == "time" or style.input_type == "date" or style.input_type == "datetime-local" %}text{% else %}{{ style.input_type }}{% endif %}"
                 {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
                 {% if field.value %}value="{{ field.value }}"{% endif %}

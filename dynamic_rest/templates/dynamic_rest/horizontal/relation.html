@@ -4,7 +4,7 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="w-100 drest-field {% if field.many %}drest-field--many{% endif %} {% if field.errors %}has-error{% endif %}">
+<div class="w-100 drest-field--select2 drest-field {% if field.many %}many{% endif %} {% if field.errors %}drest-field--invalid{% endif %}">
     <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
 
     <div class="drest-field__select w-100">
@@ -69,10 +69,7 @@
             },
             width: 'resolve',
             theme: 'material',
-            placeholder: {
-                id: "",
-                placeholder: "{{ field.label }}"
-            },
+            placeholder: {% if not field.many %}{id: "", placeholder: "{{ field.label }}"}{% else %}"{{ field.label }}"{% endif %},
             allowClear: {% if not field.required or field.allow_null%}true{% else %}false{% endif %},
             ajax: {
                 url: url,
@@ -121,6 +118,16 @@
         });
         $select2.on('select2:open', function(e){
             $parent.addClass('drest-field--focused');
+
+            var data = $select2.data('select-2');
+        });
+        $select2.data('select2').on('results:message', function() {
+            this.dropdown._resizeDropdown();
+            this.dropdown._positionDropdown();
+        });
+        $select2.on('select2:close', function(e){
+            $parent.removeClass('drest-field--focused');
+            $parent.removeClass('drest-field--invalid');
         });
         $select2.on('select2:select', function(e){
             $parent.addClass('drest-field--selected');
@@ -129,17 +136,14 @@
             var val = $(select2).val();
             if (!val || typeof val === 'undefined') {
                 $parent.removeClass('drest-field--selected');
+            } else {
+                $parent.addClass('drest-field--selected');
             }
         });
         if ($select2.val()) {
             $parent.addClass('drest-field--selected');
         }
-        $select2.on('select2:close', function(e){
-            $parent.removeClass('drest-field--focused');
-            $parent.removeClass('drest-field--invalid');
-        });
 
         $(select2).val(selected).trigger('change');
-
     });
 </script>
