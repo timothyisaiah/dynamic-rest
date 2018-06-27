@@ -365,6 +365,10 @@ class DynamicAdminRenderer(AdminRenderer):
             not is_auth_error and
             not is_directory
         )
+        context['allow_menu'] = (
+            not is_auth_error and
+            not is_directory
+        )
         context['alert'] = alert
         context['alert_class'] = alert_class
         return context

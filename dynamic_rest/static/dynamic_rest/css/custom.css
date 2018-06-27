@@ -98,6 +98,8 @@
 }
 .drest.modal .modal-header .close {
     color: white;
+    opacity: 1;
+    box-shadow: none;
 }
 .drest.modal .modal-content.modal-content {
     height: 100%;
@@ -121,6 +123,7 @@
     color: white;
     border: 0px;
     height: 56px;
+    padding-left: 0.5rem;
     left: 0px;
     right: 0px;
     top: 0px;

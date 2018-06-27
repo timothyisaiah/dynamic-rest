@@ -57,7 +57,7 @@
                         <section class="mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
                             {% block header_nav_button %}
                                 {% if allow_nav %}
-                                    <a data-no-spin=true href="#" class="material-icons mdc-top-app-bar__navigation-icon" id="drest-main-navigation-button">menu</a>
+                                    <a data-no-spin=true href="#" class="material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</a>
                                 {% endif %}
                                 {% if is_auth_error %}
                                     <span data-no-spin=true class="material-icons mdc-top-app-bar__navigation-icon">error</span>
@@ -74,15 +74,50 @@
                             </span>
                         </section>
                         <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
-                        {% if allow_filter %}
-                            <a data-no-spin=true data-toggle="modal" data-target="#filtersModal" href="#" class="material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
-                        {% endif %}
+                            {% if allow_filter %}
+                                <a data-no-spin=true data-toggle="modal" data-target="#filtersModal" href="#" class="material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
+                            {% endif %}
+                            {% if allow_menu %}
+                                <span id="drest-header-more" class="mdc-top-app-bar__action-item">
+                                    <span class="material-icons" aria-label="More" alt="More options">more_vert</span>
+                                    <span class="mdc-menu-anchor" style="position: absolute; bottom: -4px; right: -2px;">
+                                        <div class="mdc-menu" id="drest-header-more-menu">
+                                            <ul class="mdc-menu__items mdc-list">
+                                                {% if allow_edit %}
+                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#editModal" class="mdc-list-item">
+                                                        <span class="material-icons mr-2">edit</span>
+                                                        Edit
+                                                    </li>
+                                                {% endif %}
+                                                {% if allow_create %}
+                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#createModal" class="mdc-list-item">
+                                                        <span class="material-icons mr-2">add</span>
+                                                        Add
+                                                    </li>
+                                                {% endif %}
+                                                {% if allow_delete %}
+                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#deleteModal" class="mdc-list-item">
+                                                        <span class="material-icons mr-2">delete</span>
+                                                        Delete
+                                                    </li>
+                                                {% endif %}
+                                                {% if request.user.is_authenticated %}
+                                                    <li data-goto="{{ logout_url }}" tabindex="0" role=="menuitem" class="drest-goto mdc-list-item">
+                                                        <span class="material-icons mr-2">lock_open</span>
+                                                        Logout
+                                                    </li>
+                                                {% endif %}
+                                            </ul>
+                                        </div>
+                                    </span>
+                                </span>
+                            {% endif %}
                         </section>
                     </div>
                 </header>
             {% endblock %} <!-- /header -->
             {% block drawer %}
-                <aside id="drest-main-drawer" class="mdc-drawer mdc-drawer--temporary mdc-typography">
+                <aside id="drest-drawer" class="mdc-drawer mdc-drawer--temporary mdc-typography">
                     <nav class="mdc-drawer__drawer">
                         <header class="mdc-drawer__header">
                             {% block drawer_header %}
@@ -105,7 +140,7 @@
                         <div class="drest-content">
                             <h5 class="p-4">
                                 <span class="mdi mdi-alert"></span> You are not authorized to view
-                                this page. Click <a href="{% drest_settings 'ADMIN_LOGIN_URL' %}">here</a> to login.
+                                this page. Click <a href="{{ login_url }}">here</a> to login.
                             </h5>
                         </div>
                     {% else %}
@@ -178,9 +213,7 @@
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary">
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Back">
-                                        <span class="material-icons" aria-hidden="true">arrow_back</span>
-                                    </button>
+                                    <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Back">arrow_back</button>
                                     <h5 class="modal-title">
                                         <span class="mdi mdi-plus"></span>
                                         <span>Add {{ serializer_and_form.0.get_name | humanize }}</span>
@@ -217,8 +250,8 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
+                                    arrow_back
                                 </button>
                                 <h5 class="modal-title">
                                     <span class="mdi mdi-plus"></span>
@@ -247,8 +280,8 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-danger">
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
+                                    arrow_back
                                 </button>
                                 <h5 class="modal-title">
                                     <span class="mdi mdi-delete"></span>
@@ -279,8 +312,8 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
+                                    arrow_back
                                 </button>
                                 <h5 class="modal-title">
                                     <span class="fa fa-pencil"></span>
@@ -309,8 +342,8 @@
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary">
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                    <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
+                                        arrow_back
                                     </button>
                                     <h5 class="modal-title">{{ error_title }}</h5>
                                 </div>
@@ -336,8 +369,8 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
+                                    arrow_back
                                 </button>
                                 <h5 class="modal-title">
                                     <span class="fa fa-search"></span>
@@ -483,15 +516,36 @@
                     });
                     mdc.autoInit();
 
-                    var navButton = document.querySelector('#drest-main-navigation-button');
+                    var navButton = document.querySelector('#drest-header-nav');
                     var drawer = new mdc.drawer.MDCTemporaryDrawer(
-                        document.querySelector('#drest-main-drawer')
+                        document.querySelector('#drest-drawer')
                     );
-                    navButton.addEventListener('click',
-                        function() {
-                            drawer.open = true;
+                    var moreButton = document.querySelector('#drest-header-more')
+                    if (navButton) {
+                        navButton.addEventListener('click',
+                            function() {
+                                drawer.open = true;
+                            }
+                        );
+                    }
+                    if (moreButton) {
+                        var moreMenuSelector = document.querySelector('#drest-header-more-menu')
+                        var moreMenu = new mdc.menu.MDCMenu(moreMenuSelector);
+                        moreMenuSelector.MDCMenu = moreMenu;
+
+                        moreButton.addEventListener('click',
+                            function() {
+                                moreMenu.open = !moreMenu.open;
+                            }
+                        );
+                    }
+
+                    $('.drest-goto').on('click', function() {
+                        var goto = $(this).data('goto');
+                        if (goto) {
+                            window.location = goto;
                         }
-                    );
+                    });
                 </script>
             {% endblock %} <!-- /script -->
         </body>

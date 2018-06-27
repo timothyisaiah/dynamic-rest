@@ -6,12 +6,6 @@
     Welcome, {{request.user.name}}!
 </h5>
 <div class="mdc-list">
-{% if request.user.is_authenticated %}
-    <a class="mdc-list-item" href="{{ logout_url }}">
-        <span class="drest-icon-left {{ icons }} {{ icons }}-{% if icons == 'fa' %}sign-out{% else %}logout{% endif %}"></span>
-        <span>Logout</span>
-    </a>
-{% endif %}
 {% for key, value in directory.items %}
     {% with url=value.0 icon=value.1 %}
             <a class="mdc-list-item" href="{{ url }}">
