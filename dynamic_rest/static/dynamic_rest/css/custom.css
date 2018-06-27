@@ -405,7 +405,7 @@
 
 /** drest-field--file **/
 
-.drest-field.drest-field--field .dropify-wrapper {
+.drest-field.drest-field--file .dropify-wrapper {
     top: 30px;
 }
 .drest-field.drest-field--file .drest-field__label {
