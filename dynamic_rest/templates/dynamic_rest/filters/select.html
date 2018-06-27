@@ -2,17 +2,15 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div class="row form-group">
-    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
-        {% if help_text %}
-            <span class="drest-has-tooltip" data-tippy-trigger="click" title="{{ help_text | help_text_format | safe }}">{{ label }}</span>
-        {% else %}
-            {{ label }}
-        {% endif %}
-    </label>
+<div class="drest-field {% if many %}drest-field--many{% endif %}">
+    <label class="drest-field__label">{{ label }}</label>
 
-    <div class="col-sm-10">
-        <select class="form-control filter" {% if many %}multiple="multiple"{% endif %} style="width: 100%" class="form-control" name="{{ key }}">
+    <div class="drest-field__select w-100">
+        <select
+            class="w-100 filter"
+            {% if many %}multiple="multiple"{% endif %}
+            name="{{ key }}"
+        >
         </select>
     </div>
 </div>
@@ -49,12 +47,43 @@
             selected = selected[0];
         }
         var $select2 = $("select.filter[name='" + fieldName + "']");
+        var $parent = $select2.closest('.drest-field');
         var select2 = $select2[0];
         $select2.select2({
             data: initials,
-            placeholder: many ? "Choose one or more" : "Choose one",
+            dropdownParent: $parent,
+            theme: 'material',
+            language: {
+                inputTooShort: function() {
+
+                    return {% if help_text %}"{{ help_text | help_text_short_format | safe }}"{% else %}"Start typing"{% endif %};
+                }
+            },
+            theme: 'material',
+            placeholder: "{{ label }}",
             allowClear: true
         });
+        $select2.on('select2:open', function(e){
+            $parent.addClass('drest-field--focused');
+        });
+        $select2.on('select2:select', function(e){
+            $parent.addClass('drest-field--selected');
+        });
+        $select2.on('change', function() {
+            var val = $(select2).val();
+            if (!val || typeof val === 'undefined') {
+                $parent.removeClass('drest-field--selected');
+            }
+        });
+        if ($select2.val()) {
+            $parent.addClass('drest-field--selected');
+        }
+        $select2.on('select2:close', function(e){
+            $parent.removeClass('drest-field--focused');
+            $parent.removeClass('drest-field--invalid');
+        });
+
+        $(select2).val(selected).trigger('change');
         $(select2).val(selected).trigger('change');
     });
 </script>

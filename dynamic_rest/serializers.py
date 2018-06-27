@@ -390,9 +390,28 @@ class WithDynamicSerializerMixin(
 
     @cached_property
     def default_sections(self):
-        return [
-            Section('', self._readable_fields.keys(), instance=self.instance)
-        ]
+        sections = []
+        field_names = self._readable_field_names
+        instance = self.instance
+        others = []
+        for field_name in field_names:
+            field = self.fields.get(field_name)
+            if getattr(field, 'many', False):
+                sections.append(
+                    Section(
+                        inflection.humanize(field_name),
+                        [field_name],
+                        self,
+                        instance
+                    )
+                )
+            else:
+                others.append(field_name)
+
+        sections = [
+            Section('Details', others, self, self.instance, main=True)
+        ] + sections
+        return sections
 
     def get_sections(self, instance=None):
         sections = getattr(self.get_meta(), 'sections', {})
@@ -400,15 +419,20 @@ class WithDynamicSerializerMixin(
         if not sections:
             return self.default_sections
 
+        if isinstance(sections, dict):
+            sections = sections.items()
+
         return [
             Section(name, value, self, instance=instance)
-            for name, value in sections.items()
+            for name, value in sections
         ]
 
     def get_filters(self):
         filters = getattr(self.get_meta(), 'filters', {})
+        if isinstance(filters, dict):
+            filters = filters.items()
         return OrderedDict(((name, Filter(name, value, serializer=self))
-                            for name, value in filters.items()))
+                            for name, value in filters))
 
     def get_field_value(self, key, instance=None):
         if instance == '':
@@ -909,6 +933,13 @@ class WithDynamicSerializerMixin(
         # NOTE: Copied from DRF, exists in 3.2.x but not 3.1
         return [
             field for field in self.fields.values() if not field.write_only
+        ]
+
+    @cached_property
+    def _readable_field_names(self):
+        fields = self.fields
+        return [
+            key for key in fields.keys() if not fields[key].write_only
         ]
 
     def _faster_to_representation(self, instance):

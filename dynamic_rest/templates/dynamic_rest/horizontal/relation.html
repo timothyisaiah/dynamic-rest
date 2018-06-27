@@ -4,18 +4,20 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="w-100 drest-field {% if field.errors %}has-error{% endif %}">
-    <label for="{{ field.id }}" class="drest-select-float mdc-floating-label mdc-floating-label--float-above">{{ field.label }}</label>
+<div class="w-100 drest-field {% if field.many %}drest-field--many{% endif %} {% if field.errors %}has-error{% endif %}">
+    <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
 
-    <div class='w-100 drest-select'>
+    <div class="drest-field__select w-100">
         <select class='w-100' id="{{ field.id }}" {% if field.many %}multiple="multiple"{% endif %} name="{{ field.name }}">
-        </select>
+    </select>
     </div>
 
     {% if field.errors %}
-      {% for error in field.errors %}
-        <span class="text-danger">{{ error }}</span>
-      {% endfor %}
+        <p id="{{ field.id }}-helper" class="mdc-text-field-helper-text--persistent push-up mdc-text-field-helper-text" aria-hidden="false">
+            {% for error in field.errors %}
+                <span>{{error}}</span>
+            {% endfor %}
+        </p>
     {% endif %}
 
 </div>
@@ -55,18 +57,21 @@
         }
         var $select2 = $("#{{ field.id }}");
         var select2 = $select2[0];
+        var $parent = $('#{{ field.id }}').closest('.drest-field');
         $select2.select2({
             data: initials,
+            dropdownParent: $parent,
             language: {
                 inputTooShort: function() {
-                    return 'Start typing the name of a ' + resourceName;
+
+                    return {% if field.help_text %}"{{ field.help_text | help_text_short_format | safe }}"{% else %}"Start typing the name of a " + resourceName{% endif %};
                 }
             },
             width: 'resolve',
             theme: 'material',
             placeholder: {
                 id: "",
-                placeholder: "" // "Start typing the name of a " + resourceName
+                placeholder: "{{ field.label }}"
             },
             allowClear: {% if not field.required or field.allow_null%}true{% else %}false{% endif %},
             ajax: {
@@ -114,6 +119,27 @@
             },
             minimumInputLength: 1,
         });
+        $select2.on('select2:open', function(e){
+            $parent.addClass('drest-field--focused');
+        });
+        $select2.on('select2:select', function(e){
+            $parent.addClass('drest-field--selected');
+        });
+        $select2.on('change', function() {
+            var val = $(select2).val();
+            if (!val || typeof val === 'undefined') {
+                $parent.removeClass('drest-field--selected');
+            }
+        });
+        if ($select2.val()) {
+            $parent.addClass('drest-field--selected');
+        }
+        $select2.on('select2:close', function(e){
+            $parent.removeClass('drest-field--focused');
+            $parent.removeClass('drest-field--invalid');
+        });
+
         $(select2).val(selected).trigger('change');
+
     });
 </script>

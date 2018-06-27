@@ -1,17 +1,82 @@
 {% load dynamic_rest %}
-<div class="form-group row">
-    <label class="col-sm-2 form-control-label">
-        {% if help_text %}
-            <span class="drest-has-tooltip" data-tippy-trigger="click"title="{{ help_text | help_text_format | safe }}">{{ label }}</span>
-        {% else %}
-          {{ label }}
-        {% endif %}
-    </label>
 
-        <div class="col-sm-10 row drest-no-margin">
-            <span class="col-sm-1 text-center drest-no-padding form-control-label">Min</span>
-            <input class="col-sm-5 form-control filter" name="{{ key }}" type="{{ range_type }}" placeholder="###" {% if value and value.0 %}value="{{ value.0 }}"{% endif %}></inputA>
-            <span class="col-sm-1 text-center form-control-label drest-no-padding">Max</span>
-            <input class="col-sm-5 form-control filter" name="{{ key }}" type="{{ range_type }}" placeholder="###" {% if value and value.1 %}value="{{ value.1 }}"{% endif %}></input>
-        </div>
+<div class="drest-field {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}drest-field--datetime{% endif %}">
+    <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+        <input
+            class="mdc-text-field__input"
+            name="{{ key }}"
+            data-type="{{ real_type }}"
+            type="{{ range_type }}"
+            id="{{ id }}1-input"
+            {% if help_text %}
+                aria-controls="{{ id }}1-helper"
+                aria-describedby="{{ id }}1-helper"
+            {% endif %}
+            {% if value and value.0 %}
+                value="{{ value.0 }}"
+            {% endif %}
+            {% if real_type == 'integer' %}
+                step=1
+            {% endif %}
+        />
+        <label
+            {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}
+                class="drest-field__label"
+            {% else %}
+                class="mdc-floating-label mdc-floating-label"
+                data-mdc-auto-init="MDCFloatingLabel"
+            {% endif %}
+            data-mdc-auto-init="MDCFloatingLabel"
+            for="{{ id }}1-input"
+        >
+            {{ label }} (min)
+        </label>
+        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+    </div>
+    <p id="{{ id }}1-helper" class="mdc-text-field-helper-text" aria-hidden="true">
+        {% if help_text %}
+            {{ help_text | help_text_short_format | safe }}
+        {% endif %}
+    </p>
+
+</div>
+
+<div class="drest-field {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}drest-field--datetime{% endif %}">
+    <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+        <input
+            class="mdc-text-field__input"
+            name="{{ key }}"
+            type="{{ range_type }}"
+            id="{{ id }}2-input"
+            data-type="{{ real_type }}"
+            {% if help_text %}
+                aria-controls="{{ id }}2-helper"
+                aria-describedby="{{ id }}2-helper"
+            {% endif %}
+            {% if value and value.1 %}
+                value="{{ value.1 }}"
+            {% endif %}
+            {% if real_type == 'integer' %}
+                step=1
+            {% endif %}
+        />
+        <label
+            {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}
+                class="drest-field__label"
+            {% else %}
+                class="mdc-floating-label mdc-floating-label"
+                data-mdc-auto-init="MDCFloatingLabel"
+            {% endif %}
+            for="{{ id }}2-input"
+        >
+            {{ label }} (max)
+        </label>
+        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+    </div>
+    <p id="{{ id }}2-helper" class="mdc-text-field-helper-text" aria-hidden="true">
+        {% if help_text %}
+            {{ help_text | help_text_short_format | safe }}
+        {% endif %}
+    </p>
+
 </div>

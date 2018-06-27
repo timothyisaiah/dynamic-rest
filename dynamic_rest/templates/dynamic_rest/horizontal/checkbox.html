@@ -35,9 +35,12 @@
 </div>
 <script>
     $(document).ready(function(){
-        $('#{{ field.id }}').on('click', function() {
+        var $field = $('#{{ field.id }}');
+        $field.on('click', function() {
             var $t = $(this);
             $t.attr('value', $t.is(':checked'));
         });
+        $field.attr('value', $field.is(':checked'));
+
     });
 </script>

@@ -1,15 +1,33 @@
 {% load dynamic_rest %}
 
-<div class="form-group row {% if field.errors %}has-error{% endif %}">
-    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
-        {% if help_text %}
-            <span class="drest-has-tooltip" data-tippy-trigger="click" title="{{ help_text | help_text_format | safe }}">{{ label }}</span>
-        {% else %}
-          {{ label }}
-        {% endif %}
-    </label>
+    <div class="drest-field">
+        <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+            <input
+                class="mdc-text-field__input"
+                name="{{ key }}"
+                type="text"
+                id="{{ id }}-input"
+                {% if help_text %}
+                    aria-controls="{{ id }}-helper"
+                    aria-describedby="{{ id }}-helper"
+                {% endif %}
+                {% if value %}
+                    value="{{ value }}"
+                {% endif %}
+            />
+            <label
+                class="mdc-floating-label mdc-floating-label"
+                data-mdc-auto-init="MDCFloatingLabel"
+                for="{{ id }}-input"
+            >
+                {{ label }}
+            </label>
+            <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+        </div>
+        <p id="{{ id }}-helper" class="mdc-text-field-helper-text" aria-hidden="true">
+            {% if help_text %}
+                {{ help_text | help_text_short_format | safe }}
+            {% endif %}
+        </p>
 
-    <div class="col-sm-10">
-        <input class="form-control" name="{{ key }}" type="text" placeholder="Enter text..." {% if value %}value="{{ value }}"{% endif %}/>
     </div>
-</div>

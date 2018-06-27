@@ -1,3 +1,4 @@
+import uuid
 from dynamic_rest import fields as dfields
 from django.utils import six
 from decimal import Decimal
@@ -6,7 +7,7 @@ from dynamic_rest.utils import is_truthy
 
 
 class Section(object):
-    def __init__(self, name, fields, serializer, instance=None):
+    def __init__(self, name, fields, serializer, instance=None, main=False):
         self.serializer = serializer
         self.name = name
         self.fields = []
@@ -15,6 +16,12 @@ class Section(object):
             self.fields.append(
                 serializer.get_field_value(field, instance)
             )
+        if len(self.fields) == 1:
+            self.field = self.fields[0]
+        else:
+            self.field = None
+
+        self.main = main
 
     def should_render(self):
         return any([f.should_render() for f in self.fields])
@@ -158,7 +165,8 @@ class Filter(object):
             'name': self.name,
             'key': self.key,
             'choices': self.choices,
-            'value': self.value
+            'value': self.value,
+            'id': str(uuid.uuid4())
         }
         return template.render(context)
 

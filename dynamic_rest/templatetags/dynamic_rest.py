@@ -99,6 +99,12 @@ def admin_format_value(value):
 
 
 @register.simple_tag
+def get_sections(serializer, instance=None):
+    instance = instance or serializer.instance
+    return serializer.get_sections(instance)
+
+
+@register.simple_tag
 def get_field_value(serializer, instance, key, idx=None):
     return serializer.get_field_value(key, instance)
 

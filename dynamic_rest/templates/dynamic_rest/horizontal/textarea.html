@@ -1,13 +1,42 @@
-<div class="row form-group {% if field.errors %}has-error{% endif %}">
-  {% include "./label.html" %}
-  <div class="col-sm-10">
-    <textarea name="{{ field.name }}" class="form-control" rows=10 {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %} {% if style.rows %}rows="{{ style.rows }}"{% endif %}>{% if field.value %}{{ field.value }}{% endif %}</textarea>
+{% load dynamic_rest %}
+<div class="drest-field">
+    <div data-mdc-auto-init="MDCTextField" class="mdc-text-field mdc-text-field--textarea mdc-text-field--fullwidth {% if field.errors %}has-error mdc-text-field--invalid{% endif %}">
+        <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
+        <textarea
+            class="mdc-text-field__input"
+            id="{{ field.id }}-input"
+            name="{{ field.name }}"
+            rows=10
+            {% if field.errors or field.help_text %}
+                aria-controls="{{ field.id }}-helper"
+                aria-describedby="{{ field.id }}-helper"
+            {% endif %}
+            {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
+            {% if style.rows %}rows="{{ style.rows }}"{% endif %}
 
-    {% if field.errors %}
-      {% for error in field.errors %}
-        <span class="text-danger">{{ error }}</span>
-      {% endfor %}
-    {% endif %}
+            {% if field.errors %}
+                invalid
+            {% endif %}
+            {% if field.required and not field.allow_null %}
+                required
+            {% endif %}
+        >
+            {% if field.value %}
+                {{ field.value }}
+            {% endif %}
+        </textarea>
 
-  </div>
+
+    </div>
+    <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <span>{{error}}</span>
+            {% endfor %}
+        {% else %}
+            {% if field.help_text %}
+                {{ field.help_text | help_text_short_format | safe }}
+            {% endif %}
+        {% endif %}
+    </p>
 </div>

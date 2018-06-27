@@ -29,10 +29,12 @@
                 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/bs4/dt-1.10.16/cr-1.4.1/fh-3.1.3/r-2.2.1/sc-1.4.4/datatables.min.css"/>
                 <link href="https://cdnjs.cloudflare.com/ajax/libs/Dropify/0.2.2/css/dropify.min.css" media="all" rel="stylesheet" type="text/css" />
 
-                <link href="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.css" media="all" rel="stylesheet" type="text/css" />
+                {% block material_css %}
+                    <link href="{% static "dynamic_rest/css/material.css" %}" rel="stylesheet" type="text/css"/>
+                {% endblock %}
                 <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
                 <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/mprogress.min.css" %}"/>
-                <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+                <link href="https://fonts.googleapis.com/icon?family=Roboto|Material+Icons" rel="stylesheet">
                 <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/bootstrap-material-datetimepicker.css" %}"></link>
             {% endblock %}
 
@@ -47,44 +49,68 @@
     {% block body %}
         <body>
             {% block header %}
-                <nav class="navbar navbar-inverse align-items-center flex-row bg-primary fixed-top">
-                    <span class="navbar-brand ml-1" {% if style != 'directory' %}data-toggle="modal" data-target="#directoryModal"{% endif %}>
-                        {% block header_content %}
-                            {% if header %}
-                                <span>{{ header }}</span>
-                            {% endif %}
-                        {% endblock %}
-
-                    </span>
-                    <div class="navbar-nav ml-auto">
-                        <span class="nav-item">
-                            {% if allow_filter %}
-                                <div data-toggle="modal" data-target="#filtersModal" class="nav-link drest-btn {% if num_filters %}active{% endif %}">
-                                    <span class="fa fa-search drest-btn-icon"></span>
-                                    <span class="drest-btn-label">{% if num_filters %}{{ num_filters }}{% else %}Find{% endif %}</span>
-                                </div>
-                            {% endif %}
-                            {% if back %}
-                                <a class="nav-link drest-btn" href="{{back_url}}">
-                                    <span class="fa fa-arrow-left drest-btn-icon"></span>
-                                    <span class="drest-btn-label">{{back}}</span>
-                                </a>
-                            {% endif %}
-                        </span>
+                <header
+                    class="mdc-theme--on-primary mdc-top-app-bar mdc-top-app-bar--fixed"
+                    data-mdc-auto-init="MDCTopAppBar"
+                >
+                    <div class="mdc-top-app-bar__row">
+                        <section class="mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
+                            {% block header_nav_button %}
+                                {% if allow_nav %}
+                                    <a data-no-spin=true href="#" class="material-icons mdc-top-app-bar__navigation-icon" id="drest-main-navigation-button">menu</a>
+                                {% endif %}
+                                {% if is_auth_error %}
+                                    <span data-no-spin=true class="material-icons mdc-top-app-bar__navigation-icon">error</span>
+                                {% endif %}
+                            {% endblock %}
+                            <span class="mdc-top-app-bar__title">
+                                {% block header_content %}
+                                    {% if is_auth_error %}
+                                        Authentication Failed
+                                    {% else %}
+                                        {{ header }}
+                                    {% endif %}
+                                {% endblock %}
+                            </span>
+                        </section>
+                        <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
+                        {% if allow_filter %}
+                            <a data-no-spin=true data-toggle="modal" data-target="#filtersModal" href="#" class="material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
+                        {% endif %}
+                        </section>
                     </div>
-                </nav>
+                </header>
             {% endblock %} <!-- /header -->
-
+            {% block drawer %}
+                <aside id="drest-main-drawer" class="mdc-drawer mdc-drawer--temporary mdc-typography">
+                    <nav class="mdc-drawer__drawer">
+                        <header class="mdc-drawer__header">
+                            {% block drawer_header %}
+                                <div class="mdc-drawer__header-content">
+                                    {% drest_settings 'API_NAME' %}
+                                </div>
+                            {% endblock %}
+                        </header>
+                        <nav class="mdc-drawer__content">
+                            {% block drawer_content %}
+                                {% include "dynamic_rest/admin/directory.html" %}
+                            {% endblock %}
+                        </nav>
+                    </nav>
+                </aside>
+            {% endblock %}
             {% block content %}
                 <div class="drest-content-container">
                     {% if is_auth_error %}
-                        <div class="drest-content p-2">
-                            You are not authorized to view
-                            this page. Try to login.
+                        <div class="drest-content">
+                            <h5 class="p-4">
+                                <span class="mdi mdi-alert"></span> You are not authorized to view
+                                this page. Click <a href="{% drest_settings 'ADMIN_LOGIN_URL' %}">here</a> to login.
+                            </h5>
                         </div>
                     {% else %}
                         {% if style == 'list' %}
-                            <div class="drest-content">
+                            <div class="drest-content drest-content--wide">
                                 {% include "dynamic_rest/admin/list.html" %}
                             </div>
                         {% else %}
@@ -93,7 +119,7 @@
                                     {% include "dynamic_rest/admin/directory.html" %}
                                 </div>
                             {% else %}
-                                <div class="drest-content p-2">
+                                <div class="drest-content">
                                     {% include "dynamic_rest/admin/detail.html" %}
                                 </div>
                             {% endif %}
@@ -113,62 +139,63 @@
 
             {% block footer %}
                 <div id="drestProgressBar"></div>
-                <nav class="navbar bg-faded fixed-bottom">
-                    <div class="navbar-nav drest-nav">
-                        <div class="nav-item drest-nav-left">
-                            {% if allow_delete %}
-                                <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
-                                    <span class="drest-btn-icon mdi mdi-delete" aria-hidden="true"></span>
-                                    <span class="drest-btn-label">Delete</span>
-                                </div>
-                            {% endif %}
+                {% if style == 'detail' %}
+                    {% if allow_edit %}
+                        <div class="mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br" data-toggle="modal" data-target="#editModal">
+                            <span class="mdc-fab__icon material-icons">edit</span>
                         </div>
-                        <div class="nav-item">
-                            {% if paginator %}
-                                {% get_pagination_html paginator %}
-                            {% endif %}
+                    {% endif %}
+                {% else %}
+                    <nav class="navbar drest-navbar-bottom">
+                        <div class="navbar-nav drest-nav">
+                            <div class="nav-item drest-nav-left">
+                                {% if allow_delete %}
+                                    <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
+                                        <span class="drest-btn-icon mdi mdi-delete" aria-hidden="true"></span>
+                                        <span class="drest-btn-label">Delete</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="nav-item">
+                                {% if paginator %}
+                                    {% get_pagination_html paginator %}
+                                {% endif %}
+                            </div>
+                            <div class="nav-item drest-nav-right">
+                                {% if allow_create %}
+                                    <div class="mdc-fab--fixed-br mdc-theme--primary-bg mdc-fab" data-toggle="modal" data-target="#createModal">
+                                        <span class="mdc-fab__icon material-icons">add</span>
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
-                        <div class="nav-item drest-nav-right">
-                            {% if allow_create %}
-                                <div class="drest-btn btn btn-primary" data-toggle="modal" data-target="#createModal">
-                                    <span class="drest-btn-icon mdi mdi-plus" aria-hidden="true"></span>
-                                    <span class="drest-btn-label">Create</span>
-                                </div>
-                            {% endif %}
-                            {% if allow_edit %}
-                                <div class="btn btn-primary drest-btn" data-toggle="modal" data-target="#editModal">
-                                    <span class="drest-btn-icon mdi mdi-pencil" aria-hidden="true"></span>
-                                    <span class="drest-btn-label">Edit</span>
-                                </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </nav>
+                    </nav>
+                {% endif %}
             {% endblock %} <!-- /footer -->
             {% block create_related_modals %}
                 {% for related_name, serializer_and_form in create_related_forms.items %}
-                    <div class="drest modal fade" id="createModal-{{ related_name }}">
+                    <div class="drest modal left fade" id="createModal-{{ related_name }}">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <div class="modal-header bg-info">
+                                <div class="modal-header bg-primary">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Back">
+                                        <span class="material-icons" aria-hidden="true">arrow_back</span>
+                                    </button>
                                     <h5 class="modal-title">
                                         <span class="mdi mdi-plus"></span>
-                                        <span>Create {{ serializer_and_form.0.get_name | humanize }}</span>
+                                        <span>Add {{ serializer_and_form.0.get_name | humanize }}</span>
                                     </h5>
-                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
-                                    </button>
                                 </div>
                                 <form action="{{ serializer | get_related_url:related_name }}/" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
                                     <div class="modal-body">
                                         <fieldset>
                                             {% csrf_token %}
-                                            <div class="form-group row">
-                                                <label class="form-control-label col-sm-2">
-                                                    {{ singular_name }}
-                                                </label>
-                                                <div class="col-sm-10">
-                                                    <input class="form-control" type="text" disabled name="{{ related_name }}" value="{{ name }}"></input>
+                                            <div class="drest-field">
+                                                <div class="mdc-text-field mdc-text-field--disabled mdc-text-field--fullwidth">
+                                                    <label class="mdc-floating-label mdc-floating-label--float-above">
+                                                        {{ singular_name }}
+                                                    </label>
+                                                    <input class="mdc-text-field__input" type="text" disabled name="{{ related_name }}" value="{{ name }}"></input>
                                                 </div>
                                             </div>
                                             {{ serializer_and_form.1 }}
@@ -184,39 +211,19 @@
                     </div>
                 {% endfor %}
             {% endblock %}
-            {% block directory_modal %}
-                <div class="drest modal fade" id="directoryModal">
+
+            {% block create_modal %}
+                <div class="drest modal left fade" id="createModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
-                                <h5 class="modal-title">
-                                    <span class="mdi mdi-account"></span>
-                                    <span>{{ api_name }}</span>
-                                <h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
+                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
                                 </button>
-                            </div>
-                            <div class="modal-body">
-                                {% include "dynamic_rest/admin/directory.html" %}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            {% endblock %}
-            {% block create_modal %}
-                <div class="drest modal fade" id="createModal">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-info">
                                 <h5 class="modal-title">
                                     <span class="mdi mdi-plus"></span>
-                                    <span>Create {{ singular_name }}</span>
+                                    <span>Add {{ singular_name }}</span>
                                 </h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
                             <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
                                 <div class="modal-body">
@@ -236,17 +243,17 @@
             {% endblock %} <!-- /create_modal -->
 
             {% block delete_modal %}
-                <div class="drest modal fade" id="deleteModal">
+                <div class="drest modal left fade" id="deleteModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-danger">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                </button>
                                 <h5 class="modal-title">
                                     <span class="mdi mdi-delete"></span>
                                     <span>Delete {{ title }}</span>
                                 </h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
                             <form action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="form-horizontal" novalidate>
                                 <div class="modal-body">
@@ -268,17 +275,17 @@
             {% endblock %} <!-- /delete_modal -->
 
             {% block edit_modal %}
-                <div class="drest modal fade" id="editModal">
+                <div class="drest modal left fade" id="editModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <div class="modal-header bg-info">
+                            <div class="modal-header bg-primary">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                </button>
                                 <h5 class="modal-title">
                                     <span class="fa fa-pencil"></span>
                                     <span>Edit {{ title }}</span>
                                 </h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
                             <form action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
                                 <div class="modal-body">
@@ -301,11 +308,11 @@
                     <div class="drest modal" id="errorModal">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <div class="modal-header bg-info">
-                                    <h5 class="modal-title">{{ error_title }}</h5>
+                                <div class="modal-header bg-primary">
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                        <span aria-hidden="true">&times;</span>
+                                        <span aria-hidden="true" class="material-icons">arrow_back</span>
                                     </button>
+                                    <h5 class="modal-title">{{ error_title }}</h5>
                                 </div>
                                 <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
                                     <div class="modal-body">
@@ -325,19 +332,19 @@
             {% endblock %} <!-- /error_form -->
 
             {% block filter_form %}
-                <div class="drest modal fade" id="filtersModal">
+                <div class="drest modal left fade" id="filtersModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <div class="modal-header bg-info">
+                            <div class="modal-header bg-primary">
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true" class="material-icons">arrow_back</span>
+                                </button>
                                 <h5 class="modal-title">
                                     <span class="fa fa-search"></span>
                                     <span>Find {{plural_name}}</span>
                                 </h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
                             </div>
-                            <form class="filter-form" method="get" action="{{ request.get_full_path }}">
+                            <form class="filter-form" method="get" action="{{ search_endpoint }}">
                                 <div class="modal-body">
                                     <fieldset>
                                         {% for filter in filters.values %}
@@ -402,7 +409,7 @@
                             if (this.target === "_blank") {
                                 return false;
                             }
-                            return this.href && !this.href.match(/^\s*(mailto:|#|tel:)/);
+                            return this.href && !this.href.match(/^\s*(mailto:|#|tel:)/) && !$(this).data('no-spin');
                         }).click(spin);
                         $('button[type="submit"]').click(spin);
                         $('.drest-link').click(spin);
@@ -433,19 +440,58 @@
                         $('input').each(function() {
                             var type = $(this).data('type');
                             var opts = { clearButton: true };
+                            var $this = $(this);
+                            var $parent = $this.closest('.drest-field')
+                            var dtp = false;
+
                             if (type == 'time') {
                                 opts.date = false;
-                                $(this).bootstrapMaterialDatePicker(opts);
+                                $this.bootstrapMaterialDatePicker(opts);
+                                dtp = true;
                             } else if (type == 'date') {
                                 opts.time = false;
-                                $(this).bootstrapMaterialDatePicker(opts);
-                            } else if (type == 'datetime' || this == 'datetime-local') {
-                                opts.format = 'dddd MM YYYY HH:mm';
-                                $(this).bootstrapMaterialDatePicker(opts);
+                                $this.bootstrapMaterialDatePicker(opts);
+                                dtp = true;
+                            } else if (type == 'datetime' || type == 'datetime-local') {
+                                opts.format = 'YYYY-MM-DD hh:mm';
+                                $this.bootstrapMaterialDatePicker(opts);
+                                dtp = true;
+                            }
+                            if ($parent.length === 1) {
+                                if (dtp) {
+                                    $this.on('change', function() {
+                                        var val = $this.val();
+                                        if (!val || typeof val === 'undefined') {
+                                            $parent.removeClass('drest-field--selected');
+                                        } else {
+                                            $parent.addClass('drest-field--selected');
+                                        }
+                                    });
+                                    $this.on('open', function() {
+                                        $parent.addClass('drest-field--focused');
+                                    });
+                                    $this.on('close', function() {
+                                        $parent.removeClass('drest-field--focused');
+                                    });
+                                }
+                                var val = $this.val();
+                                if (val && typeof val !== 'undefined') {
+                                    $parent.addClass('drest-field--selected');
+                                }
                             }
                         });
                     });
                     mdc.autoInit();
+
+                    var navButton = document.querySelector('#drest-main-navigation-button');
+                    var drawer = new mdc.drawer.MDCTemporaryDrawer(
+                        document.querySelector('#drest-main-drawer')
+                    );
+                    navButton.addEventListener('click',
+                        function() {
+                            drawer.open = true;
+                        }
+                    );
                 </script>
             {% endblock %} <!-- /script -->
         </body>

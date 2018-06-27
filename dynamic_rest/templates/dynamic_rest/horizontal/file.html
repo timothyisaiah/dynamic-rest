@@ -1,14 +1,30 @@
-<div class="form-group row {% if field.errors %}has-error{% endif %}">
-  {% include "./label.html" %}
+<div class="drest-field--file drest-field {% if field.errors %}text-danger{% endif %}">
+    <label for="{{ field.id }}-input" class="drest-label">
+        {{ field.label }}
+    </label>
+    <input
+        id="{{ field.id }}-input"
+        name="{{ field.name }}"
+        type="file"
+        {% if field.value %}value="{{ field.value }}"{% endif %}
+        {% if field.errors or field.help_text %}
+            aria-controls="{{ field.id }}-helper"
+            aria-describedby="{{ field.id }}-helper"
+        {% endif %}
+        {% if field.errors %}
+            invalid
+        {% endif %}
+        {% if field.required and not field.allow_null %}
+            required
+        {% endif %}
+    >
 
-  <div class="col-sm-10">
-    <input name="{{ field.name }}" type="file" {% if field.value %}value="{{ field.value }}"{% endif %}>
+    <p class="mdc-text-field-helper-text {% if field.errors %}mdc-text-field-helper-text--persistent{% endif %}" id="{{ field.id }}-helper">
+        {% if field.errors %}
+          {% for error in field.errors %}
+            <span>{{ error }}</span>
+          {% endfor %}
+        {% endif %}
+    </p>
 
-    {% if field.errors %}
-      {% for error in field.errors %}
-        <span class="text-danger">{{ error }}</span>
-      {% endfor %}
-    {% endif %}
-
-  </div>
 </div>

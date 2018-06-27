@@ -1,11 +1,17 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div class="drest-field mdc-select" data-mdc-auto-init="MDCSelect">
-    <select id="{{ field.id }}" class="mdc-select__native-control" name="{{ field.name }}">
+<div class="drest-field">
+    <div class="w-100 mdc-select {% if field.errors %}mdc-text-field--invalid{% endif %}" data-mdc-auto-init="MDCSelect">
+    <select
+        {% if field.required and not field.allow_null %}required{% endif %}
+        id="{{ field.id }}"
+        class="w-100 mdc-select__native-control"
+        name="{{ field.name }}"
+    >
       {% if field.required and not field.allow_null %}
         {% if not field.value %}
-            <option value="" selected></option>
+            <option value="" selected disabled></option>
         {% endif %}
       {% else %}
         <option value="" {% if not field.value %}selected{% endif %}>
@@ -28,12 +34,19 @@
       </label>
       <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
 
-    {% if field.errors %}
-      {% for error in field.errors %}
-        <span class="text-danger">{{ error }}</span>
-      {% endfor %}
-    {% endif %}
 
+    </div>
+    <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <span>{{error}}</span>
+            {% endfor %}
+        {% else %}
+            {% if field.help_text %}
+                {{ field.help_text | help_text_short_format | safe }}
+            {% endif %}
+        {% endif %}
+    </p>
 </div>
 
 {% if field.controls %}
@@ -52,7 +65,7 @@
                     if ($f.attr('disabled')) {
                         return;
                     }
-                    var $target = $f.closest('.form-group');
+                    var $target = $f.closest('.drest-field');
                     var name = $f.attr('name');
                     if (!show || show.length === 0) {
                         $target.show();

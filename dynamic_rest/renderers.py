@@ -81,6 +81,7 @@ class DynamicAdminRenderer(AdminRenderer):
         is_update = getattr(view, 'is_update', lambda: False)()
         is_directory = view and view.__class__.__name__ == 'API'
         header = ''
+
         title = settings.API_NAME or ''
         description = ''
 
@@ -99,8 +100,6 @@ class DynamicAdminRenderer(AdminRenderer):
             title = header = settings.API_NAME or ''
             description = settings.API_DESCRIPTION
 
-        back_url = None
-        back = None
         filters = {}
         create_related_forms = {}
 
@@ -156,7 +155,9 @@ class DynamicAdminRenderer(AdminRenderer):
             icon = serializer.get_icon()
             header = serializer.get_plural_name().title().replace('_', ' ')
 
-            if style == 'list':
+            if is_auth_error:
+                header = "Authentication Failed"
+            elif style == 'list':
                 if paginator:
                     paging = paginator.get_page_metadata()
                     count = paging['total_results']
@@ -164,8 +165,6 @@ class DynamicAdminRenderer(AdminRenderer):
                     count = len(results)
                 header = '%d %s' % (count, header)
             elif not is_error:
-                back_url = serializer.get_url()
-                back = 'List'
                 header = serializer.get_name().title().replace('_', ' ')
 
             title = header
@@ -227,8 +226,12 @@ class DynamicAdminRenderer(AdminRenderer):
         if is_error:
             error = response.data
             if isinstance(error, dict):
-                error = 'see above for details'
-            elif isinstance(error, list) and len(error) == 1:
+                values = error.values()
+                if len(values) == 1:
+                    error = values[0]
+                else:
+                    error = 'see above for details'
+            if isinstance(error, list) and len(error) == 1:
                 error = error[0]
             alert = 'An error has occurred: %s' % error
             alert_class = 'danger'
@@ -249,7 +252,11 @@ class DynamicAdminRenderer(AdminRenderer):
         if alert and not alert_class:
             alert_class = 'info'
 
-        permissions = getattr(serializer, 'permissions', None)
+        if getattr(serializer, 'child', None):
+            permissions = getattr(serializer.child, 'permissions', None)
+        else:
+            permissions = getattr(serializer, 'permissions', None)
+
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )
@@ -279,11 +286,12 @@ class DynamicAdminRenderer(AdminRenderer):
                     permissions.update.filters
                 ).filter(pk=instance.pk).exists():
                     allowed.discard('update')
+
             if not permissions.create:
                 allowed.discard('create')
+
             if not permissions.list:
                 allowed.discard('list')
-                back = None
 
         from dynamic_rest.routers import get_directory
         context['instance_name'] = instance_name
@@ -297,8 +305,6 @@ class DynamicAdminRenderer(AdminRenderer):
             ) else 0
             for f in filters.values()
         ])
-        context['back_url'] = back_url
-        context['back'] = back
         context['columns'] = columns
         context['fields'] = fields
         context['serializer'] = serializer
@@ -337,8 +343,12 @@ class DynamicAdminRenderer(AdminRenderer):
         context['api_name'] = settings.API_NAME
         context['url'] = request.get_full_path()
         context['allow_filter'] = (
-            'read' in allowed and style == 'list'
+            'list' in allowed
         ) and bool(filters)
+        context['search_endpoint'] = (
+            '/' if serializer is None
+            else serializer.get_url()
+        )
         context['allow_delete'] = (
             'delete' in allowed and style == 'detail'
             and bool(instance)
@@ -350,6 +360,10 @@ class DynamicAdminRenderer(AdminRenderer):
         )
         context['allow_create'] = (
             'create' in allowed and style == 'list'
+        )
+        context['allow_nav'] = (
+            not is_auth_error and
+            not is_directory
         )
         context['alert'] = alert
         context['alert_class'] = alert_class

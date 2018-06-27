@@ -49,11 +49,15 @@ class DynamicBoundField(object):
         value = self.value
         field = self._field
 
+        model_field = getattr(field, 'model_field', None)
+        if getattr(model_field, 'primary_key', None):
+            return False
+
         if isinstance(field, DynamicRelationField):
             if field.create:
                 return True
 
-        if value is None or value == '':
+        if not value and value != 0 and value != 0.0:
             return False
 
         return True

@@ -1,49 +1,77 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
-<div class="p-2 mb-5">
+<div class="mdc-layout-grid mb-5">
+<div class="mdc-layout-grid__inner">
     {% if not results.serializer %}
         {% for key in details %}
-                <div class="drest-field row form-group p-2">
-                    <label class="col-sm-2 form-control-label">
-                        {{ key }}
-                    </label>
-                    <div class="col-sm-10 drest-field-value">
-                        {% get_value_from_dict results key %}
+            <div class="mdc-layout-grid__cell mdc-layout-grid__cell--span-12">
+                <div class="mdc-card">
+                    <div class="mdc-card__title">
+                        <span class="mdi mdi-alert-circle-outline"></span>
+                        Error
+                    </div>
+                    <div class="mdc-card__fields">
+                        <div class="mdc-card__field">
+                            <div class="mdc-card__label">
+                                {{ key }}
+                            </div>
+                            <div class="mdc-card__value">
+                                {% get_value_from_dict results key %}
+                            </div>
+                        </div>
                     </div>
                 </div>
+            </div>
         {% endfor %}
     {% else %}
-        {% get_sections results.serializers as sections %}
+        {% get_sections results.serializer as sections %}
 
         {% for section in sections %}
-            <div class="mdc-card">
+            {% if section.should_render %}
+          <div class="
+            mdc-layout-grid__cell
+            {% if section.main %}
+                mdc-layout-grid__cell--span-12-desktop
+            {% else %}
+                mdc-layout-grid__cell--span-6-desktop
+            {% endif %}
+            mdc-layout-grid__cell--span-12-phone
+            mdc-layout-grid__cell--span-12-tablet
+          ">
+            <div class="mdc-card {% if section.field %}mdc-card--relation{% endif %}">
                 {% if section.name %}
-                <div class="mdc-card__title">{{ section.name }}</div>a
-                {% if section.has_action %}
-                    <div class="mdc-card__action">
-                        {{ section.action }}
-                    </div>
+                    <div class="mdc-card__title">{{ section.name }}</div>
                 {% endif %}
+                {% if section.field and section.field.name in create_related_forms %}
+                    <div class="mdc-card__mainaction">
+                        <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#createModal-{{ section.field.name }}">
+                            <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                            <span class="drest-btn-label">Create</span>
+                        </div>
+                    </div>
                 {% endif %}
                     <div class="mdc-card__fields">
                     {% for field in section.fields %}
                         {% if field.should_render %}
-                            <div class="mdc-card__field {% if field.long %}mdc-card__field--long{% endif %}">
-                                <label class="mdc-card__label">
-                                        <span
-                                            {% if field and field.help_text %}
-                                                data-placement="right"
-                                                data-tippy-trigger="click"
-                                                title="{{ field.help_text | help_text_format | safe }}"
-                                            {% endif %}
-                                        >
-                                            {{ field.label }}
-                                        </span>
-                                </label>
+                            <div class="mdc-card__field">
+                                {% if not section.field %}
+                                    <label class="mdc-card__label">
+                                            <span
+                                                {% if field and field.help_text %}
+                                                    data-placement="right"
+                                                    data-tippy-trigger="click"
+                                                    title="{{ field.help_text | help_text_format | safe }}"
+                                                    class="drest-has-tooltip"
+                                                {% endif %}
+                                            >
+                                                {{ field.label }}
+                                            </span>
+                                    </label>
+                                {% endif %}
                                 <div class="mdc-card__value">
                                     {{ field | render_field_value }}
-                                    {% if field.name in create_related_forms %}
-                                        <div class="drest-btn btn btn-primary" data-toggle="modal" data-target="#createModal-{{ field.name }}">
+                                    {% if not section.field and field.name in create_related_forms %}
+                                        <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#createModal-{{ field.name }}">
                                             <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
                                             <span class="drest-btn-label">Create</span>
                                         </div>
@@ -54,6 +82,8 @@
                     {% endfor %}
                     </div>
                </div>
+            </div>
+            {% endif %}
         {% endfor %}
     {% endif %}
 </div>

@@ -2,53 +2,71 @@
 
 {% if style.input_type == "text" or style.input_type == "password" or style.input_type == "number" %}
     <div class="drest-field">
-        <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+        <div class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
             <input
                 class="mdc-text-field__input"
                 name="{{ field.name }}"
                 type="{{ style.input_type }}"
                 id="{{ field.id }}-input"
-                {% if field.help_text %}
+                {% if field.errors or field.help_text %}
                     aria-controls="{{ field.id }}-helper"
                     aria-describedby="{{ field.id }}-helper"
+                {% endif %}
+                {% if field.errors %}
+                    invalid
+                {% endif %}
+                {% if field.required and not field.allow_null %}
+                    required
                 {% endif %}
                 value="{{ field.value }}"
             />
             <label class="mdc-floating-label mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
             <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
         </div>
-        {% if field.help_text or field.errors %}
-            <p id="{{ field.id }}-helper" class="{% if field.errors %}text-danger {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
-                {% if field.errors %}
-                    {% for error in field.errors %}
-                        <div>{{error}}</div>
-                    {% endfor %}
-                {% else %}
+        <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+            {% if field.errors %}
+                {% for error in field.errors %}
+                    <span>{{error}}</span>
+                {% endfor %}
+            {% else %}
+                {% if field.help_text %}
                     {{ field.help_text | help_text_short_format | safe }}
                 {% endif %}
-            </p>
-        {% endif %}
+            {% endif %}
+        </p>
+
     </div>
 {% else %}
-        <div class="drest-field {% if field.errors %}has-error{% endif %}">
-            <label class="mdc-floating-label mdc-floating-label--float-above" for="{{ field.id }}-input">
+        <div class="drest-field drest-field--datetime">
+            <div class="mdc-text-field--fullwidth mdc-text-field {% if field.errors %}mdc-help-text--validation-msg mdc-text-field--invalid{% endif %}">
+            <label
+                class="drest-field__label"
+                for="{{ field.id }}-input"
+            >
                 {{ field.label }}
             </label>
             <input
                 id="{{ field.id }}-input"
                 name="{{ field.name }}"
                 data-type="{{ style.input_type }}"
-                class="mdc-text-field__input drest{% if style.input_type != "file" %} form-control{% endif %}"
+                class="mdc-text-field__input drest"
                 type="{% if style.input_type == "time" or style.input_type == "date" or style.input_type == "datetime-local" %}text{% else %}{{ style.input_type }}{% endif %}"
                 {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
                 {% if field.value %}value="{{ field.value }}"{% endif %}
                 {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}
             >
-            {% if field.errors %}
-              {% for error in field.errors %}
-                <span class="text-danger">{{ error }}</span>
-              {% endfor %}
-            {% endif %}
 
+            <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <span>{{error}}</span>
+                    {% endfor %}
+                {% else %}
+                    {% if field.help_text %}
+                        {{ field.help_text | help_text_short_format | safe }}
+                    {% endif %}
+                {% endif %}
+            </p>
         </div>
+    </div>
 {% endif %}

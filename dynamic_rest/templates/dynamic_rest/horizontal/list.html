@@ -4,18 +4,20 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="drest-field {% if field.errors %}has-error{% endif %}">
-    <label for="{{ field.id }}" class="drest-select-float mdc-floating-label mdc-floating-label--float-above">{{ field.label }}</label>
+<div class="drest-field drest-field--many {% if field.errors %}drest-field--invalid{% endif %}">
+    <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
 
-    <div class="drest-select">
+    <div class="drest-field__select">
         <select id="{{ field.id }}" multiple="multiple" name="{{ field.name }}">
         </select>
     </div>
 
     {% if field.errors %}
-      {% for error in field.errors %}
-        <span class="text-danger">{{ error }}</span>
-      {% endfor %}
+        <p id="{{ field.id }}-helper" class="push-up mdc-text-field-helper-text--persistent mdc-text-field-helper-text" aria-hidden="false">
+            {% for error in field.errors %}
+                <span>{{error}}</span>
+            {% endfor %}
+        </p>
     {% endif %}
 </div>
 
@@ -24,6 +26,8 @@
         // set initial values
         var values = {{field.value | to_json | safe}};
         var $el = $("#{{ field.id }}");
+        var placeholder = '{{ field.label }}';
+        var $parent = $el.closest('.drest-field');
         for (var v in values) {
             if (values.hasOwnProperty(v)) {
                 var value = values[v];
@@ -34,8 +38,32 @@
         }
         $el.select2({
             tags: true,
+            placeholder: placeholder,
             theme: 'material',
             minimumInputLength: 1,
+            language: {
+                inputTooShort: function() {
+                    return {% if field.help_text %}"{{ field.help_text | help_text_short_format | safe }}"{% else %}"Start typing"{% endif %};
+                }
+            },
+            dropdownParent: $parent
         });
+        $el.on('select2:open', function(e){
+            $parent.addClass('drest-field--focused');
+        });
+        $el.on('change', function() {
+            var val = $el.val();
+            if (!val || typeof val === 'undefined') {
+                $parent.removeClass('drest-field--selected');
+            }
+        });
+        if ($el.val()) {
+            $parent.addClass('drest-field--selected');
+        }
+        $el.on('select2:close', function(e){
+            $parent.removeClass('drest-field--focused');
+            $parent.removeClass('drest-field--invalid');
+        });
+        $el.trigger('change');
     });
 </script>

@@ -3,67 +3,88 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
+{% block header_nav_button %}
+    <span class="mdc-top-app-bar__navigation-icon material-icons">lock</span>
+{% endblock %}
+
 {% block header_content %}
-    <span class="fa fa-unlock"></span>
-    <span>{% drest_settings 'API_NAME' %}</span>
+    Login
 {% endblock %}
 
 {% block content %}
     <div class="drest-content-container">
-        <div class="drest-content padded">
-            <form class="container mr-auto" action="{% url 'dynamic_rest:login' %}" role="form" method="post">
+        <div class="drest-content drest-content--thin p-4">
+            <form
+                action="{% url 'dynamic_rest:login' %}"
+                role="form"
+                method="post"
+            >
               {% csrf_token %}
               <input type="hidden" name="next" value="{{ next }}">
 
-              <div id="div_id_username" class="clearfix control-group {% if form.username.errors %}error{% endif %}">
-                <div class="form-group">
-                    <label for="id_username">
-                        {% if form %}
-                            {{ form.username.label }}:
-                        {% else %}
-                            Username:
-                        {%endif%}
-                    </label>
-                    <input type="text" name="username" maxlength="100"
-                        autocapitalize="off"
-                        autocorrect="off" class="form-control textinput textInput"
-                        id="id_username" required autofocus
-                        {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
-                    {% if form.username.errors %}
-                        <p class="text-danger">
-                            {{ form.username.errors|striptags }}
-                        </p>
-                    {% endif %}
-                </div>
-            </div>
-
-            <div id="div_id_password" class="clearfix control-group {% if form.password.errors %}error{% endif %}">
-                <div class="form-group">
-                    <label for="id_password">
-                        {% if form %}
-                            {{ form.password.label }}:
-                        {% else %}
-                            Password:
-                        {%endif%}
-                    </label>
-                    <input type="password" name="password" maxlength="100" autocapitalize="off" autocorrect="off" class="form-control textinput textInput" id="id_password" required>
-                    {% if form.password.errors %}
-                        <p class="text-danger">
-                            {{ form.password.errors|striptags }}
-                        </p>
-                    {% endif %}
+                <div class="drest-field">
+                    <div class="{% if form.username.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+                        <input
+                            class="mdc-text-field__input"
+                            name="username"
+                            type="text"
+                            id="username-input"
+                            {% if form.username.errors %}
+                                aria-controls="username-helper"
+                                aria-describedby="username-helper"
+                            {% endif %}
+                            {% if form.username.errors %}
+                                invalid
+                            {% endif %}
+                            required
+                        />
+                        <label class="mdc-floating-label mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="username-input">Username</label>
+                        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
                     </div>
+                    <p id="username-helper" class="{% if form.username.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if form.username.errors %}false{% else %}true{% endif %}">
+                        {% if form.username.errors %}
+                            {% for error in form.username.errors %}
+                                <span>{{error}}</span>
+                            {% endfor %}
+                        {% endif %}
+                    </p>
                 </div>
+                <div class="drest-field">
+                    <div class="{% if form.password.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+                        <input
+                            class="mdc-text-field__input"
+                            name="password"
+                            type="password"
+                            id="password-input"
+                            {% if form.password.errors %}
+                                aria-controls="password-helper"
+                                aria-describedby="password-helper"
+                            {% endif %}
+                            {% if form.password.errors %}
+                                invalid
+                            {% endif %}
+                            required
+                        />
+                        <label class="mdc-floating-label mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="password-input">Password</label>
+                        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+                    </div>
+                    <p id="password-helper" class="{% if form.password.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if form.password.errors %}false{% else %}true{% endif %}">
+                        {% if form.password.errors %}
+                            {% for error in form.password.errors %}
+                                <div>{{error}}</div>
+                            {% endfor %}
+                        {% endif %}
+                    </p>
+                </div>
+
 
                 {% if form.non_field_errors %}
                     {% for error in form.non_field_errors %}
-                        <div class="well well-small text-danger" style="border: none">{{ error }}</div>
+                        <div class="p-2 text-danger">{{ error }}</div>
                     {% endfor %}
                 {% endif %}
 
-                <div class="form-actions-no-box">
-                    <input type="submit" name="submit" value="Log in" class="btn btn-primary form-control" id="submit-id-submit">
-                </div>
+                <button type="submit" class="w-100 mdc-button mdc-button--raised">Log in</button>
             </form>
         </div>
     </div>
