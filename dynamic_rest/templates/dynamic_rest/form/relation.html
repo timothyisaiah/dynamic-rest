@@ -2,6 +2,23 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
+{% if field.type == 'image' %}
+    <div class="drest-field--file drest-field{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
+        <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
+        <div class="dropify-wrapper">
+            <div class="dropify-message">
+                <span class="material-icons medium">image</span>
+            </div>
+            <div class="dropify-preview">
+                <span class="dropify-render">
+                    <img src="{{ field.value.file.url }}" />
+                </span>
+            </div>
+        </div>
+    </div>
+
+{% else %}
+
 {% trans "No items to select." as no_items %}
 
 <div class="w-100 drest-field--select2 drest-field{% if field.many %} many{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
@@ -152,3 +169,5 @@
         $(select2).val(selected).trigger('change');
     });
 </script>
+
+{% endif %}

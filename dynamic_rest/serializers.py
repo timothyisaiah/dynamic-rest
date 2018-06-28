@@ -358,9 +358,7 @@ class WithDynamicSerializerMixin(
                     not getattr(related_serializer, 'permissions', None) or
                     related_serializer.permissions.create
                 )
-                can_create = field.create and (
-                    field.many
-                )
+                can_create = field.create
                 has_source = field.source != '*'
                 if (
                     has_source and

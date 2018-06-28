@@ -109,13 +109,16 @@ class DynamicAdminRenderer(AdminRenderer):
         create_related_forms = {}
 
         if serializer:
+            related_serializers = serializer.create_related_serializers or []
+            if related_serializers:
+                related_serializers = related_serializers.items()
             create_related_forms = {
                 name: (
                     serializer,
                     self.render_form_for_serializer(serializer)
                 )
                 for name, serializer
-                in serializer.create_related_serializers.items()
+                in related_serializers
             }
             filters = serializer.get_filters()
             meta = serializer.get_meta()

@@ -35,5 +35,5 @@ class DynamicFileField(
 
     def prepare_value(self, instance):
         source = self.source or self.field_name
-        value = getattr(instance, source)
+        value = getattr(instance, source, None)
         return value

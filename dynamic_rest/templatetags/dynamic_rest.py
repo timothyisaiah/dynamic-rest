@@ -111,9 +111,14 @@ def admin_format_value(value):
 
 
 @register.simple_tag
-def get_sections(serializer, instance=None):
+def get_sections(serializer, instance=None, check=True):
     instance = instance or serializer.instance
-    return serializer.get_sections(instance)
+    sections = serializer.get_sections(instance)
+    if check:
+        sections = [
+            s for s in sections if s.should_render()
+        ]
+    return sections
 
 
 @register.simple_tag
