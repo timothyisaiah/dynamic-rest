@@ -28,57 +28,39 @@
 
         {% for section in sections %}
             {% if section.should_render %}
-          <div class="
-            mdc-layout-grid__cell
-            mdc-layout-grid__cell--span-6-desktop
-            mdc-layout-grid__cell--span-12-phone
-            mdc-layout-grid__cell--span-12-tablet
-          ">
-            <div class="mdc-card {% if section.field %}mdc-card--relation{% endif %}">
-                {% if section.name %}
-                    <div class="mdc-card__title">{{ section.name }}</div>
-                {% endif %}
-                {% if section.field and section.field.name in create_related_forms %}
-                    <div class="mdc-card__mainaction">
-                        <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#createModal-{{ section.field.name }}">
-                            <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
-                            <span class="drest-btn-label">Create</span>
-                        </div>
-                    </div>
-                {% endif %}
-                    <div class="mdc-card__fields">
-                    {% for field in section.fields %}
-                        {% if field.should_render %}
-                            <div class="mdc-card__field">
-                                {% if not section.field %}
-                                    <label class="mdc-card__label">
-                                            <span
-                                                {% if field and field.help_text %}
-                                                    data-placement="right"
-                                                    data-tippy-trigger="click"
-                                                    title="{{ field.help_text | help_text_format | safe }}"
-                                                    class="drest-has-tooltip"
-                                                {% endif %}
-                                            >
-                                                {{ field.label }}
-                                            </span>
-                                    </label>
-                                {% endif %}
-                                <div class="mdc-card__value">
-                                    {{ field | render_field_value }}
-                                    {% if not section.field and field.name in create_related_forms %}
-                                        <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#createModal-{{ field.name }}">
-                                            <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
-                                            <span class="drest-btn-label">Create</span>
-                                        </div>
-                                    {% endif %}
-                                </div>
+              <div class="
+                mdc-layout-grid__cell
+                mdc-layout-grid__cell--span-6-desktop
+                mdc-layout-grid__cell--span-12-phone
+                mdc-layout-grid__cell--span-12-tablet
+              ">
+                <div class="mdc-card {% if section.field %}mdc-card--relation{% endif %}">
+                    {% if section.name %}
+                        <div class="mdc-card__title">{{ section.name }}</div>
+                    {% endif %}
+                    {% if section.field and section.field.name in create_related_forms %}
+                        <div class="mdc-card__mainaction">
+                            <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#createModal-{{ section.field.name }}">
+                                <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                                <span class="drest-btn-label">Create</span>
                             </div>
-                        {% endif %}
-                    {% endfor %}
+                        </div>
+                    {% endif %}
+                    <div class="mdc-card__fields">
+                        {% for field in section.fields %}
+                            {% if field.should_render %}
+                                {% render_read_only_field field style=render_style %}
+                                {% if not section.field and field.name in create_related_forms %}
+                                    <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#createModal-{{ field.name }}">
+                                        <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                                        <span class="drest-btn-label">Create</span>
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
                     </div>
-               </div>
-            </div>
+                  </div>
+                </div>
             {% endif %}
         {% endfor %}
     {% endif %}

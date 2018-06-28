@@ -1,0 +1,44 @@
+{% load rest_framework %}
+{% load dynamic_rest %}
+
+{% if False %}
+
+    {% for field in form %}
+      {% if not field.read_only %}
+        {% render_field field style=style %}
+      {% endif %}
+    {% endfor %}
+
+{% else %}
+    <div class="mdc-layout-grid mb-5">
+        <div class="mdc-layout-grid__inner">
+            {% get_sections form as sections %}
+            {% for section in sections %}
+                {% if section.should_render %}
+                  <div class="
+                    mdc-layout-grid__cell
+                    mdc-layout-grid__cell--span-6-desktop
+                    mdc-layout-grid__cell--span-12-phone
+                    mdc-layout-grid__cell--span-12-tablet
+                  ">
+                    <div class="mdc-card {% if section.field %}mdc-card--relation{% endif %}">
+                        {% if section.name %}
+                            <div class="mdc-card__title">{{ section.name }}</div>
+                        {% endif %}
+
+                        {% if section.should_render %}
+                            <div class="mdc-card__fields">
+                                {% for field in section.fields %}
+                                    {% if field.should_render %}
+                                        {% render_field field style=style %}
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                   </div>
+                </div>
+            {% endif %}
+        {% endfor %}
+        </div>
+    </div>
+{% endif %}

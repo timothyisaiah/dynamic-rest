@@ -8,7 +8,11 @@
     <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
 
     <div class="drest-field__select">
-        <select id="{{ field.id }}" multiple="multiple" name="{{ field.name }}">
+        <select
+            id="{{ field.id }}"
+            multiple="multiple"
+            {% if field.read_only %}disabled{% endif %}
+            name="{{ field.name }}">
         </select>
     </div>
 

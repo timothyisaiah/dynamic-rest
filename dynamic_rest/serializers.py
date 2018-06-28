@@ -14,12 +14,11 @@ from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
-from dynamic_rest.ui import Filter, Section
+from dynamic_rest.ui import UIFilter, UISection, UIField, UIJSONField
 from dynamic_rest.permissions import PermissionsSerializerMixin
 from dynamic_rest.conf import settings
 from dynamic_rest import fields as _fields
 from dynamic_rest.links import merge_link_object
-from dynamic_rest.bound import DynamicJSONBoundField, DynamicBoundField
 from dynamic_rest.meta import (Meta, get_model_table, get_model_field,
                                get_related_model)
 from dynamic_rest.processors import SideloadingProcessor
@@ -85,6 +84,10 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def __init__(self, *args, **kwargs):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
+
+    @property
+    def create_related_serializers(self):
+        return None
 
     def get_router(self):
         return self.child.get_router()
@@ -327,10 +330,45 @@ class WithDynamicSerializerMixin(
         value = self.data.get(key)
         error = self.errors.get(key) if hasattr(self, '_errors') else None
         if not isinstance(field, serializers.Serializer):
-            return DynamicBoundField(
+            return UIField(
                 field, value, error, instance=self.instance)
         else:
             return super(WithDynamicSerializerMixin, self).__getitem__(key)
+
+    @property
+    def create_related_serializers(self):
+        return self.get_create_related_serializers()
+
+    def get_create_related_serializers(self, instance=None):
+        instance = instance or self.instance
+        forms = {}
+        if instance:
+            for related_name, field in self.get_link_fields(
+            ).items():
+                kwargs = {
+                    'request_fields': None,
+                    'many': False
+                }
+                inverse_field_name = field.get_inverse_field_name()
+                if inverse_field_name:
+                    kwargs['exclude_fields'] = [inverse_field_name]
+                related_serializer = field.get_serializer(**kwargs)
+                related_serializer.set_request_method('POST')
+                has_permission = (
+                    not getattr(related_serializer, 'permissions', None) or
+                    related_serializer.permissions.create
+                )
+                can_create = field.create and (
+                    field.many
+                )
+                has_source = field.source != '*'
+                if (
+                    has_source and
+                    can_create and
+                    has_permission
+                ):
+                    forms[related_name] = related_serializer
+        return forms
 
     def get_router(self):
         return getattr(self, '_router', None)
@@ -398,7 +436,7 @@ class WithDynamicSerializerMixin(
             field = self.fields.get(field_name)
             if getattr(field, 'many', False):
                 sections.append(
-                    Section(
+                    UISection(
                         inflection.humanize(field_name),
                         [field_name],
                         self,
@@ -409,7 +447,7 @@ class WithDynamicSerializerMixin(
                 others.append(field_name)
 
         sections = [
-            Section('Details', others, self, self.instance, main=True)
+            UISection('Details', others, self, self.instance, main=True)
         ] + sections
         return sections
 
@@ -423,7 +461,7 @@ class WithDynamicSerializerMixin(
             sections = sections.items()
 
         return [
-            Section(name, value, self, instance=instance)
+            UISection(name, value, self, instance=instance)
             for name, value in sections
         ]
 
@@ -431,7 +469,7 @@ class WithDynamicSerializerMixin(
         filters = getattr(self.get_meta(), 'filters', {})
         if isinstance(filters, dict):
             filters = filters.items()
-        return OrderedDict(((name, Filter(name, value, serializer=self))
+        return OrderedDict(((name, UIFilter(name, value, serializer=self))
                             for name, value in filters))
 
     def get_field_value(self, key, instance=None):
@@ -442,7 +480,9 @@ class WithDynamicSerializerMixin(
         if hasattr(field, 'prepare_value'):
             value = field.prepare_value(instance)
         else:
-            value = field.to_representation(field.get_attribute(instance))
+            attr = field.get_attribute(instance)
+            value = field.to_representation(attr) if attr else None
+
         if not isinstance(value, FieldFile):
             if isinstance(value, list):
                 value = [getattr(v, 'instance', v) for v in value]
@@ -451,10 +491,10 @@ class WithDynamicSerializerMixin(
         error = self.errors.get(key) if hasattr(self, '_errors') else None
 
         if isinstance(field, JSONField):
-            return DynamicJSONBoundField(
+            return UIJSONField(
                 field, value, error, prefix='', instance=instance
             )
-        return DynamicBoundField(
+        return UIField(
             field, value, error, prefix='', instance=instance
         )
 

@@ -4,12 +4,17 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="w-100 drest-field--select2 drest-field {% if field.many %}many{% endif %} {% if field.errors %}drest-field--invalid{% endif %}">
+<div class="w-100 drest-field--select2 drest-field{% if field.many %} many{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
     <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
 
     <div class="drest-field__select w-100">
-        <select class='w-100' id="{{ field.id }}" {% if field.many %}multiple="multiple"{% endif %} name="{{ field.name }}">
-    </select>
+        <select
+            class='w-100'
+            id="{{ field.id }}"
+            {% if field.many %}multiple="multiple"{% endif %}
+            {% if field.read_only %}disabled{% endif %}
+            name="{{ field.name }}">
+        </select>
     </div>
 
     {% if field.errors %}

@@ -1,6 +1,6 @@
 <div class="drest-field row justify-content-between">
     <div class="col-4">
-        <label class="form-control-label">{{ field.label }}</label>
+        <label>{{ field.label }}</label>
     </div>
     <div class="col-8 mdc-checkbox {% if field.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
         <input
@@ -8,12 +8,11 @@
             type="checkbox"
             name="{{ field.name }}"
             id="{{ field.id }}"
-            {% if field.value == None %}
-                indeterminate=true
-            {% else %}
-                {% if field.value %}
-                    checked
-                {% endif %}
+            {% if field.value %}
+                checked
+            {% endif %}
+            {% if field.read_only %}
+                disabled
             {% endif %}
         >
 
@@ -40,7 +39,11 @@
             var $t = $(this);
             $t.attr('value', $t.is(':checked'));
         });
-        $field.attr('value', $field.is(':checked'));
+        var is_null = {% if field.is_null %}true{% else %}false{% endif %};
+        if (is_null){
+            $field[0].indeterminate = true;
+        }
+        $field.attr('value', is_null ? null : $field.is(':checked'));
 
     });
 </script>

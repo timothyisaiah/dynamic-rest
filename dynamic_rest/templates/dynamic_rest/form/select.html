@@ -6,6 +6,7 @@
     <select
         {% if field.required and not field.allow_null %}required{% endif %}
         id="{{ field.id }}"
+        {% if field.read_only %}disabled{% endif %}
         class="w-100 mdc-select__native-control"
         name="{{ field.name }}"
     >

@@ -2,12 +2,16 @@
 
 {% if style.input_type == "text" or style.input_type == "password" or style.input_type == "number" %}
     <div class="drest-field">
-        <div class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+        <div
+            class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if field.value %}mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}"
+            data-mdc-auto-init="MDCTextField">
             <input
                 class="mdc-text-field__input"
                 name="{{ field.name }}"
                 type="{{ style.input_type }}"
                 id="{{ field.id }}-input"
+                {% if field.read_only %}disabled{% endif %}
+
                 {% if field.errors or field.help_text %}
                     aria-controls="{{ field.id }}-helper"
                     aria-describedby="{{ field.id }}-helper"
@@ -20,7 +24,13 @@
                 {% endif %}
                 value="{{ field.value }}"
             />
-            <label class="mdc-floating-label mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
+            <label
+                class="mdc-floating-label{% if field.value %} mdc-floating-label--float-above{% endif %}"
+                data-mdc-auto-init="MDCFloatingLabel"
+                for="{{ field.id }}-input"
+            >
+                {{ field.label }}
+            </label>
             <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
         </div>
         <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
@@ -37,26 +47,25 @@
 
     </div>
 {% else %}
-        <div class="drest-field drest-field--datetime">
-            <div class="mdc-text-field--fullwidth mdc-text-field {% if field.errors %}mdc-help-text--validation-msg mdc-text-field--invalid{% endif %}">
+    <div class="drest-field drest-field--datetime {% if field.errors %}drest-field--invalid{% endif %}">
+        <div
+            class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth{% if field.value %} mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}">
             <label
                 class="drest-field__label"
-                for="{{ field.id }}-input"
-            >
+                for="{{ field.id }}-input">
                 {{ field.label }}
             </label>
             <input
                 id="{{ field.id }}-input"
                 name="{{ field.name }}"
+                {% if field.read_only %}disabled{% endif %}
                 data-type="{{ style.input_type }}"
                 class="mdc-text-field__input"
                 type="{% if style.input_type == "time" or style.input_type == "date" or style.input_type == "datetime-local" %}text{% else %}{{ style.input_type }}{% endif %}"
                 {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
                 {% if field.value %}value="{{ field.value }}"{% endif %}
-                {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}
-            >
-
-            <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+                {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}/>
+            <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--persistent {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
                 {% if field.errors %}
                     {% for error in field.errors %}
                         <span>{{error}}</span>

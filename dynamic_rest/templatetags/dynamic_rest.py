@@ -11,6 +11,7 @@ from django import template
 from django.utils.safestring import mark_safe
 from django.utils import six
 from dynamic_rest.conf import settings
+from dynamic_rest.renderers import DynamicHTMLFormRenderer
 from rest_framework.fields import get_attribute
 
 try:
@@ -21,6 +22,13 @@ except:  # noqa
 
 
 register = template.Library()
+
+
+@register.simple_tag
+def render_read_only_field(field, style):
+    field._field.read_only = True
+    renderer = style.get('renderer', DynamicHTMLFormRenderer())
+    return renderer.render_field(field, style)
 
 
 @register.filter
@@ -58,6 +66,7 @@ def as_id_to_name(field):
         value = [value]
 
     result = {}
+    model = serializer.get_model()
     for v in value:
         if v:
             if hasattr(v, 'instance'):
@@ -66,9 +75,12 @@ def as_id_to_name(field):
                 if v is None:
                     continue
                 else:
-                    instance = serializer.get_model().objects.get(
-                        pk=str(v)
-                    )
+                    if isinstance(v, model):
+                        instance = v
+                    else:
+                        instance = model.objects.get(
+                            pk=str(v)
+                        )
             result[str(instance.pk)] = get_attribute(instance, source_attrs)
     return mark_safe(json.dumps(result))
 

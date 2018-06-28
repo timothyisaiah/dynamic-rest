@@ -342,6 +342,12 @@
 
 /** drest-field **/
 
+.drest-field label,
+.drest-field .select2-selection__placeholder {
+    color: rgba(0, 0, 0, 0.6);
+    letter-spacing: 0.00937em;
+    font-weight: 400;
+}
 .drest-field .mdc-text-field-helper-text.push-up {
     position: relative;
     top: -10px;
@@ -419,6 +425,15 @@
 
 /** drest-field--select2 **/
 
+.mdc-card--relation .drest-field.drest-field--select2 .drest-field__label {
+    opacity: 0;
+}
+.mdc-card--relation .drest-field.drest-field--select2 .select2-container .select2-search__field::placeholder {
+    opacity: 0;
+}
+.mdc-card--relation .drest-field.drest-field--select2.drest-field--disabled .select2-selection {
+    border-bottom: 1px solid transparent;
+}
 .drest-field.drest-field--select2.drest-field--selected:not(.many) .drest-field__label {
     transform: scale(0.75);
 }
@@ -555,7 +570,14 @@
   margin-top: 0;
   /* Match input[type=text] */
   height: 34px;
+  background: transparent;
   line-height: 1;
+}
+.drest-field.drest-field--select2 .select2-container--disabled .select2-selection__clear {
+    opacity: 0;
+}
+.drest-field.drest-field--select2 .select2-container--disabled .select2-selection__choice__remove {
+    display: none;
 }
 .drest-field.drest-field--select2 .select2-container--material ul.select2-selection__rendered {
     margin-bottom: 0px;

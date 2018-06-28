@@ -32,7 +32,7 @@ mapping[fields.DynamicNullBooleanField] = {
 
 
 class DynamicHTMLFormRenderer(HTMLFormRenderer):
-    template_pack = 'dynamic_rest/horizontal'
+    template_pack = 'dynamic_rest/form'
     default_style = ClassLookupDict(mapping)
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
@@ -88,6 +88,11 @@ class DynamicAdminRenderer(AdminRenderer):
         results = context.get('results')
 
         style = context.get('style')
+
+        render_style = {}
+        render_style['template_pack'] = self.form_renderer_class.template_pack
+        render_style['renderer'] = self.form_renderer_class()
+
         paginator = context.get('paginator')
         columns = context.get('columns')
         serializer = getattr(results, 'serializer', None)
@@ -103,50 +108,15 @@ class DynamicAdminRenderer(AdminRenderer):
         filters = {}
         create_related_forms = {}
 
-        instance_name = None
-
         if serializer:
-            if instance:
-                try:
-                    name_field_name = serializer.get_name_field()
-                    name_field = serializer.get_field(name_field_name)
-                    name_source = name_field.source or name_field_name
-                    instance_name = getattr(
-                        instance, name_source, str(instance.pk)
-                    )
-                except AttributeError:
-                    instance_name = None
-                for related_name, field in serializer.get_link_fields(
-                ).items():
-                    kwargs = {
-                        'request_fields': None,
-                        'many': False
-                    }
-                    inverse_field_name = field.get_inverse_field_name()
-                    if inverse_field_name:
-                        kwargs['exclude_fields'] = [inverse_field_name]
-                    related_serializer = field.get_serializer(**kwargs)
-                    related_serializer.set_request_method('POST')
-                    has_permission = (
-                        not getattr(related_serializer, 'permissions', None) or
-                        related_serializer.permissions.create
-                    )
-                    can_create = field.create and (
-                        field.many or not results.get(related_name)
-                    )
-                    has_source = field.source != '*'
-                    if (
-                        has_source and
-                        can_create and
-                        has_permission
-                    ):
-                        create_related_forms[related_name] = (
-                            related_serializer,
-                            self.render_form_for_serializer(
-                                related_serializer
-                            )
-                        )
-
+            create_related_forms = {
+                name: (
+                    serializer,
+                    self.render_form_for_serializer(serializer)
+                )
+                for name, serializer
+                in serializer.create_related_serializers.items()
+            }
             filters = serializer.get_filters()
             meta = serializer.get_meta()
             singular_name = serializer.get_name().title()
@@ -294,7 +264,8 @@ class DynamicAdminRenderer(AdminRenderer):
                 allowed.discard('list')
 
         from dynamic_rest.routers import get_directory
-        context['instance_name'] = instance_name
+
+        context['render_style'] = render_style
         context['directory'] = get_directory(request, icons=True)
         context['filters'] = filters
         context['num_filters'] = sum([
@@ -389,7 +360,7 @@ class DynamicAdminRenderer(AdminRenderer):
         return form_renderer.render(
             serializer.data,
             self.accepted_media_type,
-            {'style': {'template_pack': 'dynamic_rest/horizontal'}}
+            {'style': {'template_pack': 'dynamic_rest/form'}}
         )
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
