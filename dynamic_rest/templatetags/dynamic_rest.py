@@ -25,6 +25,37 @@ register = template.Library()
 
 
 @register.simple_tag
+def get_image_url(field):
+    # field = UI + DynamicRelationField
+
+    instance = field.value
+
+    if not instance:
+        return None
+
+    serializer = field.serializer
+    if not serializer:
+        return None
+
+    image_field_name = serializer.get_image_field()
+
+    if not image_field_name:
+        return None
+
+    image_field = serializer.get_field(image_field_name)
+
+    if not image_field:
+        return None
+
+    image = getattr(
+        instance,
+        image_field.source or image_field_name,
+        None
+    )
+    return getattr(image, 'url', None)
+
+
+@register.simple_tag
 def render_read_only_field(field, style):
     field._field.read_only = True
     renderer = style.get('renderer', DynamicHTMLFormRenderer())

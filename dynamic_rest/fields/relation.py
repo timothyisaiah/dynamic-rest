@@ -46,7 +46,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             sideloading=None,
             debug=False,
             inverse=None,
-            create=True,
+            create=False,
             **kwargs
     ):
         """

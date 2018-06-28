@@ -137,6 +137,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_name_field(self):
         return self.child.get_name_field()
 
+    def get_image_field(self):
+        return self.child.get_image_field()
+
     def get_class_getter(self):
         return self.child.get_class_getter()
 
@@ -773,6 +776,13 @@ class WithDynamicSerializerMixin(
             # fallback to primary key
             return 'pk'
         return cls.Meta.name_field
+
+    @classmethod
+    def get_image_field(cls):
+        if not hasattr(cls.Meta, 'image_field'):
+            # fallback to primary key
+            return None
+        return cls.Meta.image_field
 
     @classmethod
     def get_search_key(cls):

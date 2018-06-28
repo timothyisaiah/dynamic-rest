@@ -3,7 +3,8 @@
 {% load dynamic_rest %}
 
 {% if field.type == 'image' %}
-    <div class="drest-field--file drest-field{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
+    {% get_image_url field as image_url %}
+    <div class="drest-field--file drest-field{% if image_url %} drest-field--selected{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
         <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
         <div class="dropify-wrapper">
             <div class="dropify-message">
@@ -11,7 +12,7 @@
             </div>
             <div class="dropify-preview">
                 <span class="dropify-render">
-                    <img src="{{ field.value.file.url }}" />
+                    <img src="{% get_image_url field %}" />
                 </span>
             </div>
         </div>
