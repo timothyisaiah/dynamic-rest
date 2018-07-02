@@ -16,13 +16,15 @@
         </select>
     </div>
 
-    {% if field.errors %}
-        <p id="{{ field.id }}-helper" class="push-up mdc-text-field-helper-text--persistent mdc-text-field-helper-text" aria-hidden="false">
+    <p id="{{ field.id }}-helper" class="push-up {% if field.errors %}mdc-text-field-helper-text--persistent{% endif %} mdc-text-field-helper-text" aria-hidden="false">
+        {% if field.errors %}
             {% for error in field.errors %}
                 <span>{{error}}</span>
             {% endfor %}
-        </p>
-    {% endif %}
+        {% else %}
+            <span>{{ field.help_text | help_text_format | safe }}</span>
+        {% endif %}
+    </p>
 </div>
 
 {% include "./field-js.html" %}

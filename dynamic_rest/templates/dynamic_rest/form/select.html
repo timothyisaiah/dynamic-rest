@@ -2,7 +2,7 @@
 {% load dynamic_rest %}
 
 <div id="{{ field.id }}" class="drest-field drest-field--select {% if field.read_only %}drest-field--disabled{% endif%}">
-    <div class="w-100 mdc-select {% if field.errors %}mdc-text-field--invalid{% endif %}" data-mdc-auto-init="MDCSelect">
+    <div class="w-100 mdc-select {% if field.read_only %}mdc-select--disabled {% endif %}{% if field.errors %}mdc-text-field--invalid{% endif %}" data-mdc-auto-init="MDCSelect">
     <select
         {% if field.required and not field.allow_null %}required{% endif %}
         id="{{ field.id }}-input"

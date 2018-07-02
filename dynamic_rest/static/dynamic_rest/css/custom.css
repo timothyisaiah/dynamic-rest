@@ -350,6 +350,22 @@
 }
 
 /** drest-field **/
+.drest-field--changed.drest-field--select2:not(.drest-field--invalid) .select2-container .select2-selection,
+.drest-field--changed.drest-field--datetime:not(.drest-field--invalid) .mdc-text-field__input {
+  /* @extend input[type=text]:focus */
+  border-bottom: 1px solid var(--mdc-theme-secondary);
+  box-shadow: 0 1px 0 0 var(--mdc-theme-secondary);
+}
+.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-floating-label,
+.drest-field.drest-field--changed:not(.drest-field--invalid) .drest-field__label {
+    color: var(--mdc-theme-secondary);
+}
+.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-text-field .mdc-line-ripple,
+.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-select .mdc-line-ripple {
+    background-color: var(--mdc-theme-secondary);
+    transform: scaleX(1);
+    opacity: 1;
+}
 
 .drest-field label,
 .drest-field .select2-selection__placeholder {
@@ -403,9 +419,15 @@
 }
 /** drest-section **/
 .drest-section .drest-field {
-    margin-bottom: 0.6rem;
-    margin-top: 0.6rem;
-    transition: all .3s;
+    transition: all .5s;
+}
+.drest-form.drest-form--readonly .drest-field {
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+.drest-form .drest-field {
+    margin-bottom: 1rem;
+    margin-top: 1rem;
 }
 .drest-section .drest-field:first-child {
     margin-top: 0rem;
@@ -413,13 +435,9 @@
 .drest-section .drest-field:last-child {
     margin-bottom: 0rem;
 }
-.drest-form.drest-form--readonly .drest-field {
-    margin-top: 0.1rem;
-    margin-bottom: 0.1rem;
-}
 .drest-form.drest-form--readonly .drest-field .mdc-text-field__input,
 .drest-form.drest-form--readonly .drest-field .select2-selection__rendered {
-    color: black;
+    color: rgba(0,0,0,0.7);
 }
 .drest-section .drest-field:first-child {
     margin-top: 0rem;
@@ -583,13 +601,13 @@
 .drest-field--select2 .select2-container--material .select2-selection--multiple .select2-selection__rendered li {
   list-style: none;
 }
-.drest-form.drest-form--readonly .drest-field--select2 .select2-container--material .select2-selection--multiple .select2-selection__choice {
+.drest-field--select2.drest-field--disabled .select2-container--material .select2-selection--multiple .select2-selection__choice {
     background-color: transparent;
     font-size: 1rem;
     padding: 0;
 }
-.drest-form.drest-form--readonly .drest-field--relation .select2-container--material .select2-selection--multiple .select2-selection__choice,
-.drest-form.drest-form--readonly .drest-field--relation .select2-container--material .select2-selection__rendered {
+.drest-field--relation.drest-field--disabled .select2-container--material .select2-selection--multiple .select2-selection__choice,
+.drest-field--relation.drest-field--disabled .select2-container--material .select2-selection__rendered {
     color: var(--mdc-theme-primary);
 }
 .drest-field--select2 .select2-container--material .select2-selection--multiple .select2-selection__choice {
@@ -602,7 +620,7 @@
   border: 0;
   border-radius: 16px;
   background-color: #dedede;
-  color: rgba(0, 0, 0, 0.87);
+  /* color: rgba(0, 0, 0, 0.87); */
   margin: 2px 0;
   font-size: 0;
   white-space: nowrap;
@@ -624,7 +642,7 @@
   margin-left: 6px;
   transition: opacity;
 }
-.drest-form.drest-form--readonly .drest-field.drest-field--relation .select2-container--material .select2-selection--multiple .select2-selection__choice__remove::before {
+.drest-field.drest-field--disabled.drest-field--relation .select2-container--material .select2-selection--multiple .select2-selection__choice__remove::before {
     display: none;
 }
 .drest-field.drest-field--select2 .select2-container--material .select2-selection--multiple .select2-selection__choice__remove::before {
@@ -657,11 +675,24 @@
   background: transparent;
   line-height: 1;
 }
+.drest-field--disabled input[type=number]::-webkit-outer-spin-button,
+.drest-field--disabled input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.drest-field.drest-field--disabled input[type=number] {
+    -moz-appearance:textfield;
+}
+
 .drest-field.drest-field--select2 .select2-container--disabled .select2-selection__clear {
     opacity: 0;
 }
 .drest-form.drest-form--readonly .drest-field.drest-field--select2:not(.drest-field--relation) .select2-container--disabled .select2-selection__choice__remove {
     display: none;
+}
+.drest-field.drest-field--disabled.drest-field--select .mdc-select {
+    background-image: none;
 }
 .drest-field.drest-field--select2 .select2-container--material ul.select2-selection__rendered {
     margin-bottom: 0px;

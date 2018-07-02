@@ -4,6 +4,7 @@ import re
 import os
 import json
 
+from decimal import Decimal
 from django.db.models.fields.files import FieldFile
 from django.http.request import QueryDict
 from urlparse import urlparse, urlunparse
@@ -170,8 +171,10 @@ def field_to_json(field):
     )
     if isinstance(value, UUID):
         value = str(value)
-    if isinstance(value, FieldFile):
+    elif isinstance(value, FieldFile):
         value = value.url
+    elif isinstance(value, Decimal):
+        value = str(value)
 
     if not related_serializer:
         return to_json(value)
