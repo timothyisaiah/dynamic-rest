@@ -19,7 +19,7 @@
         var per_page = 25;
         // set initial values
         var many = {% if many %}true{% else %}false{% endif %};
-        var values = {{ field | as_id_to_name }};
+        var value = values = {% relation_filter_value field value many %};
         var selected = [];
         var initials = [];
         // get field/serializer info
@@ -34,18 +34,36 @@
         if (pkField !== nameField) {
             includes.push(nameField);
         }
-        for (var v in values) {
-            var val = values[v];
-            initials.push({
-                id: v,
-                text: val,
-                name: val,
-                selected: true
-            });
-            selected.push(v);
-        }
-        if (!many) {
-            selected = selected[0];
+        if (many) {
+            selected = [];
+            initials = [];
+            if (value) {
+                for (var v in value) {
+                    if (value.hasOwnProperty(v)) {
+                        v = value[v];
+                        initials.push({
+                            id: v.id,
+                            text: v[nameField],
+                            name: v[nameField],
+                            selected: true
+                        });
+                        selected.push(v.id);
+                    }
+                }
+            }
+        } else {
+            if (value && value.id) {
+                initials = [{
+                    id: value.id,
+                    text: value[nameField],
+                    name: value[nameField],
+                    selected: true
+                }];
+                selected = value.id;
+            } else {
+                initials = [];
+                selected = null;
+            }
         }
         var $select2 = $("select.filter[name='" + fieldName + "']");
         var select2 = $select2[0];

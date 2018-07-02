@@ -1,7 +1,7 @@
 {% load dynamic_rest %}
 
 {% if style.input_type == "text" or style.input_type == "password" or style.input_type == "number" %}
-    <div class="drest-field">
+    <div id="{{ field.id }}" class="drest-field {% if field.errors %}drest-field--invalid{% endif %}">
         <div
             class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if field.value %}mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}"
             data-mdc-auto-init="MDCTextField">
@@ -10,8 +10,9 @@
                 name="{{ field.name }}"
                 type="{{ style.input_type }}"
                 id="{{ field.id }}-input"
-                {% if field.read_only %}disabled{% endif %}
-
+                {% if field.read_only %}
+                    disabled
+                {% endif %}
                 {% if field.errors or field.help_text %}
                     aria-controls="{{ field.id }}-helper"
                     aria-describedby="{{ field.id }}-helper"
@@ -33,21 +34,23 @@
             </label>
             <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
         </div>
-        <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
-            {% if field.errors %}
-                {% for error in field.errors %}
-                    <span>{{error}}</span>
-                {% endfor %}
-            {% else %}
-                {% if field.help_text %}
-                    {{ field.help_text | help_text_short_format | safe }}
+        <p
+            id="{{ field.id }}-helper"
+            class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text"
+            aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+                {% if field.errors %}
+                    {% for error in field.errors %}
+                        <span>{{error}}</span>
+                    {% endfor %}
+                {% else %}
+                    {% if field.help_text %}
+                        {{ field.help_text | help_text_short_format | safe }}
+                    {% endif %}
                 {% endif %}
-            {% endif %}
         </p>
-
     </div>
 {% else %}
-    <div class="drest-field drest-field--datetime {% if field.errors %}drest-field--invalid{% endif %}">
+    <div id="{{ field.id }}" class="drest-field--datetime drest-field {% if field.errors %}drest-field--invalid{% endif %}">
         <div
             class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth{% if field.value %} mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}">
             <label
@@ -79,3 +82,5 @@
         </div>
     </div>
 {% endif %}
+
+{% include "./field-js.html" %}

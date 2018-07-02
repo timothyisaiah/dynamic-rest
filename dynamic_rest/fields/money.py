@@ -11,14 +11,8 @@ class DynamicMoneyFieldBase(
     def admin_get_icon(self, instance, value):
         return 'cash-usd'
 
-    def prepare_value(self, instance):
-        value = super(DynamicMoneyFieldBase, self).prepare_value(
-            instance
-        )
-        value = money_format(
-            value,
-        )
-        return value
+    def admin_render_value(self, value):
+        return money_format(value)
 
 
 class DynamicMoneyField(

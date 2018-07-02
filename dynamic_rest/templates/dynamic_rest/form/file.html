@@ -1,4 +1,4 @@
-<div class="drest-field--file drest-field {% if field.errors %}drest-field--invalid{% endif %}">
+<div id="{{ field.id }}" class="drest-field--file drest-field {% if field.errors %}drest-field--invalid{% endif %}">
     <label for="{{ field.id }}-input" class="drest-field__label">
         {{ field.label }}
     </label>
@@ -17,6 +17,9 @@
         {% if field.required and not field.allow_null %}
             required
         {% endif %}
+        {% if field.read_only %}
+            disabled
+        {% endif %}
     >
 
     <p class="mdc-text-field-helper-text {% if field.errors %}mdc-text-field-helper-text--persistent{% endif %}" id="{{ field.id }}-helper">
@@ -28,3 +31,5 @@
     </p>
 
 </div>
+
+{% include "./field-js.html" %}

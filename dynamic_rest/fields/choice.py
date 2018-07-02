@@ -7,14 +7,9 @@ class DynamicChoiceField(
     DynamicField,
     ChoiceField,
 ):
-    def __init__(self, *args, **kwargs):
-        self.controls = kwargs.pop('controls', {})
-        super(DynamicChoiceField, self).__init__(*args, **kwargs)
-
-    def prepare_value(self, instance):
+    def admin_render_value(self, value):
         model = self.parent_model
         source = self.source or self.field_name
         choices = Meta(model).get_field(source).choices
-        value = getattr(instance, source, None)
         choices = dict(choices).get(value, None)
         return choices

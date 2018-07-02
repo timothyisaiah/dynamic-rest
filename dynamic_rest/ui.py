@@ -11,6 +11,41 @@ from dynamic_rest.utils import is_truthy
 from dynamic_rest import fields as dfields
 
 
+def get_type_for(field):
+    if isinstance(field, dfields.DynamicChoiceField):
+        return "select"
+    elif isinstance(field, dfields.DynamicIntegerField):
+        return 'integer'
+    elif isinstance(
+        field,
+        (
+            dfields.DynamicBooleanField,
+            dfields.DynamicNullBooleanField
+        )
+    ):
+        return 'boolean'
+    elif isinstance(field, dfields.DynamicDecimalField):
+        return 'decimal'
+    elif isinstance(field, dfields.DynamicDateField):
+        return 'date'
+    elif isinstance(field, dfields.DynamicDateTimeField):
+        return 'datetime'
+    elif isinstance(field, dfields.DynamicRelationField):
+        return "relation"
+    elif isinstance(field, dfields.DynamicListField):
+        return "list"
+    elif isinstance(
+        field,
+        (
+            dfields.DynamicFileField,
+            dfields.DynamicImageField
+        )
+    ):
+        return "file"
+    else:
+        return "text"
+
+
 class UIField(object):
     """
     A field object that also includes `.value` and `.error` properties
@@ -29,6 +64,7 @@ class UIField(object):
         self.errors = errors
         self.instance = instance
         self.name = prefix + self.field_name
+        self.type = get_type_for(self._field)
         self.is_null = value is None or value == ''
 
     def __getattr__(self, attr_name):
@@ -116,9 +152,7 @@ class UISection(object):
         self.fields = []
         self.instance = instance
         for field in fields:
-            self.fields.append(
-                serializer.get_field_value(field, instance)
-            )
+            self.fields.append(serializer.get_field_value(field, instance))
         if len(self.fields) == 1:
             self.field = self.fields[0]
         else:
@@ -164,24 +198,6 @@ class UIFilter(object):
         # resolve options
         self.resolve()
 
-    def get_type_for(self, field):
-        if isinstance(field, dfields.DynamicChoiceField):
-            return "select"
-        elif isinstance(field, dfields.DynamicIntegerField):
-            return 'integer'
-        elif isinstance(field, dfields.DynamicBooleanField):
-            return 'boolean'
-        elif isinstance(field, dfields.DynamicDecimalField):
-            return 'decimal'
-        elif isinstance(field, dfields.DynamicDateField):
-            return 'date'
-        elif isinstance(field, dfields.DynamicDateTimeField):
-            return 'datetime'
-        elif isinstance(field, dfields.DynamicRelationField):
-            return "relation"
-        else:
-            return "text"
-
     def get_choices_for(self, field):
         choices = getattr(field, 'choices', None)
         if choices:
@@ -194,18 +210,9 @@ class UIFilter(object):
 
     def get_key_for(self, name):
         type = self.type
-        if type in (
-            "select",
-            "relation",
-            "boolean"
-        ):
+        if type in ("select", "relation", "boolean"):
             return 'filter{%s.in}' % name
-        elif type in (
-            "date",
-            "datetime",
-            "integer",
-            "decimal"
-        ):
+        elif type in ("date", "datetime", "integer", "decimal"):
             return 'filter{%s.range}' % name
         elif type == 'text':
             return 'filter{%s.icontains}' % name
@@ -214,24 +221,21 @@ class UIFilter(object):
 
     def resolve(self):
         if isinstance(self.options, six.string_types):
-            self.options = {
-                'field': self.options
-            }
+            self.options = {'field': self.options}
         name = self.name
         field_name = self.options.get('field', None)
         key = self.options.get('key', None)
         type = self.options.get('type', None)
         choices = self.options.get('choices', None)
         help_text = self.options.get('help_text', None)
-        self.label = self.options.get(
-            'label',
-            (field_name or name).title().replace('_', ' ')
-        )
+        self.label = self.options.get('label', (field_name
+                                                or name).title().replace(
+                                                    '_', ' '))
         self.many = self.options.get('many', True)
         if field_name:
             field = self.serializer.get_field(field_name)
             self.field = field
-            self.type = self.get_type_for(field)
+            self.type = get_type_for(field)
             self.key = self.get_key_for(field_name)
             self.choices = self.get_choices_for(field)
             self.help_text = getattr(field, 'help_text', None)
@@ -253,10 +257,7 @@ class UIFilter(object):
             self.field.value = self.value
 
     def render(self):
-        template_name = '%s/%s.html' % (
-            self.base_template_path,
-            self.type
-        )
+        template_name = '%s/%s.html' % (self.base_template_path, self.type)
         template = loader.get_template(template_name)
         context = {
             'serializer': self.serializer,

@@ -4,12 +4,12 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="drest-field drest-field--select2 many {% if field.errors %}drest-field--invalid{% endif %}">
-    <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
+<div id="{{ field.id }}" class="drest-field drest-field--select2 many {% if field.errors %}drest-field--invalid{% endif %}">
+    <label for="{{ field.id }}-input" class="drest-field__label">{{ field.label }}</label>
 
     <div class="drest-field__select">
         <select
-            id="{{ field.id }}"
+            id="{{ field.id }}-input"
             multiple="multiple"
             {% if field.read_only %}disabled{% endif %}
             name="{{ field.name }}">
@@ -25,55 +25,4 @@
     {% endif %}
 </div>
 
-<script>
-    $(document).ready(function() {
-        // set initial values
-        var values = {{field.value | to_json | safe}};
-        var $el = $("#{{ field.id }}");
-        var placeholder = '{{ field.label }}';
-        var $parent = $el.closest('.drest-field');
-        for (var v in values) {
-            if (values.hasOwnProperty(v)) {
-                var value = values[v];
-                $el.append(
-                    '<option selected="selected">' + value + '</option>'
-                );
-            }
-        }
-        $el.select2({
-            tags: true,
-            placeholder: placeholder,
-            theme: 'material',
-            minimumInputLength: 1,
-            language: {
-                inputTooShort: function() {
-                    return {% if field.help_text %}"{{ field.help_text | help_text_short_format | safe }}"{% else %}"Start typing"{% endif %};
-                }
-            },
-            dropdownParent: $parent
-        });
-        $el.on('select2:open', function(e){
-            $parent.addClass('drest-field--focused');
-        });
-        $el.on('change', function() {
-            var val = $el.val();
-            if (!val || typeof val === 'undefined') {
-                $parent.removeClass('drest-field--selected');
-            } else {
-                $parent.addClass('drest-field--selected');
-            }
-        });
-        if ($el.val()) {
-            $parent.addClass('drest-field--selected');
-        }
-        $el.on('select2:close', function(e){
-            $parent.removeClass('drest-field--focused');
-            $parent.removeClass('drest-field--invalid');
-        });
-        $el.data('select2').on('results:message', function() {
-            this.dropdown._resizeDropdown();
-            this.dropdown._positionDropdown();
-        });
-        $el.trigger('change');
-    });
-</script>
+{% include "./field-js.html" %}

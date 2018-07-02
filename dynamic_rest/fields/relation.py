@@ -47,6 +47,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             debug=False,
             inverse=None,
             create=False,
+            image=False,
             **kwargs
     ):
         """
@@ -72,6 +73,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self.sideloading = sideloading
         self.debug = debug
         self.create = create
+        self.image = image
         self.inverse = inverse
         self.embed = embed if sideloading is None else not sideloading
         if 'link' in kwargs:
@@ -79,8 +81,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if 'to_field' in kwargs:
             # TODO: support this properly
             self.to_field = kwargs.pop('to_field')
-
-        self.type = kwargs.pop('type', 'normal')
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 

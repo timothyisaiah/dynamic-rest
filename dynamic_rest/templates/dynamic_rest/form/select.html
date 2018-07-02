@@ -1,11 +1,11 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div class="drest-field drest-field--select {% if field.read_only %}drest-field--disabled{% endif%}">
+<div id="{{ field.id }}" class="drest-field drest-field--select {% if field.read_only %}drest-field--disabled{% endif%}">
     <div class="w-100 mdc-select {% if field.errors %}mdc-text-field--invalid{% endif %}" data-mdc-auto-init="MDCSelect">
     <select
         {% if field.required and not field.allow_null %}required{% endif %}
-        id="{{ field.id }}"
+        id="{{ field.id }}-input"
         {% if field.read_only %}disabled{% endif %}
         class="w-100 mdc-select__native-control"
         name="{{ field.name }}"
@@ -29,7 +29,6 @@
           {% endif %}
       {% endfor %}
     </select>
-
       <label data-mdc-auto-init="MDCFloatingLabel" class="mdc-floating-label" for="{{ field.id }}">
         {{ field.label }}
       </label>
@@ -50,37 +49,4 @@
     </p>
 </div>
 
-{% if field.controls %}
-    <script>
-        $(document).ready(function() {
-            var fieldId = "#{{ field.id }}";
-            var controls = {{ field.controls | to_json }};
-            var $field = $(fieldId);
-            var $form = $field.closest('form');
-            var fieldChanged = function() {
-                var value = $field.val() || '';
-                var show = controls[value];
-                $form.find('input, select, radio, textarea')
-                .each(function() {
-                    var $f = $(this);
-                    if ($f.attr('disabled')) {
-                        return;
-                    }
-                    var $target = $f.closest('.drest-field');
-                    var name = $f.attr('name');
-                    if (!show || show.length === 0) {
-                        $target.show();
-                    } else {
-                        if (show.indexOf(name) > -1)  {
-                            $target.show();
-                        } else {
-                            $target.hide();
-                        }
-                    }
-                });
-            }
-            $field.on('change', fieldChanged);
-            fieldChanged();
-        });
-    </script>
-{% endif %}
+{% include "./field-js.html" %}

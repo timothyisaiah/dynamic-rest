@@ -2,10 +2,11 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-{% if field.type == 'image' %}
+{% if field.image %}
     {% get_image_url field as image_url %}
-    <div class="drest-field--file drest-field{% if image_url %} drest-field--selected{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
+    <div id="{{ field.id }}" class="drest-field--file drest-field--relation drest-field{% if image_url %} drest-field--selected{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
         <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
+        <input type="hidden" value={{ field | field_to_json }} id="{{field.id}}-input">
         <div class="dropify-wrapper">
             <div class="dropify-message">
                 <span class="material-icons medium">image</span>
@@ -20,155 +21,32 @@
 
 {% else %}
 
-{% trans "No items to select." as no_items %}
+    {% trans "No items to select." as no_items %}
 
-<div class="drest-field--relation w-100 drest-field--select2 drest-field{% if field.many %} many{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
-    <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
+    <div id="{{ field.id }}" class="drest-field--relation w-100 drest-field--relation drest-field--select2 drest-field{% if field.many %} many{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
+        <label for="{{ field.id }}-input" class="drest-field__label">{{ field.label }}</label>
 
-    <div class="drest-field__select w-100">
-        <select
-            class='w-100'
-            id="{{ field.id }}"
-            {% if field.many %}multiple="multiple"{% endif %}
-            {% if field.read_only %}disabled{% endif %}
-            name="{{ field.name }}">
-        </select>
+        <div class="drest-field__select w-100">
+            <select
+                class='w-100'
+                id="{{ field.id }}-input"
+                {% if field.many %}multiple="multiple"{% endif %}
+                {% if field.read_only %}disabled{% endif %}
+                name="{{ field.name }}">
+            </select>
+        </div>
+
+        {% if field.errors %}
+            <p id="{{ field.id }}-helper" class="mdc-text-field-helper-text--persistent push-up mdc-text-field-helper-text" aria-hidden="false">
+                {% for error in field.errors %}
+                    <span>{{error}}</span>
+                {% endfor %}
+            </p>
+        {% endif %}
+
     </div>
 
-    {% if field.errors %}
-        <p id="{{ field.id }}-helper" class="mdc-text-field-helper-text--persistent push-up mdc-text-field-helper-text" aria-hidden="false">
-            {% for error in field.errors %}
-                <span>{{error}}</span>
-            {% endfor %}
-        </p>
-    {% endif %}
-
-</div>
-
-<script>
-    $(document).ready(function() {
-        var per_page = 25;
-        // set initial values
-        var values = {{field | as_id_to_name}};
-        var selected = [];
-        var initials = [];
-        // get field/serializer info
-        var fieldName = '{{ field.name }}';
-        var nameField = '{{ field.get_name_field }}';
-        var searchKey = '{{ field.get_search_key }}';
-        var pkField = '{{ field.get_pk_field }}';
-        var resourceName = '{{ field.serializer.get_name }}';
-        var pluralName = '{{ field.get_plural_name }}';
-        var url = '{{ field.get_url }}';
-        var includes = [pkField];
-        if (pkField !== nameField) {
-            includes.push(nameField);
-        }
-        for (var s in values) {
-            s = s ? s.toString() : s;
-            initials.push({
-                id: s,
-                text: values[s],
-                name: values[s],
-                selected: true
-            });
-            selected.push(s);
-        }
-        var many = {% if field.many %}true{% else %}false{% endif %};
-        if (!many) {
-            selected = selected[0];
-        }
-        var $select2 = $("#{{ field.id }}");
-        var select2 = $select2[0];
-        var $parent = $('#{{ field.id }}').closest('.drest-field');
-        $select2.select2({
-            data: initials,
-            dropdownParent: $parent,
-            language: {
-                inputTooShort: function() {
-
-                    return {% if field.help_text %}"{{ field.help_text | help_text_short_format | safe }}"{% else %}"Start typing the name of a " + resourceName{% endif %};
-                }
-            },
-            width: 'resolve',
-            theme: 'material',
-            placeholder: {% if not field.many %}{id: "", placeholder: "{{ field.label }}"}{% else %}"{{ field.label }}"{% endif %},
-            allowClear: {% if not field.required or field.allow_null%}true{% else %}false{% endif %},
-            ajax: {
-                url: url,
-                dataType: "json",
-                delay: 250,
-                data: function(params) {
-                  var result = {
-                    page: params.page,
-                    per_page: per_page,
-                  };
-                  result[searchKey] = params.term;
-                  result['exclude[]'] = '*';
-                  result['include[]'] = includes;
-                  return result;
-                },
-                processResults: function(data, params) {
-                  params.page = params.page || 1;
-                  var meta = data.meta;
-                  var result = {
-                    results: data[pluralName],
-                    pagination: {
-                      more: meta ? meta.page < meta.total_pages : false
-                    }
-                  };
-                  return result;
-                }
-            },
-            escapeMarkup: function(markup) {
-                return markup;
-            },
-            templateResult: function(item) {
-                if (item.placeholder) return item.placeholder;
-                if (nameField == 'pk') {
-                    return item.links ? item.links.self : item.id;
-                }
-                return item[nameField];
-            },
-            templateSelection: function(item) {
-                if (item.placeholder) return item.placeholder;
-                if (nameField == 'pk') {
-                    return item.links ? item.links.self : item.id;
-                }
-                return item[nameField];
-            },
-            minimumInputLength: 1,
-        });
-        $select2.on('select2:open', function(e){
-            $parent.addClass('drest-field--focused');
-
-            var data = $select2.data('select-2');
-        });
-        $select2.data('select2').on('results:message', function() {
-            this.dropdown._resizeDropdown();
-            this.dropdown._positionDropdown();
-        });
-        $select2.on('select2:close', function(e){
-            $parent.removeClass('drest-field--focused');
-            $parent.removeClass('drest-field--invalid');
-        });
-        $select2.on('select2:select', function(e){
-            $parent.addClass('drest-field--selected');
-        });
-        $select2.on('change', function() {
-            var val = $(select2).val();
-            if (!val || typeof val === 'undefined') {
-                $parent.removeClass('drest-field--selected');
-            } else {
-                $parent.addClass('drest-field--selected');
-            }
-        });
-        if ($select2.val()) {
-            $parent.addClass('drest-field--selected');
-        }
-
-        $(select2).val(selected).trigger('change');
-    });
-</script>
 
 {% endif %}
+
+{% include "./field-js.html" %}

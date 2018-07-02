@@ -1,0 +1,31 @@
+{% load dynamic_rest %}
+
+<script>
+$(document).ready(function() {
+    var field = new drest.DRESTField({
+        id: "{{ field.id }}",
+        label: {{ field.label | to_json }},
+        readOnly: {{ field.read_only | to_json }},
+        writeOnly: {{ field.write_only | to_json }},
+        helpText: "{{ field.help_text | help_text_format | escapejs }}",
+        controls: {{ field.controls | to_json }},
+        helpTextShort: "{{ field.help_text | help_text_short_format | escapejs }}",
+        type: {{ field.type | to_json }},
+        many: {{ field.many | to_json }},
+        name: {{ field.name | to_json }},
+        required: {{ field.required | to_json }},
+        value: {{ field | field_to_json }}{% if field.type == 'relation' %},
+            relation: {
+                nameField: {{ field.get_name_field | to_json }},
+                searchKey: {{ field.get_search_key | to_json }},
+                pkField: {{ field.get_pk_field | to_json }},
+                resourceName: {{ field.serializer.get_name | to_json }},
+                pluralName: {{ field.get_plural_name | to_json }},
+                url: {{ field.get_url | to_json }},
+                image: {% if field.image %}true{% else %}false{% endif %},
+                create: {{ field.create | to_json }}
+            }
+        {% endif %}
+    });
+});
+</script>

@@ -1,7 +1,5 @@
 {% load rest_framework %}
 <fieldset>
-  {% include "./label.html" %}
-
   {% for nested_field in field %}
     {% if not nested_field.read_only %}
       {% render_field nested_field style=style %}

@@ -48,6 +48,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.get_classes = kwargs.pop('get_classes', None)
         self.getter = kwargs.pop('getter', None)
         self.setter = kwargs.pop('setter', None)
+        self.controls = kwargs.pop('controls', None)
         self.bound = False
         if self.getter:
             # dont bind to model
@@ -196,8 +197,11 @@ class DynamicField(fields.Field, DynamicBase):
 
         return None
 
+    def admin_render_value(self, value):
+        return value
+
     def admin_render(self, instance, value=None):
-        value = value or self.prepare_value(instance)
+        value = self.admin_render_value(value or self.prepare_value(instance))
         if isinstance(value, list) and not isinstance(
             value, six.string_types
         ) and not isinstance(value, UUID) and not isinstance(

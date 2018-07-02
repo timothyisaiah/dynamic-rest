@@ -1,5 +1,5 @@
 {% load dynamic_rest %}
-<div class="drest-field drest-field--textarea">
+<div id="{{ field.id }}" class="drest-field drest-field--textarea">
     <div data-mdc-auto-init="MDCTextField" class="mdc-text-field mdc-text-field--textarea mdc-text-field--fullwidth {% if field.errors %}has-error mdc-text-field--invalid{% endif %}">
         <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
         <textarea
@@ -40,3 +40,4 @@
         {% endif %}
     </p>
 </div>
+{% include "./field-js.html" %}

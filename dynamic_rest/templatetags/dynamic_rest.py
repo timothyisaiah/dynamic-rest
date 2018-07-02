@@ -4,6 +4,7 @@ import re
 import os
 import json
 
+from django.db.models.fields.files import FieldFile
 from django.http.request import QueryDict
 from urlparse import urlparse, urlunparse
 from uuid import UUID
@@ -64,6 +65,8 @@ def render_read_only_field(field, style):
 
 @register.filter
 def help_text_format(txt):
+    if not txt:
+        return ''
     txt = txt.strip().replace('\n', '<br/>')
     txt = re.sub(r'\*([0-9A-Za-z ]+)\*', '<b>\\1</b>', txt)
     txt = re.sub(r'`([0-9A-Za-z ]+)`', '<code>\\1</code>', txt)
@@ -72,6 +75,8 @@ def help_text_format(txt):
 
 @register.filter
 def help_text_short_format(txt):
+    if not txt:
+        return ''
     txt = txt.strip()
     txt = txt.split('\n')[0]
     txt = re.sub(r'\*([0-9A-Za-z ]+)\*', '<b>\\1</b>', txt)
@@ -80,14 +85,17 @@ def help_text_short_format(txt):
 
 
 @register.filter
-def as_id_to_name(field):
+def relation_to_json(field, value=None, many=None):
     serializer = field.serializer
+    if many is None:
+        many = field.many
+
     name_field_name = serializer.get_name_field()
     name_source = serializer.get_field(
         name_field_name
     ).source or name_field_name
     source_attrs = name_source.split('.')
-    value = field.value
+    value = value or field.value
 
     if not (
         isinstance(value, list)
@@ -96,7 +104,7 @@ def as_id_to_name(field):
     ):
         value = [value]
 
-    result = {}
+    results = []
     model = serializer.get_model()
     for v in value:
         if v:
@@ -112,8 +120,19 @@ def as_id_to_name(field):
                         instance = model.objects.get(
                             pk=str(v)
                         )
-            result[str(instance.pk)] = get_attribute(instance, source_attrs)
-    return mark_safe(json.dumps(result))
+            result = {
+                'id': str(instance.pk)
+            }
+            result[name_field_name] = get_attribute(
+                instance,
+                source_attrs
+            )
+            results.append(result)
+
+    if not many:
+        # single value result
+        results = results[0] if len(results) else None
+    return mark_safe(json.dumps(results))
 
 
 @register.simple_tag
@@ -127,6 +146,11 @@ def format_key(key):
 
 
 @register.simple_tag
+def relation_filter_value(field, value, many):
+    return relation_to_json(field, value=value, many=many)
+
+
+@register.simple_tag
 def drest_settings(key):
     return getattr(settings, key)
 
@@ -134,6 +158,25 @@ def drest_settings(key):
 @register.filter
 def to_json(value):
     return mark_safe(json.dumps(value))
+
+
+@register.filter
+def field_to_json(field):
+    value = field.value
+    related_serializer = getattr(
+        field,
+        'serializer',
+        None
+    )
+    if isinstance(value, UUID):
+        value = str(value)
+    if isinstance(value, FieldFile):
+        value = value.url
+
+    if not related_serializer:
+        return to_json(value)
+    else:
+        return relation_to_json(field)
 
 
 @register.filter

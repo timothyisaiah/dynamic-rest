@@ -1,4 +1,6 @@
-<div class="drest-field row justify-content-between">
+{% load dynamic_rest %}
+
+<div id="{{ field.id }}" title="{{ field.help_text | help_text_format }}" class="drest-field row justify-content-between">
     <div class="col-4">
         <label>{{ field.label }}</label>
     </div>
@@ -7,7 +9,7 @@
             class="mdc-checkbox__native-control"
             type="checkbox"
             name="{{ field.name }}"
-            id="{{ field.id }}"
+            id="{{ field.id }}-input"
             {% if field.value %}
                 checked
             {% endif %}
@@ -32,18 +34,5 @@
         {% endif %}
     </div>
 </div>
-<script>
-    $(document).ready(function(){
-        var $field = $('#{{ field.id }}');
-        $field.on('click', function() {
-            var $t = $(this);
-            $t.attr('value', $t.is(':checked'));
-        });
-        var is_null = {% if field.is_null %}true{% else %}false{% endif %};
-        if (is_null){
-            $field[0].indeterminate = true;
-        }
-        $field.attr('value', is_null ? null : $field.is(':checked'));
 
-    });
-</script>
+{% include "./field-js.html" %}
