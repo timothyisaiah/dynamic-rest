@@ -17,8 +17,7 @@ def get_type_for(field):
     elif isinstance(field, dfields.DynamicIntegerField):
         return 'integer'
     elif isinstance(
-        field,
-        (
+        field, (
             dfields.DynamicBooleanField,
             dfields.DynamicNullBooleanField
         )
@@ -34,13 +33,8 @@ def get_type_for(field):
         return "relation"
     elif isinstance(field, dfields.DynamicListField):
         return "list"
-    elif isinstance(
-        field,
-        (
-            dfields.DynamicFileField,
-            dfields.DynamicImageField
-        )
-    ):
+    elif isinstance(field,
+                    (dfields.DynamicFileField, dfields.DynamicImageField)):
         return "file"
     else:
         return "text"
@@ -66,6 +60,7 @@ class UIField(object):
         self.name = prefix + self.field_name
         self.type = get_type_for(self._field)
         self.is_null = value is None or value == ''
+        self.is_empty = (not value and not (value == 0 or value is False))
 
     def __getattr__(self, attr_name):
         return getattr(self._field, attr_name)
@@ -90,7 +85,6 @@ class UIField(object):
         return self._rendered_value
 
     def should_render(self):
-        value = self.value
         field = self._field
         read_only = field.read_only
 
@@ -101,17 +95,17 @@ class UIField(object):
         request_method = field.parent.get_request_method().upper()
 
         if request_method == 'GET':
-            if getattr(field, 'create', None):
-                return True
-
-            if field.write_only:
-                return False
-
-            if read_only and not value and value != 0 and value != 0.0:
+            if (
+                field.write_only or (
+                    getattr(field, 'hide', None) and
+                    field.read_only and not getattr(field, 'create', None)
+                    and self.is_empty
+                )
+            ):
                 return False
 
         elif request_method in ('POST', 'PATCH', 'PUT'):
-            if field.read_only:
+            if read_only:
                 return False
 
         return True
@@ -152,7 +146,10 @@ class UISection(object):
         self.fields = []
         self.instance = instance
         for field in fields:
-            self.fields.append(serializer.get_field_value(field, instance))
+            try:
+                self.fields.append(serializer.get_field_value(field, instance))
+            except KeyError:
+                pass
         if len(self.fields) == 1:
             self.field = self.fields[0]
         else:

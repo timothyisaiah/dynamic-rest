@@ -30,10 +30,10 @@
                 {% for section in sections %}
                     <div class="
                         mdc-layout-grid__cell
-                        mdc-layout-grid__cell--span-{% if sections|length > 1 %}6{% else %}12{% endif %}-desktop
+                        mdc-layout-grid__cell--span-{% if sections|length > 1 %}12{% else %}12{% endif %}-desktop
                         mdc-layout-grid__cell--span-12-phone
                         mdc-layout-grid__cell--span-12-tablet">
-                        <div class="drest-section mdc-card {% if section.field %}mdc-card--relation{% endif %}">
+                        <div class="drest-section mdc-card {% if section.field %}mdc-card--solo{% endif %}">
                             {% if section.name %}
                                 <div class="mdc-card__title">{{ section.name }}</div>
                             {% endif %}
@@ -45,16 +45,10 @@
                                     </div>
                                 </div>
                             {% endif %}
-                            <div class="mdc-card__fields">
+                            <div class="mdc-card__fields {% if section.field and section.field.is_empty  and section.field.read_only %}hide{% endif %}">
                                 {% for field in section.fields %}
                                     {% if field.should_render %}
                                         {% render_field field style=render_style %}
-                                        {% if False and not section.field and field.name in create_related_forms %}
-                                            <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#createModal-{{ field.name }}">
-                                                <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
-                                                <span class="drest-btn-label">Create</span>
-                                            </div>
-                                        {% endif %}
                                     {% endif %}
                                 {% endfor %}
                             </div>

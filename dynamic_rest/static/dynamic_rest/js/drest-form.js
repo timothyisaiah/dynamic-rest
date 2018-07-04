@@ -2,45 +2,6 @@ window.drest = {};
 
 $(document).ready(function() {
     function DRESTForm(_form) {
-        var form = this;
-        this.$form = $(_form);
-        this.$fields = this.$form.find('.drest-field');
-        this.disabled = this.$form.hasClass('drest-form--readonly');
-
-        this.toggleDisabled = function() {
-            if (this.disabled) {
-                this.$form.removeClass('drest-form--readonly');
-            } else {
-                this.$form.addClass('drest-form--readonly');
-            }
-            this.disabled = !this.disabled;
-            this.getFields().each(function() {
-                this.toggleDisabled()
-            });
-        };
-        this.reset = function() {
-            this.getFields().each(function() {
-                if (this.hasChanged()) {
-                    this.reset(this.initial);
-                }
-            });
-        }
-        this.hasChanged = function() {
-            var fields = this.getFields();
-            var changed = false;
-            for (var i=0; i<fields.length; i++) {
-                var field = fields[i];
-                if (field.hasChanged()) {
-                    changed = true;
-                    break;
-                }
-            }
-            return changed;
-        }
-        this.$form.addClass('drest-form--js');
-        this.$form[0].DRESTForm = this;
-        this._fields = null;
-        this._fieldsByName = null;
         this.getFields = function() {
             if (this._fields === null) {
                 var fields = this.$fields.map(function() {
@@ -51,7 +12,7 @@ $(document).ready(function() {
                 } else {
                     console.log(
                         'warning: form field length mismatch',
-                        fields.map(function() { return this.name }),
+                        fields.map(function() { return this.name; }),
                         fields.length,
                         this.$fields.length
                     );
@@ -72,63 +33,171 @@ $(document).ready(function() {
             }
             return this._fieldsByName;
         };
-        this.$form.on('drest-form:submit-failed', function(e, response) {
-            var errors = response.error;
+        this.toggleDisabled = function() {
+            if (this.disabled) {
+                this.$form.removeClass('drest-form--readonly');
+            } else {
+                this.$form.addClass('drest-form--readonly');
+            }
+            this.disabled = !this.disabled;
+            this.getFields().each(function() {
+                this.toggleDisabled();
+            });
+        };
+        this.reset = function() {
+            this.getFields().each(function() {
+                if (this.hasChanged()) {
+                    this.reset(this.initial);
+                }
+            });
+        };
+        this.hasChanged = function() {
+            var fields = this.getFields();
+            var changed = false;
+            for (var i=0; i<fields.length; i++) {
+                var field = fields[i];
+                if (field.hasChanged()) {
+                    changed = true;
+                    break;
+                }
+            }
+            return changed;
+        };
+        this.onSubmit = function(e) {
+              var form = this.$form;
+              var method = (form.data('method') || form.attr('method') || 'GET').toUpperCase();
+
+              if (method === 'GET' || method === 'POST') {
+                return;
+              }
+
+              e.preventDefault();
+
+              var url = form.attr('action');
+              var data;
+              var contentType = form.attr('enctype') || form.attr('encoding') || 'multipart/form-data';
+
+              if (contentType === 'multipart/form-data') {
+                  contentType = false;
+                  data = new FormData();
+                  var fields = this.getFields();
+                  var anyChanges = false;
+                  for (var i=0; i<fields.length; i++) {
+                    var f = fields[i];
+                    if (method === 'PUT' || f.hasChanged()) {
+                        var val = f.getSubmitValue();
+                        if (val === null) {
+                            val = "";
+                        }
+                        data.append(f.name, val);
+                        anyChanges = true;
+                    }
+                  }
+                  if (!anyChanges) {
+                    form.trigger('drest-form:submit-noop');
+                    return;
+                  }
+
+              } else {
+                  contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                  data = form.serialize();
+              }
+              form.trigger('drest-form:submitting');
+              return $.ajax({
+                url: url,
+                method: method,
+                data: data,
+                contentType: contentType,
+                processData: false,
+                dataType: 'json',
+                headers: {
+                  'Accept': 'application/json'
+                },
+              }).done(function(data, textStatus, jqXHR) {
+                    for (var x in data) {
+                        if (data.hasOwnProperty(x)) {
+                            data = data[x];
+                            break;
+                        }
+                    }
+                    form.trigger('drest-form:submit-succeeded', [{
+                        'status': jqXHR.status,
+                        'data': data,
+                    }]);
+              }).fail(function(jqXHR) {
+                    form.trigger('drest-form:submit-failed', [{
+                        'error': jqXHR.responseJSON,
+                        'status': jqXHR.status,
+                    }]);
+              });
+        };
+        this.onSubmitFailed = function(e, response) {
+            var errors = response.error || {};
             var fields = this.getFieldsByName();
             for (var key in fields) {
-                var e = errors[key];
+              if (fields.hasOwnProperty(key)) {
+                var error = errors[key];
                 var f = fields[key];
-                if (e) {
-                    f.setError(e);
+                if (error) {
+                    f.setError(error);
                 } else {
                     f.clearError();
                 }
+              }
             }
-        }.bind(this));
-        this.$form.on('drest-form:submit-succeeded', function(e, response) {
+        };
+        this.onSubmitSucceeded = function(e, response) {
             var data = response.data;
             var fields = this.getFieldsByName();
             for (var key in fields) {
+              if (fields.hasOwnProperty(key)) {
                 var d = data[key];
                 var f = fields[key];
+                if (key === 'age') {
+                    console.log(f, d);
+                }
                 if (typeof d !== 'undefined') {
                     f.reset(data[key]);
                 } else {
                     f.clearError();
                 }
+              }
             }
-        }.bind(this));
+        };
+
+        var form = this;
+        this._fields = null;
+        this._fieldsByName = null;
+
+        this.$form = $(_form);
+        this.$form.addClass('drest-form--js');
+
+        this.$fields = this.$form.find('.drest-field');
+        this.disabled = this.$form.hasClass('drest-form--readonly');
+        this.$form.on('drest-form:submit-failed', this.onSubmitFailed.bind(this));
+        this.$form.on('drest-form:submit-succeeded', this.onSubmitSucceeded.bind(this));
+        this.$form.off('submit.drest-form').on('submit.drest-form', this.onSubmit.bind(this));
+        this.$form[0].DRESTForm = this;
     }
 
     function DRESTField(args) {
-        var field = this;
-        field.id = args.id;
-        var $field = field.$field = $('#' + field.id);
-        var $input = field.$input = $('#' + field.id + '-input');
-        var $form = field.$form = $field.closest('.drest-form');
-        var $label = field.$field.find('label, .drest-field__label');
-        var $select2;
-        field.name = args.name;
-        field.controls = args.controls;
-        field.disabled = !$form.length || $form.hasClass('drest-form--readonly');
-        field.readOnly = args.readOnly;
-        field.helpTextShort = args.helpTextShort;
-        field.helpText = args.helpText;
-        field.writeOnly = args.writeOnly;
-        field.required = args.required;
-        field.initial = field.value = args.value;
-        field.label = args.label;
-        field.type = args.type;
-        field.many = args.many || field.type === 'list';
-        field.relation = args.relation;
-
-        if (field.helpText && false) {
-            $label.addClass('drest-tooltip');
-            $label[0].title = field.helpText;
-            $label.attr('data-tippy-trigger', 'click');
-            tippy($label);
-        }
-        this._form = null;
+        this.getSubmitValue = function() {
+            if (this.type === 'file') {
+                var input = this.$input[0];
+                var files = input.files;
+                return (files && files.length) ? files[0] : null;
+            }
+            return this.value;
+        };
+        this.getInputValue = function() {
+            var val = this.$input.val();
+            if (val === null && this.many) {
+                // replace null with empty list for
+                // any "many" field
+                val = [];
+            }
+            return val;
+        };
         this.getForm = function() {
             if (this._form === null) {
                 var form = this.$form[0];
@@ -136,7 +205,7 @@ $(document).ready(function() {
                 this._form = form;
             }
             return this._form;
-        }
+        };
         this.isEmpty = function(value) {
             if (value === null || typeof value === 'undefined' || value === '') {
                 return true;
@@ -145,26 +214,69 @@ $(document).ready(function() {
                 return value.length === 0;
             }
             return false;
-        }
+        };
         this.hasChanged = function() {
             if ($.isArray(this.initial) || $.isPlainObject(this.initial)) {
                 return JSON.stringify(this.value) !== JSON.stringify(this.initial);
             } else {
                 return this.value != this.initial;
             }
-        }
+        };
         this.enable = function() {
             this.$field.removeClass('drest-field--disabled');
             this.$input[0].disabled = false;
-            this.$field.find('.mdc-text-field').removeClass('mdc-text-field--disabled');
-            this.$field.find('.mdc-select').removeClass('mdc-select--disabled');
-        }
+            this.$textField.removeClass('mdc-text-field--disabled');
+            this.$select.removeClass('mdc-select--disabled');
+            this.disabled = false;
+        };
+        this.relation__disable = function() {
+            var $choice;
+            var url = this.relation.url;
+          	var linkMe = function() {
+                var url = $(this).data('url');
+                if (url && $(this).closest('.drest-form').hasClass('drest-form--readonly')) {
+                    // only link in readonly mode
+                    window.location = url;
+                }
+            };
+            if (this.many) {
+                var $choices = this.$field.find('.select2-selection__choice');
+                for (var i = 0; i < $choices.length; i++) {
+                    $choice = $($choices[i]);
+                    var v = this.value[i];
+                    var t = $choice.attr('title');
+                    if ($choice.text().indexOf(t) === -1) {
+                        // fix select2 bug where selection text is not set
+                        $choice.html(
+                            '<span class="select2-selection__choice__remove">&times;</span>' + t
+                        );
+                    }
+                    $choice.addClass('drest--clickable');
+                    $choice.attr('data-url', url + '/' + v);
+                    $choice.off('click.drest-field').on('click.drest-field', linkMe);
+                }
+            } else {
+                $choice = this.$field.find('.select2-selection__rendered');
+                $choice.addClass('drest--clickable').off('click.drest-field');
+
+                if (!this.isEmpty(this.value)) {
+                    $choice.attr('data-url', url + '/' + this.value);
+                    $choice.off('click.drest-field').on('click.drest-field', linkMe);
+                }
+            }
+        };
         this.disable = function() {
+            var field = this;
             this.$field.addClass('drest-field--disabled');
             this.$input[0].disabled = true;
-            this.$field.find('.mdc-text-field').addClass('mdc-text-field--disabled');
-            this.$field.find('.mdc-select').addClass('mdc-select--disabled');
-        }
+            this.$textField.addClass('mdc-text-field--disabled');
+            this.$select.addClass('mdc-select--disabled');
+            this.disabled = true;
+
+            if (this.type === 'relation') {
+                this.relation__disable();
+            }
+        };
         this.toggleDisabled = function() {
             var $field = this.$field;
             var $input = this.$input;
@@ -172,49 +284,146 @@ $(document).ready(function() {
                 // enable if not readOnly
                 if (!this.readOnly) {
                     this.enable();
-                    this.disabled = !this.disabled;
                 }
             } else {
                 // disable
                 this.disable();
-                this.disabled = !this.disabled;
             }
-        }
-        this.setError = function(errors) {
-            this.$field.addClass('drest-field--invalid');
-            this.$field.find('.mdc-text-field').addClass('mdc-text-field--invalid');
-            this.$field.find('.mdc-text-field-helper-text').addClass(
-                'mdc-text-field-helper-text--persistent'
-            ).html(errors[0]);
-        }
-        this.clearError = function() {
-            this.$field.removeClass('drest-field--invalid');
-            this.$field.find('.mdc-text-field').removeClass('mdc-text-field--invalid');
-            this.$field.find('.mdc-text-field-helper-text').removeClass(
-                'mdc-text-field-helper-text--persistent'
-            ).html(this.helpText);
-        }
+        };
         this.reset = function(value) {
-            this.initial = this.value = value;
-            this.$field.removeClass('drest-field--changed');
             if (this.isEmpty(value)) {
                 this.$field.removeClass('drest-field--selected');
-                this.$field.find('.mdc-floating-label').removeClass('mdc-floating-label--float-above');
+                this.$label.removeClass('mdc-floating-label--float-above');
             } else {
                 this.$field.addClass('drest-field--selected');
-                this.$field.find('.mdc-floating-label').addClass('mdc-floating-label--float-above');
+                if (this.$label.hasClass('mdc-floating-label')) {
+                    this.$label.addClass('mdc-floating-label--float-above');
+                }
+            }
+
+            this.clearError();
+
+            if (this.type === 'file') {
+                if (value) {
+                    this.$field.find('.dropify-render img').attr('src', value);
+                }
+            } else if (this.type === 'relation') {
+                if (this.relation.image) {
+                    // noop
+                } else {
+                    if (this.many) {
+                        this.$input.val(value).trigger('change');
+                    } else {
+                        if (value) {
+                            this.$input.select2('trigger', 'select', {data: {id: value}});
+                        } else {
+                            this.$input.val(null).trigger('change');
+                        }
+                    }
+                }
+            } else if (this.type === 'list') {
+                this.$input.val(value).trigger('change');
+            } else {
+                this.$input.val(value);
+            }
+            this.value = value;
+
+            this.initial = value;
+            this.$field.removeClass('drest-field--changed');
+
+        };
+        this.setError = function(errors) {
+            this.$field.addClass('drest-field--invalid');
+            this.$textField.addClass('mdc-text-field--invalid');
+            this.$select.addClass('mdc-text-field--invalid');
+            this.$helper.addClass('mdc-text-field-helper-text--persistent').html(errors[0]);
+        };
+        this.clearError = function() {
+            this.$field.removeClass('drest-field--invalid');
+            this.$textField.removeClass('mdc-text-field--invalid');
+            this.$helper.removeClass('mdc-text-field-helper-text--persistent').html(this.helpTextShort);
+        };
+        this.onChange = function() {
+            var value = this.getInputValue();
+            var form = this.getForm();
+            var $form = this.$form;
+            if (this.isEmpty(value)) {
+                this.$field.removeClass('drest-field--selected');
+            } else {
+                this.$field.addClass('drest-field--selected');
+            }
+            if (this.controls) {
+                var show = this.controls[value || ''];
+                $form.find('.drest-field')
+                .each(function() {
+                    var $field = $(this);
+                    if ($field.hasClass('drest-field--fake')) {
+                        return;
+                    }
+                    var name = $field.find('textarea, input, select')[0].name;
+                    if (!show || show.length === 0) {
+                        $field.show();
+                    } else {
+                        if (show.indexOf(name) > -1)  {
+                            $field.show();
+                        } else {
+                            $field.hide();
+                        }
+                    }
+                });
             }
             this.clearError();
-            this.$input.val(value);
-            if (this.type === 'relation' || this.type === 'list') {
-                this.$input.trigger('change');
+            var was = field.value;
+            this.value = value;
+            if (this.hasChanged()) {
+                this.$field.addClass('drest-field--changed');
+            } else {
+                this.$field.removeClass('drest-field--changed');
             }
+            if (form) {
+                form.$form.trigger('change', [{
+                    field: this,
+                    before: was,
+                    after: value
+                }]);
+            }
+        };
+
+        var field = this;
+        this._form = null;
+
+        this.id = args.id;
+        var $field = this.$field = $('#' + field.id);
+        var $input = this.$input = $('#' + field.id + '-input');
+        var $helper = this.$helper = $('#' + field.id + '-helper');
+        var $form = this.$form = $field.closest('.drest-form');
+        var $textField = this.$textField = $field.find('.mdc-text-field');
+        var $select = this.$select = $field.find('.mdc-select');
+        var $label = this.$label = field.$field.find('label, .drest-field__label');
+        var relation = this.relation = args.relation;
+        var value = this.initial = field.value = args.value;
+        var label = this.label = args.label;
+        var name = this.name = args.name;
+        var many = this.many = args.many || field.type === 'list';
+        var required = this.required = args.required;
+        var type = this.type = args.type;
+        var disabled = this.disabled = !$form.length || $form.hasClass('drest-form--readonly');
+
+        this.controls = args.controls;
+        this.readOnly = args.readOnly;
+        this.helpTextShort = args.helpTextShort;
+        this.helpText = args.helpText;
+        this.writeOnly = args.writeOnly;
+
+        //  set classes
+        $field.addClass('drest-field--js');
+        if (!this.isEmpty(value)) {
+            $field.addClass('drest-field--selected');
         }
 
         // setup dependents and listeners
-        if (field.type === 'list') {
-            var value = field.value;
-            var $select2 = $input;
+        if (type === 'list') {
+            // fixed-style select2
             if (value) {
                 for (var v in value) {
                     if (value.hasOwnProperty(v)) {
@@ -224,9 +433,9 @@ $(document).ready(function() {
                     }
                 }
             }
-            $select2.select2({
+            $input.select2({
                 tags: true,
-                placeholder: field.label,
+                placeholder: label,
                 theme: 'material',
                 minimumInputLength: 1,
                 language: {
@@ -236,47 +445,63 @@ $(document).ready(function() {
                 },
                 dropdownParent: $field
             });
-        } else if (field.type === 'relation') {
-            if (field.relation.image) {
+            $input.on('select2:open', function(e){
+                $field.addClass('drest-field--focused');
+            });
+            $input.on('select2:close', function(e){
+                $field.removeClass('drest-field--focused');
+                $field.removeClass('drest-field--invalid');
+            });
+            $input.data('select2').on('results:message', function() {
+                this.dropdown._resizeDropdown();
+                this.dropdown._positionDropdown();
+            });
+        } else if (type === 'relation') {
+            if (relation.image) {
+                // images
+                // many-type not yet supported
+                this.value = this.initial = value.id;
             } else {
+                // ajax-style select2
                 var perPage = 25;
-                var value = field.value;
                 var selected;
                 var initials;
-                // get field/serializer info
-                var nameField = field.relation.nameField;
-                var searchKey = field.relation.searchKey;
-                var pkField = field.relation.pkField;
-                var resourceName = field.relation.resourceName;
-                var pluralName = field.relation.pluralName;
-                var url = field.relation.url;
+                var nameField = relation.nameField;
+                var searchKey = relation.searchKey;
+                var pkField = relation.pkField;
+                var resourceName = relation.resourceName;
+                var pluralName = relation.pluralName;
+                var url = relation.url;
+
                 var includes = [pkField];
                 if (pkField !== nameField) {
                     includes.push(nameField);
                 }
-                if (field.many) {
+                var placeholder = many ? label : {
+                    id: "",
+                    placeholder: label
+                };
+                if (many) {
                     selected = [];
                     initials = [];
                     if (value) {
-                        for (var v in value) {
-                            if (value.hasOwnProperty(v)) {
-                                v = value[v];
-                                initials.push({
-                                    id: v.id,
-                                    text: v[nameField],
-                                    name: v[nameField],
-                                    selected: true
-                                });
-                                selected.push(v.id);
-                            }
+                        for (var i = 0; i<value.length; i++) {
+                            var val = value[i];
+                            initials.push({
+                                id: val.id,
+                                text: val.name,
+                                name: val.name,
+                                selected: true
+                            });
+                            selected.push(val.id);
                         }
                     }
                 } else {
                     if (value && value.id) {
                         initials = [{
                             id: value.id,
-                            text: value[nameField],
-                            name: value[nameField],
+                            text: value.name,
+                            name: value.name,
                             selected: true
                         }];
                         selected = value.id;
@@ -285,24 +510,18 @@ $(document).ready(function() {
                         selected = null;
                     }
                 }
-                var $select2 = $input;
-                var select2 = $select2[0];
-                var placeholder = field.many ? field.label : {
-                    id: "",
-                    placeholder: field.label
-                };
-                $select2.select2({
+                $input.select2({
                     data: initials,
                     dropdownParent: $field,
                     language: {
                         inputTooShort: function() {
-                            return field.helpTextShort
+                            return field.helpTextShort;
                         }
                     },
                     width: 'resolve',
                     theme: 'material',
                     placeholder: placeholder,
-                    allowClear: !field.required,
+                    allowClear: !required,
                     ajax: {
                         url: url,
                         dataType: "json",
@@ -347,248 +566,72 @@ $(document).ready(function() {
                         return item[nameField];
                     },
                     minimumInputLength: 1,
-                });
-                $select2.val(selected);
-                if (field.many) {
-                    $field.find('.select2-selection__choice').addClass('drest--clickable').on('click.drest-field', function() {
-                        if (field.disabled && !field.isEmpty(field.value)) {
-                            var $this = $(this);
-                            var name = $this.attr('title');
-                            var group = $this.closest('.select2-seletion__rendered');
-                            var value = field.value;
+            });
+            // set selection
+            $input.val(selected);
 
-                            for (var i = 0; i < value.length; i++) {
-                                if (value[i][nameField] == name) {
-                                    window.spin();
-                                    window.location = url + '/' + value[i].id;
-                                }
-                            }
-                        }
-                    });
-                } else {
-                    $field.find('.select2-selection--single').addClass('drest--clickable').on('click.drest-field', function() {
-                        if (field.disabled && !field.isEmpty(field.value)) {
-                            window.spin();
-                            window.location = url + '/' + field.value.id;
-                        }
-                    });
-                }
-            }
-        } else if (field.type === 'boolean') {
-            $input.on('click.drest-field', function() {
+            // reset value from object form to canonical ID form
+            // e.g. if the object form is {"id": "x", "name": "y", ...},
+            // the canonical ID form is just "x"
+            $input.on('select2:open', function(e){
+                $field.addClass('drest-field--focused');
+            });
+            $input.on('select2:close', function(e){
+                $field.removeClass('drest-field--focused');
+                $field.removeClass('drest-field--invalid');
+            });
+            $input.data('select2').on('results:message', function() {
+                this.dropdown._resizeDropdown();
+                this.dropdown._positionDropdown();
+            });
+            this.value = this.initial = selected;
+          }
+
+        } else if (type === 'boolean') {
+            $input.off('click.drest-field').on('click.drest-field', function() {
                 var $this = $(this);
                 $this.attr('value', $this.is(':checked'));
             });
-            if (field.value === null){
+            if (value === null){
                 $input[0].indeterminate = true;
                 $input.attr('value', null);
             } else {
                 $input.attr('value', $input.is(':checked'));
             }
-        } else if (field.type === 'file') {
+        } else if (type === 'file') {
             $input.dropify();
             $field.find('.dropify-render').append(
-                '<img src="' + field.value + '">'
+                '<img src="' + value + '">'
             );
         }
-        if ($select2) {
-            $select2.on('select2:open', function(e){
-                $field.addClass('drest-field--focused');
-            });
-            $select2.on('select2:close', function(e){
-                $field.removeClass('drest-field--focused');
-                $field.removeClass('drest-field--invalid');
-            });
-            $select2.data('select2').on('results:message', function() {
-                this.dropdown._resizeDropdown();
-                this.dropdown._positionDropdown();
-            });
+
+        // bind change handler
+        $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
+
+        // trigger change
+        if (field.controls || type === 'relation') {
+            $input.trigger('change');
         }
 
+        // trigger disable
         if (this.disabled) {
             this.disable();
         }
-        $input.on('change.drest-field', function(e) {
-            var value = $input.val();
-            var form = field.getForm();
-            if (field.isEmpty(value)) {
-                $field.removeClass('drest-field--selected');
-            } else {
-                $field.addClass('drest-field--selected');
-            }
-            if (this.controls) {
-                var show = controls[value || ''];
-                this.$form[0].DRESTForm.$fields
-                .each(function() {
-                    var $f = $(this);
-                    var f = $f[0].DRESTField;
-                    if (f.disabled) {
-                        return;
-                    }
-                    var name = f.name;
-                    if (!show || show.length === 0) {
-                        $f.show();
-                    } else {
-                        if (show.indexOf(name) > -1)  {
-                            $f.show();
-                        } else {
-                            $f.hide();
-                        }
-                    }
-                });
-            }
-            field.clearError();
-            var was = field.value;
-            field.value = value;
-            if (field.hasChanged()) {
-                $field.addClass('drest-field--changed');
-            } else {
-                $field.removeClass('drest-field--changed');
-            }
-            if (form) {
-                form.$form.trigger('change', [{
-                    element: this, was: was, value: value
-                }]);
-            }
-        });
-        if (!field.isEmpty(field.value)) {
-            $field.addClass('drest-field--selected');
-        }
-        $field[0].DRESTField = this;
-        $field.addClass('drest-field--js');
-        window.$field = $field[0];
-    }
 
-    window.drest = {
-        DRESTForm: DRESTForm,
-        DRESTField: DRESTField
-    };
+        // set field
+        $field[0].DRESTField = this;
+    }
 
     var formId = 0;
     $('.drest-form').each(function() {
         var form = new DRESTForm($(this)[0]);
     });
 
-    function replaceDocument(docString) {
-      var doc = document.open("text/html");
 
-      doc.write(docString);
-      doc.close();
-    }
-
-    function doAjaxSubmit(e) {
-      var form = $(this);
-      var btn = $(this.clk);
-      var method = (
-        btn.data('method') ||
-        form.data('method') ||
-        form.attr('method') || 'GET'
-      ).toUpperCase();
-
-      if (method === 'GET') {
-        // GET requests can always use standard form submits.
-        return;
-      }
-
-      var contentType =
-        form.find('input[data-override="content-type"]').val() ||
-        form.find('select[data-override="content-type"] option:selected').text();
-
-      if (method === 'POST' && !contentType) {
-        // POST requests can use standard form submits, unless we have
-        // overridden the content type.
-        return;
-      }
-
-      // At this point we need to make an AJAX form submission.
-      e.preventDefault();
-
-      var url = form.attr('action');
-      var data;
-
-      if (contentType) {
-        data = form.find('[data-override="content"]').val() || ''
-
-        if (contentType === 'multipart/form-data') {
-          // We need to add a boundary parameter to the header
-          // We assume the first valid-looking boundary line in the body is correct
-          // regex is from RFC 2046 appendix A
-          var boundaryCharNoSpace = "0-9A-Z'()+_,-./:=?";
-          var boundaryChar = boundaryCharNoSpace + ' ';
-          var re = new RegExp('^--([' + boundaryChar + ']{0,69}[' + boundaryCharNoSpace + '])[\\s]*?$', 'im');
-          var boundary = data.match(re);
-          if (boundary !== null) {
-            contentType += '; boundary="' + boundary[1] + '"';
-          }
-          // Fix textarea.value EOL normalisation (multipart/form-data should use CR+NL, not NL)
-          data = data.replace(/\n/g, '\r\n');
-        }
-      } else {
-        contentType = form.attr('enctype') || form.attr('encoding')
-
-        if (contentType === 'multipart/form-data') {
-          if (!window.FormData) {
-            alert('Your browser does not support AJAX multipart form submissions');
-            return;
-          }
-
-          // Use the FormData API and allow the content type to be set automatically,
-          // so it includes the boundary string.
-          // See https://developer.mozilla.org/en-US/docs/Web/API/FormData/Using_FormData_Objects
-          contentType = false;
-          data = new FormData(form[0]);
-        } else {
-          contentType = 'application/x-www-form-urlencoded; charset=UTF-8'
-          data = form.serialize();
-        }
-      }
-
-      var ret = $.ajax({
-        url: url,
-        method: method,
-        data: data,
-        contentType: contentType,
-        processData: false,
-        dataType: 'json',
-        headers: {
-          'Accept': 'application/json'
-        },
-      });
-      form.trigger('drest-form:submitting');
-      ret.done(function(data, textStatus, jqXHR) {
-            for (var x in data) {
-                if (data.hasOwnProperty(x)) {
-                    data = data[x];
-                    break;
-                }
-            }
-            form.trigger('drest-form:submit-succeeded', [{
-                'status': jqXHR.status,
-                'data': data,
-            }]);
-      }).fail(function(jqXHR) {
-            form.trigger('drest-form:submit-failed', [{
-                'error': jqXHR.responseJSON,
-                'status': jqXHR.status,
-            }]);
-      });
-      return ret;
-    }
-
-    function captureSubmittingElement(e) {
-      var target = e.target;
-      var form = this;
-
-      form.clk = target;
-    }
-
-    $.fn.ajaxForm = function() {
-      var options = {}
-
-      return this
-        .unbind('submit.drest-form  click.drest-form')
-        .bind('submit.drest-form', options, doAjaxSubmit)
-        .bind('click.drest-form', options, captureSubmittingElement);
+    window.drest = {
+        DRESTForm: DRESTForm,
+        DRESTField: DRESTField
     };
+
 });
 

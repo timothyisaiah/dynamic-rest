@@ -1,7 +1,6 @@
 {% load dynamic_rest %}
 <div id="{{ field.id }}" class="drest-field drest-field--textarea">
     <div data-mdc-auto-init="MDCTextField" class="mdc-text-field mdc-text-field--textarea mdc-text-field--fullwidth {% if field.errors %}has-error mdc-text-field--invalid{% endif %}">
-        <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
         <textarea
             class="mdc-text-field__input"
             id="{{ field.id }}-input"
@@ -25,8 +24,7 @@
                 {{ field.value }}
             {% endif %}
         </textarea>
-
-
+        <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
     </div>
     <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
         {% if field.errors %}

@@ -8,6 +8,12 @@
         id="{{ field.id }}-input"
         {% if field.read_only %}disabled{% endif %}
         class="w-100 mdc-select__native-control"
+        {% if field.errors %}
+            invalid
+        {% endif %}
+        {% if field.required and not field.allow_null %}
+            required
+        {% endif %}
         name="{{ field.name }}"
     >
       {% if field.required and not field.allow_null %}
@@ -29,7 +35,7 @@
           {% endif %}
       {% endfor %}
     </select>
-      <label data-mdc-auto-init="MDCFloatingLabel" class="mdc-floating-label" for="{{ field.id }}">
+      <label data-mdc-auto-init="MDCFloatingLabel" class="mdc-floating-label" for="{{ field.id }}-input">
         {{ field.label }}
       </label>
       <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
@@ -47,6 +53,6 @@
             {% endif %}
         {% endif %}
     </p>
+{% include "./field-js.html" %}
 </div>
 
-{% include "./field-js.html" %}

@@ -348,6 +348,10 @@ class WithDynamicSerializerMixin(
         if instance:
             for related_name, field in self.get_link_fields(
             ).items():
+                source = field.source or related_name
+                has_source = source != '*'
+                if not has_source:
+                    continue
                 kwargs = {
                     'request_fields': None,
                     'many': False
@@ -361,13 +365,11 @@ class WithDynamicSerializerMixin(
                     not getattr(related_serializer, 'permissions', None) or
                     related_serializer.permissions.create
                 )
-                can_create = field.create
-                has_source = field.source != '*'
-                if (
-                    has_source and
-                    can_create and
-                    has_permission
-                ):
+                can_create = field.create and (
+                    field.many or getattr(instance, source, None) is None
+                ) and has_permission
+
+                if can_create:
                     forms[related_name] = related_serializer
         return forms
 

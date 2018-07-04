@@ -56,9 +56,6 @@
     font-family: Roboto, sans-serif;
     position: relative;
 }
-.mdc-card__fields {
-    padding: 1.25rem;
-}
 .mdc-card__field {
     min-height: 32px;
     display: flex;
@@ -76,13 +73,17 @@
     font-size: 1rem;
     text-align: right;
 }
-.mdc-card.mdc-card--relation .mdc-card__value {
+.mdc-card.mdc-card--solo .mdc-card__value {
     text-align: left;
     font-size: 0.9rem;
 }
+.mdc-card.mdc-card--solo .drest-field.drest-field--disabled .select2-selection {
+    margin-top: 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid transparent;
+}
 .mdc-card__title {
     font-size: 1.25rem;
-    padding: 1.25rem;
     padding-bottom: 0;
 }
 .mdc-card__mainaction {
@@ -93,6 +94,10 @@
 
 /** Modals **/
 
+.drest-modal-content {
+    max-width: 1200px;
+    width: 100%;
+}
 .drest.modal .modal-title {
     padding-left: 1rem;
 }
@@ -115,7 +120,9 @@
     bottom: 60px;
     left: 0px;
     right: 0px;
-    overflow-y: scroll;
+    display: flex;
+    justify-content: center;
+    overflow-y: auto;
     overflow-x: hidden;
 }
 .drest.modal .modal-content .modal-header{
@@ -350,12 +357,38 @@
 }
 
 /** drest-field **/
+.drest-field .mdc-checkbox__background::before {
+    background-color: var(--mdc-theme-primary);
+}
+.drest-field.drest-field--changed .mdc-checkbox__background::before {
+    background-color: var(--mdc-theme-secondary);
+}
+.drest-field .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background, .mdc-checkbox__native-control:enabled:indeterminate ~ .mdc-checkbox__background {
+    border-color: var(--mdc-theme-primary);
+    background-color: var(--mdc-theme-primary);
+}
+.drest-field.drest-field--changed .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background, .mdc-checkbox__native-control:enabled:indeterminate ~ .mdc-checkbox__background {
+    border-color: var(--mdc-theme-secondary);
+    background-color: var(--mdc-theme-secondary);
+}
+.drest-field--select2.many .select2-selection__clear {
+    display: none;
+}
 .drest-field--changed.drest-field--select2:not(.drest-field--invalid) .select2-container .select2-selection,
 .drest-field--changed.drest-field--datetime:not(.drest-field--invalid) .mdc-text-field__input {
   /* @extend input[type=text]:focus */
   border-bottom: 1px solid var(--mdc-theme-secondary);
   box-shadow: 0 1px 0 0 var(--mdc-theme-secondary);
 }
+.mdc-text-field__input:required + .drest-field__label::after {
+    margin-left: 1px;
+    content: '*';
+}
+.mdc-select__native-control:required + .mdc-floating-label::after {
+    margin-left: 1px;
+    content: '*';
+}
+
 .drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-floating-label,
 .drest-field.drest-field--changed:not(.drest-field--invalid) .drest-field__label {
     color: var(--mdc-theme-secondary);
@@ -417,36 +450,35 @@
     height: auto;
     min-height: 66px;
 }
-/** drest-section **/
-.drest-section .drest-field {
-    transition: all .5s;
+/** drest-form **/
+.drest-section {
+    padding: 1.25rem;
 }
-.drest-form.drest-form--readonly .drest-field {
-    margin-top: 0.5rem;
-    margin-bottom: 0.5rem;
+.drest-section .drest-field {
+    transition: all .3s;
 }
 .drest-form .drest-field {
     margin-bottom: 1rem;
     margin-top: 1rem;
 }
-.drest-section .drest-field:first-child {
-    margin-top: 0rem;
+.drest-form .drest-field:first-child {
+    margin-top: 0;
 }
-.drest-section .drest-field:last-child {
-    margin-bottom: 0rem;
+.drest-form .drest-field:last-child {
+    margin-bottom: 0;
 }
 .drest-form.drest-form--readonly .drest-field .mdc-text-field__input,
 .drest-form.drest-form--readonly .drest-field .select2-selection__rendered {
     color: rgba(0,0,0,0.7);
 }
-.drest-section .drest-field:first-child {
-    margin-top: 0rem;
-}
-.drest-section.drest-form--readonly .drest-field:last-child {
-    margin-bottom: 0;
+.drest-form .drest-field:first-child {
+    margin-top: 0;
 }
 .drest-form.drest-form--readonly .drest-field .mdc-text-field-helper-text,
 .drest-form.drest-form--readonly .drest-field .drest-btn {
+    display: none;
+}
+.drest-form:not(.drest-form--readonly) .drest-btn {
     display: none;
 }
 
@@ -473,10 +505,9 @@
 /** drest-field--file **/
 
 .drest-field.drest-field--file {
-    height: 230px;
+    height: auto;
 }
 .drest-field.drest-field--file .dropify-wrapper {
-    top: 30px;
     border: 1px solid rgba(0,0,0,0.12)
 }
 .drest-field.drest-field--file.drest-field--selected .dropify-preview {
@@ -493,13 +524,16 @@
 
 /** drest-field--select2 **/
 
-.mdc-card--relation .drest-field.drest-field--select2 .drest-field__label {
+.mdc-card--solo .drest-field.drest-field--select2 .drest-field__label {
     opacity: 0;
 }
-.mdc-card--relation .drest-field.drest-field--file .drest-field__label {
-    opacity: 0;
+.mdc-card--solo .drest-field.drest-field--file .drest-field__label {
+    display: none;
 }
-.mdc-card--relation .drest-field.drest-field--file.drest-field--disabled .dropify-wrapper:hover {
+.drest-field.drest-field--file .drest-field__label {
+    position: relative;
+}
+.mdc-card--solo .drest-field.drest-field--file.drest-field--disabled .dropify-wrapper:hover {
     background-size: 0 0;
     cursor: auto;
 }
@@ -516,10 +550,10 @@
 .drest-field.drest-field--disabled .mdc-select--disabled .mdc-select__native-control {
     border-bottom: 1px solid rgba(0,0,0,0.2);
 }
-.mdc-card--relation .drest-field.drest-field--select2 .select2-container .select2-search__field::placeholder {
+.mdc-card--solo .drest-field.drest-field--select2 .select2-container .select2-search__field::placeholder {
     opacity: 0;
 }
-.mdc-card--relation .drest-field.drest-field--select2.drest-field--disabled .select2-selection {
+.mdc-card--solo.drest-field.drest-field--select2.drest-field--disabled .select2-selection {
     border-bottom: 1px solid transparent;
 }
 .drest-field.drest-field--select2.drest-field--selected:not(.many) .drest-field__label {
@@ -587,7 +621,7 @@
   width: 100%;
   font-size: 1rem;
   box-shadow: none;
-  transition: all .3s;
+  /* transition: all .3s; */
 }
 .drest-field--select2 .select2-container--material .select2-selection .select2-selection__rendered {
   padding-left: 0;
@@ -817,14 +851,23 @@
     font-weight: 400;
     font-family: Roboto,sans-serif;
 }
-.drest-form--readonly .drest-field .drest-field__select {
-    padding: 5px 0 1px;
-}
-.drest-form--readonly .drest-field.drest-field--select2.drest-field--selected .select2-container--material .select2-search--inline .select2-search__field {
+.drest-field.drest-field--disabled.drest-field--select2.drest-field--selected .select2-container--material .select2-search--inline .select2-search__field {
     display: none;
 }
+.drest-field.drest-field--disabled .drest-field__select {
+    padding: 15px 0 1px;
+}
 .drest-field .drest-field__select {
-    padding: 18px 0 1px;
+    padding-top: 28px;
+}
+.mdc-card__fields {
+    padding-top: 1rem;
+}
+.mdc-card.mdc-card--solo .mdc-card__fields {
+    padding-top: 1rem;
+}
+.mdc-card__fields.hide {
+    display: none;
 }
 
 

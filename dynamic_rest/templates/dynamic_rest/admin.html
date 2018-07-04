@@ -128,12 +128,6 @@
                                     <span class="mdc-menu-anchor" style="position: absolute; bottom: -4px; right: -2px;">
                                         <div class="mdc-menu" id="drest-header-more-menu">
                                             <ul class="mdc-menu__items mdc-list">
-                                                {% if allow_edit %}
-                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#editModal" class="mdc-list-item">
-                                                        <span class="material-icons mr-2">edit</span>
-                                                        Edit
-                                                    </li>
-                                                {% endif %}
                                                 {% if allow_create %}
                                                     <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#createModal" class="mdc-list-item">
                                                         <span class="material-icons mr-2">add</span>
@@ -269,18 +263,20 @@
                                         </h5>
                                     </div>
                                     <div class="modal-body p-md-4">
-                                        <fieldset>
-                                            {% csrf_token %}
-                                            <div class="drest-field">
-                                                <div class="mdc-text-field mdc-text-field--disabled mdc-text-field--fullwidth">
-                                                    <label class="mdc-floating-label mdc-floating-label--float-above">
-                                                        {{ singular_name }}
-                                                    </label>
-                                                    <input class="mdc-text-field__input" type="text" disabled name="{{ related_name }}" value="{{ name }}"></input>
+                                        <div class="drest-modal-content">
+                                            <fieldset>
+                                                {% csrf_token %}
+                                                <div class="drest-field drest-field--fake">
+                                                    <div class="mdc-text-field mdc-text-field--disabled mdc-text-field--fullwidth">
+                                                        <label class="mdc-floating-label mdc-floating-label--float-above">
+                                                            {{ singular_name }}
+                                                        </label>
+                                                        <input class="mdc-text-field__input" type="text" disabled name="{{ related_name }}" value="{{ name }}"></input>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            {{ serializer_and_form.1 }}
-                                        </fieldset>
+                                                {{ serializer_and_form.1 }}
+                                            </fieldset>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="modal-footer bg-faded">
@@ -308,10 +304,12 @@
                             </div>
                             <form id="form-create" action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="drest-form" novalidate>
                                 <div class="modal-body p-md-4">
+                                    <div class="drest-modal-content">
                                     <fieldset>
                                         {% csrf_token %}
                                         {{ post_form }}
                                     </fieldset>
+                                    </div>
                                 </div>
                                 <div class="modal-footer bg-faded">
                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -338,12 +336,13 @@
                             </div>
                             <form id="form-delete" action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="drest-form" novalidate>
                                 <div class="modal-body p-md-4">
-                                    <p>Are you sure you want to delete?</p>
-                                    <p class="text-danger">
-                                        <span class="mdi mdi-alert"></span>
-                                        <span>This operation cannot be undone!</span>
-                                    </p>
-
+                                    <div class="drest-modal-content">
+                                        <p>Are you sure you want to delete?</p>
+                                        <p class="text-danger">
+                                            <span class="mdi mdi-alert"></span>
+                                            <span>This operation cannot be undone!</span>
+                                        </p>
+                                    </div>
                                 </div>
                                 <div class="modal-footer bg-faded">
                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -370,9 +369,11 @@
                             </div>
                             <form id="form-edit" action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="drest-form" novalidate>
                                 <div class="modal-body p-md-4">
+                                    <div class="drest-modal-content">
                                     <fieldset>
                                         {{ put_form }}
                                     </fieldset>
+                                    </div>
                                 </div>
                                 <div class="modal-footer bg-faded">
                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -395,11 +396,13 @@
                                     </button>
                                     <h5 class="modal-title">{{ error_title }}</h5>
                                 </div>
-                                <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="drest-form" novalidate>
+                                <form id="error-form" action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="drest-form" novalidate>
                                     <div class="modal-body p-md-4">
+                                        <div class="drest-modal-content">
                                         <fieldset>
                                             {{ error_form }}
                                         </fieldset>
+                                        </div>
                                     </div>
                                     <div class="modal-footer bg-faded">
                                         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -427,11 +430,13 @@
                             </div>
                             <form class="filter-form" method="get" action="{{ search_endpoint }}">
                                 <div class="modal-body p-md-4">
+                                    <div class="drest-modal-content">
                                     <fieldset>
                                         {% for filter in filters.values %}
                                             {% render_filter filter %}
                                         {% endfor %}
                                     </fieldset>
+                                    </div>
                                 </div>
                                 <div class="modal-footer bg-faded">
                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -456,7 +461,6 @@
                     // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
                     $.fn.modal.Constructor.prototype._enforceFocus = function() {};
                     // initialize the form
-                    $('form').ajaxForm();
 
                     // show the error modal
                     $('#errorModal').modal('show');
@@ -464,18 +468,28 @@
                     $('.drest-nav-alert').delay(5000).slideUp(200, function() {
                         $(this).alert('close');
                     });
+
                     $('[data-toggle="tooltip"]').tooltip();
                     tippy('.drest-tooltip');
                     $('.drest-content-container').show();
 
                     var spin = function() {
-                        var mprogress = new Mprogress({
-                            template: 3,
-                            parent: '#drestProgressBar'
-                        });
-                        mprogress.start();
+                        if (!window.spinner) {
+                            var mprogress = new Mprogress({
+                                template: 3,
+                                parent: '#drestProgressBar'
+                            });
+                            window.spinner = mprogress;
+                        }
+                        window.spinner.start();
+                    };
+                    var stopSpinner = function() {
+                        if (window.spinner) {
+                            window.spinner.end();
+                        }
                     };
                     window.spin = spin;
+                    window.stopSpinner = stopSpinner;
                     $('a').filter(function() {
                         if (this.target === "_blank") {
                             return false;
@@ -593,20 +607,62 @@
                 var $clearFabIcon = $clearFab.find('.mdc-fab__icon');
                 var $editForm = $('#form-inline-edit');
 
+                $editForm.on('drest-form:submit-succeeded', function() {
+                    window.stopSpinner();
+                    $editFab.removeClass('submitting').addClass('mdc-theme--primary-bg').removeClass('mdc-theme--background');
+                    $editFabIcon.html('edit').removeClass('mdc-theme--on-surface');
+
+                    $clearFab.hide();
+
+                    $editForm[0].DRESTForm.toggleDisabled();
+
+                    // $('html, body').animate({ scrollTop: $('.drest-content-container').offset().top }, 500);
+                });
+
+                $editForm.on('drest-form:submit-failed', function() {
+                    window.stopSpinner();
+                    $editFab.removeClass('submitting').addClass('mdc-theme--primary-bg').removeClass('mdc-theme--background');
+                    $editFabIcon.html('check').removeClass('mdc-theme--on-surface');
+
+                    $clearFab.show();
+                });
+
+                $editForm.on('drest-form:submit-noop', function() {
+                    window.stopSpinner();
+                    $editFab.removeClass('submitting').addClass('mdc-theme--primary-bg').removeClass('mdc-theme--background');
+                    $editFabIcon.html('check').removeClass('mdc-theme--on-surface');
+
+                    $clearFab.show();
+                    $clearFab.click();
+                });
+
                 $editFab.on('click.drest', function() {
+                    if ($editFab.hasClass('submitting')) {
+                        return;
+                    }
+
                     var editForm = $editForm[0].DRESTForm;
                     if (editForm.disabled) {
                         // enable
-                        $editFabIcon.html('check')
+                        $editFabIcon.html('check').removeClass('mdc-theme--on-surface');
                         $clearFabIcon.html('close');
+
                         $clearFab.show();
                         editForm.toggleDisabled();
                     } else {
                         // save
+                        window.spin();
+                        $editFab.addClass('submitting').removeClass('mdc-theme--primary-bg').addClass('mdc-theme--background');
+                        $editFabIcon.addClass('mdc-theme--on-surface').html('more_horiz');
+
+                        $clearFab.hide();
                         $editForm.submit();
                     }
                 });
                 $clearFab.on('click.drest', function() {
+                    if ($editFab.hasClass('submitting')) {
+                        return;
+                    }
                     var editForm = $editForm[0].DRESTForm;
                     $editFabIcon.html('edit');
                     if (editForm.hasChanged()) {

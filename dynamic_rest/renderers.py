@@ -29,6 +29,14 @@ mapping[fields.DynamicImageField] = {
 mapping[fields.DynamicNullBooleanField] = {
     'base_template': 'checkbox.html'
 }
+mapping[fields.DynamicDecimalField] = {
+    'base_template': 'input.html',
+    'input_type': 'number'
+}
+mapping[fields.DynamicMoneyField] = {
+    'base_template': 'input.html',
+    'input_type': 'number'
+}
 
 
 class DynamicHTMLFormRenderer(HTMLFormRenderer):

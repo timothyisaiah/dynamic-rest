@@ -48,17 +48,12 @@
                     {% endif %}
                 {% endif %}
         </p>
+        {% include "./field-js.html" %}
     </div>
 {% else %}
     <div id="{{ field.id }}" class="drest-field--datetime drest-field {% if field.errors %}drest-field--invalid{% endif %}">
         <div
             class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth{% if field.value %} mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}">
-            <label
-                class="drest-field__label"
-                for="{{ field.id }}-input">
-                {{ field.label }}
-            </label>
-            <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
             <input
                 id="{{ field.id }}-input"
                 name="{{ field.name }}"
@@ -68,7 +63,19 @@
                 type="{% if style.input_type == "time" or style.input_type == "date" or style.input_type == "datetime-local" %}text{% else %}{{ style.input_type }}{% endif %}"
                 {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
                 {% if field.value %}value="{{ field.value }}"{% endif %}
+                {% if field.errors %}
+                    invalid
+                {% endif %}
+                {% if field.required and not field.allow_null %}
+                    required
+                {% endif %}
                 {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}/>
+            <label
+                class="drest-field__label"
+                for="{{ field.id }}-input">
+                {{ field.label }}
+            </label>
+            <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
             <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--persistent {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
                 {% if field.errors %}
                     {% for error in field.errors %}
@@ -81,7 +88,7 @@
                 {% endif %}
             </p>
         </div>
+        {% include "./field-js.html" %}
     </div>
 {% endif %}
 
-{% include "./field-js.html" %}

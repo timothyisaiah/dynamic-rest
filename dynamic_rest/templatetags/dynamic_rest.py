@@ -122,12 +122,9 @@ def relation_to_json(field, value=None, many=None):
                             pk=str(v)
                         )
             result = {
-                'id': str(instance.pk)
+                'id': str(instance.pk),
+                'name': get_attribute(instance, source_attrs)
             }
-            result[name_field_name] = get_attribute(
-                instance,
-                source_attrs
-            )
             results.append(result)
 
     if not many:
@@ -172,7 +169,10 @@ def field_to_json(field):
     if isinstance(value, UUID):
         value = str(value)
     elif isinstance(value, FieldFile):
-        value = value.url
+        try:
+            value = value.url
+        except ValueError:
+            value = None
     elif isinstance(value, Decimal):
         value = str(value)
 
