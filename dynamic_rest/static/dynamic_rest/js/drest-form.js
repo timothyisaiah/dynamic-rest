@@ -148,20 +148,16 @@ $(document).ready(function() {
         };
         this.onSubmitSucceeded = function(e, response) {
             var data = response.data;
-            var fields = this.getFieldsByName();
-            for (var key in fields) {
-              if (fields.hasOwnProperty(key)) {
-                var d = data[key];
-                var f = fields[key];
-                if (key === 'age') {
-                    console.log(f, d);
-                }
+            var fields = this.getFields();
+            for (var i=fields.length-1; i>=0; i--) {
+                var field = fields[i];
+                var name = field.name;
+                var d = data[name];
                 if (typeof d !== 'undefined') {
-                    f.reset(data[key]);
+                    field.reset(d);
                 } else {
-                    f.clearError();
+                    field.clearError();
                 }
-              }
             }
         };
 

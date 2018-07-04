@@ -616,7 +616,7 @@
 
                     $editForm[0].DRESTForm.toggleDisabled();
 
-                    // $('html, body').animate({ scrollTop: $('.drest-content-container').offset().top }, 500);
+                    $('html').animate({ scrollTop: window.submitOffset }, 1);
                 });
 
                 $editForm.on('drest-form:submit-failed', function() {
@@ -652,6 +652,7 @@
                     } else {
                         // save
                         window.spin();
+                        window.submitOffset = $('html').scrollTop();
                         $editFab.addClass('submitting').removeClass('mdc-theme--primary-bg').addClass('mdc-theme--background');
                         $editFabIcon.addClass('mdc-theme--on-surface').html('more_horiz');
 
