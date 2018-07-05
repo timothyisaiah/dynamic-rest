@@ -11,7 +11,7 @@
                 aria-describedby="{{ field.id }}-helper"
             {% endif %}
             {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
-            {% if style.rows %}rows="{{ style.rows }}"{% endif %}
+            rows=4
 
             {% if field.errors %}
                 invalid
@@ -19,11 +19,7 @@
             {% if field.required and not field.allow_null %}
                 required
             {% endif %}
-        >
-            {% if field.value %}
-                {{ field.value }}
-            {% endif %}
-        </textarea>
+        >{% if field.value %}{{ field.value }}{% endif %}</textarea>
         <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
     </div>
     <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
