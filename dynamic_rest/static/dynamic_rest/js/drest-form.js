@@ -200,6 +200,13 @@ $(document).ready(function() {
                 // any "many" field
                 val = [];
             }
+            if (this.type === 'boolean') {
+                if (val === 'false') {
+                    val = false;
+                } else if (val === 'true') {
+                    val = true;
+                }
+            }
             return val;
         };
         this.getForm = function() {
