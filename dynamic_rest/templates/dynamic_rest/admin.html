@@ -120,7 +120,7 @@
                         </section>
                         <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
                             {% if allow_filter %}
-                                <a data-no-spin=true data-toggle="modal" data-target="#filtersModal" href="#" class="material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
+                                <a data-no-spin=true data-toggle="modal" data-target="#drest-filter-modal" href="#" class="material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
                             {% endif %}
                             {% if allow_menu %}
                                 <span id="drest-header-more" class="mdc-top-app-bar__action-item">
@@ -129,13 +129,13 @@
                                         <div class="mdc-menu" id="drest-header-more-menu">
                                             <ul class="mdc-menu__items mdc-list">
                                                 {% if allow_create %}
-                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#createModal" class="mdc-list-item">
+                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#drest-create-modal" class="mdc-list-item">
                                                         <span class="material-icons mr-2">add</span>
                                                         Add
                                                     </li>
                                                 {% endif %}
                                                 {% if allow_delete %}
-                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#deleteModal" class="mdc-list-item">
+                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#drest-delete-modal" class="mdc-list-item">
                                                         <span class="material-icons mr-2">delete</span>
                                                         Delete
                                                     </li>
@@ -250,7 +250,7 @@
                         <div class="navbar-nav drest-nav">
                             <div class="nav-item drest-nav-left">
                                 {% if allow_delete %}
-                                    <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
+                                    <div data-toggle="modal" data-target="#drest-delete-modal" class="drest-btn btn btn-danger">
                                         <span class="drest-btn-icon mdi mdi-delete" aria-hidden="true"></span>
                                         <span class="drest-btn-label">Delete</span>
                                     </div>
@@ -263,7 +263,7 @@
                             </div>
                             <div class="nav-item drest-nav-right">
                                 {% if allow_create %}
-                                    <div class="mdc-fab--fixed-br mdc-theme--primary-bg mdc-fab" data-toggle="modal" data-target="#createModal">
+                                    <div class="mdc-fab--fixed-br mdc-theme--primary-bg mdc-fab" data-toggle="modal" data-target="#drest-create-modal">
                                         <span class="mdc-fab__icon material-icons">add</span>
                                     </div>
                                 {% endif %}
