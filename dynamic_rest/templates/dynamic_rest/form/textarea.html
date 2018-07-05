@@ -5,7 +5,6 @@
             class="mdc-text-field__input"
             id="{{ field.id }}-input"
             name="{{ field.name }}"
-            rows=10
             {% if field.errors or field.help_text %}
                 aria-controls="{{ field.id }}-helper"
                 aria-describedby="{{ field.id }}-helper"
