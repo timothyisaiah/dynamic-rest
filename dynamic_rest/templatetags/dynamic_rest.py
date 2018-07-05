@@ -193,7 +193,7 @@ def get_sections(serializer, instance=None, check=True):
     sections = serializer.get_sections(instance)
     if check:
         sections = [
-            s for s in sections if s.should_render()
+            s for s in sections if s.should_render
         ]
     return sections
 
@@ -205,7 +205,10 @@ def get_field_value(serializer, instance, key, idx=None):
 
 @register.filter
 def render_field_value(field):
-    value = getattr(field, 'get_rendered_value', lambda *x: field)()
+    if hasattr(field, 'rendered_value'):
+        value = field.rendered_value
+    else:
+        value = field
     return mark_safe(value)
 
 

@@ -49,6 +49,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.getter = kwargs.pop('getter', None)
         self.setter = kwargs.pop('setter', None)
         self.controls = kwargs.pop('controls', None)
+        self.hide = kwargs.pop('hide', None)
         self.bound = False
         if self.getter:
             # dont bind to model

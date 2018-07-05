@@ -8,9 +8,6 @@ from .base import DynamicField
 class DynamicMoneyFieldBase(
     DynamicField
 ):
-    def admin_get_icon(self, instance, value):
-        return 'cash-usd'
-
     def admin_render_value(self, value):
         return money_format(value)
 

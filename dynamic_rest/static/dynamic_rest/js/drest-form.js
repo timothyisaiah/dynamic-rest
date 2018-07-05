@@ -77,7 +77,9 @@ $(document).ready(function() {
               var data;
               var contentType = form.attr('enctype') || form.attr('encoding') || 'multipart/form-data';
 
-              if (contentType === 'multipart/form-data') {
+              if (method === 'DELETE') {
+                  data = null;
+              } else if (contentType === 'multipart/form-data') {
                   contentType = false;
                   data = new FormData();
                   var fields = this.getFields();
@@ -94,6 +96,7 @@ $(document).ready(function() {
                     }
                   }
                   if (!anyChanges) {
+                    // no changes to save -> noop
                     form.trigger('drest-form:submit-noop');
                     return;
                   }
@@ -102,6 +105,7 @@ $(document).ready(function() {
                   contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
                   data = form.serialize();
               }
+
               form.trigger('drest-form:submitting');
               return $.ajax({
                 url: url,
@@ -114,10 +118,14 @@ $(document).ready(function() {
                   'Accept': 'application/json'
                 },
               }).done(function(data, textStatus, jqXHR) {
-                    for (var x in data) {
-                        if (data.hasOwnProperty(x)) {
-                            data = data[x];
-                            break;
+                    if (method === 'DELETE') {
+                        data = null;
+                    } else {
+                        for (var x in data) {
+                            if (data.hasOwnProperty(x)) {
+                                data = data[x];
+                                break;
+                            }
                         }
                     }
                     form.trigger('drest-form:submit-succeeded', [{
@@ -253,9 +261,8 @@ $(document).ready(function() {
                 }
             } else {
                 $choice = this.$field.find('.select2-selection__rendered');
-                $choice.addClass('drest--clickable').off('click.drest-field');
-
                 if (!this.isEmpty(this.value)) {
+                    $choice.addClass('drest--clickable');
                     $choice.attr('data-url', url + '/' + this.value);
                     $choice.off('click.drest-field').on('click.drest-field', linkMe);
                 }

@@ -303,16 +303,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 value
             )
 
-    def admin_get_icon(self, instance, value):
-        serializer = self.serializer
-        if serializer:
-            icon = serializer.get_icon()
-            label = self.admin_get_label(instance, value)
-            if label:
-                return icon
-
-        return None
-
     def admin_get_label(self, instance, value):
         # use the name field
         serializer = self.serializer

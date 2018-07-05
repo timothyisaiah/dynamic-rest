@@ -13,9 +13,6 @@ class DynamicDateField(
 ):
     ADMIN_FORMAT = settings.ADMIN_DATE_FORMAT
 
-    def admin_get_icon(self, instance, value):
-        return 'calendar'
-
     def prepare_value(self, instance):
         value = super(DynamicDateField, self).prepare_value(
             instance

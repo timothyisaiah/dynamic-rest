@@ -155,6 +155,29 @@
                     </div>
                 </header>
             {% endblock %} <!-- /header -->
+            {% block delete_dialog %}
+                <aside id="drest-delete-dialog"
+                  class="mdc-dialog"
+                  role="alertdialog"
+                  aria-labelledby="delete-dialog-label"
+                  aria-describedby="delete-dialog-description">
+                  <div class="mdc-dialog__surface">
+                    <header class="mdc-dialog__header">
+                      <h2 id="drest-delete-dialog-label" class="mdc-dialog__header__title">
+                        Are you sure you want to delete this record?
+                      </h2>
+                    </header>
+                    <section id="drest-delete-dialog-description" class="mdc-dialog__body">
+                        This operation cannot be undone!
+                    </section>
+                    <footer class="mdc-dialog__footer">
+                      <button type="button" class="mdc-button mdc-dialog__footer__button mdc-dialog__footer__button--cancel">Cancel</button>
+                      <button type="button" class="mdc-dialog__action mdc-button mdc-dialog__footer__button mdc-dialog__footer__button--accept">Delete</button>
+                    </footer>
+                  </div>
+                  <div class="mdc-dialog__backdrop"></div>
+                </aside>
+            {% endblock %}
             {% block drawer %}
                 <aside id="drest-drawer" class="mdc-drawer mdc-drawer--temporary mdc-typography">
                     <nav class="mdc-drawer__drawer">
@@ -212,13 +235,13 @@
             {% endblock %}
 
             {% block footer %}
-                <div id="drestProgressBar"></div>
+                <div id="drest-progress-bar"></div>
                 {% if style == 'detail' %}
                     {% if allow_edit %}
-                        <div id="drestEditFab" class="mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
+                        <div id="drest-edit-fab" class="mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
                             <span class="mdc-fab__icon material-icons">edit</span>
                         </div>
-                        <div style="display: none" id="drestClearFab" class="mdc-fab mdc-theme--background mdc-fab--fixed-br-2">
+                        <div style="display: none" id="drest-clear-fab" class="mdc-fab mdc-theme--background mdc-fab--fixed-br-2">
                             <span class="mdc-theme--on-surface mdc-fab__icon material-icons">close</span>
                         </div>
                     {% endif %}
@@ -251,10 +274,10 @@
             {% endblock %} <!-- /footer -->
             {% block create_related_modals %}
                 {% for related_name, serializer_and_form in create_related_forms.items %}
-                    <div class="drest modal left fade" id="createModal-{{ related_name }}">
+                    <div class="drest modal left fade" id="drest-create-modal-{{ related_name }}">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <form id="form-create-{{ related_name }}" action="{{ serializer | get_related_url:related_name }}/" method="POST" enctype="multipart/form-data" class="drest-form" novalidate>
+                                <form id="drest-create-form-{{ related_name }}" action="{{ serializer | get_related_url:related_name }}/" method="POST" enctype="multipart/form-data" class="drest-form" novalidate>
                                     <div class="modal-header bg-primary">
                                         <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Back">arrow_back</button>
                                         <h5 class="modal-title">
@@ -290,7 +313,7 @@
             {% endblock %}
 
             {% block create_modal %}
-                <div class="drest modal left fade" id="createModal">
+                <div class="drest modal left fade" id="drest-create-modal">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
@@ -302,7 +325,7 @@
                                     <span>Add {{ singular_name }}</span>
                                 </h5>
                             </div>
-                            <form id="form-create" action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="drest-form" novalidate>
+                            <form id="drest-create-form" action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="drest-form" novalidate>
                                 <div class="modal-body p-md-4">
                                     <div class="drest-modal-content">
                                     <fieldset>
@@ -322,7 +345,7 @@
             {% endblock %} <!-- /create_modal -->
 
             {% block delete_modal %}
-                <div class="drest modal left fade" id="deleteModal">
+                <div class="drest modal left fade" id="drest-delete-modal">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-danger">
@@ -334,7 +357,7 @@
                                     <span>Delete {{ title }}</span>
                                 </h5>
                             </div>
-                            <form id="form-delete" action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="drest-form" novalidate>
+                            <form id="drest-delete-form" action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="drest-form" novalidate>
                                 <div class="modal-body p-md-4">
                                     <div class="drest-modal-content">
                                         <p>Are you sure you want to delete?</p>
@@ -354,40 +377,9 @@
                 </div>
             {% endblock %} <!-- /delete_modal -->
 
-            {% block edit_modal %}
-                <div class="drest modal left fade" id="editModal">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary">
-                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
-                                    arrow_back
-                                </button>
-                                <h5 class="modal-title">
-                                    <span class="fa fa-pencil"></span>
-                                    <span>Edit {{ title }}</span>
-                                </h5>
-                            </div>
-                            <form id="form-edit" action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="drest-form" novalidate>
-                                <div class="modal-body p-md-4">
-                                    <div class="drest-modal-content">
-                                    <fieldset>
-                                        {{ put_form }}
-                                    </fieldset>
-                                    </div>
-                                </div>
-                                <div class="modal-footer bg-faded">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                    <button type="submit" class="btn btn-primary">Save</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            {% endblock %} <!-- /edit_modal -->
-
             {% block error_form %}
                 {% if error_form %}
-                    <div class="drest modal" id="errorModal">
+                    <div class="drest modal" id="drest-error-modal">
                         <div class="modal-dialog">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary">
@@ -396,7 +388,7 @@
                                     </button>
                                     <h5 class="modal-title">{{ error_title }}</h5>
                                 </div>
-                                <form id="error-form" action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="drest-form" novalidate>
+                                <form id="drest-error-form" action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="drest-form" novalidate>
                                     <div class="modal-body p-md-4">
                                         <div class="drest-modal-content">
                                         <fieldset>
@@ -416,7 +408,7 @@
             {% endblock %} <!-- /error_form -->
 
             {% block filter_form %}
-                <div class="drest modal left fade" id="filtersModal">
+                <div class="drest modal left fade" id="drest-filter-modal">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
@@ -463,7 +455,7 @@
                     // initialize the form
 
                     // show the error modal
-                    $('#errorModal').modal('show');
+                    $('#drest-error-modal').modal('show');
                     // enable responsible tables
                     $('.drest-nav-alert').delay(5000).slideUp(200, function() {
                         $(this).alert('close');
@@ -477,7 +469,7 @@
                         if (!window.spinner) {
                             var mprogress = new Mprogress({
                                 template: 3,
-                                parent: '#drestProgressBar'
+                                parent: '#drest-progress-bar'
                             });
                             window.spinner = mprogress;
                         }
@@ -496,9 +488,12 @@
                         }
                         return this.href && !this.href.match(/^\s*(mailto:|#|tel:)/) && !$(this).data('no-spin');
                     }).click(spin);
+
                     $('button[type="submit"]').click(spin);
+
                     $('.drest-link').click(spin);
-                    var table = $('#results-table').DataTable({
+
+                    $('#drest-data-table').DataTable({
                         "paging": false,
                         "ordering": false,
                         "info": false,
@@ -510,6 +505,7 @@
                             "details": false
                         },
                     });
+
                     $('.drest-json').each(function(index){
                         var json = $(this).data('json');
                         if (json) {
@@ -601,8 +597,8 @@
                     }
                 });
 
-                var $editFab = $('#drestEditFab');
-                var $clearFab = $('#drestClearFab');
+                var $editFab = $('#drest-edit-fab');
+                var $clearFab = $('#drest-clear-fab');
                 var $editFabIcon = $editFab.find('.mdc-fab__icon');
                 var $clearFabIcon = $clearFab.find('.mdc-fab__icon');
                 var $editForm = $('#form-inline-edit');
@@ -671,6 +667,11 @@
                     }
                     $clearFab.hide();
                     editForm.toggleDisabled();
+                });
+                // delete dialog
+                // TODO
+                $('#drest-delete-form').on('drest-form:submit-succeeded', function() {
+                    window.history.back();
                 });
             </script>
         {% endblock %} <!-- /script -->

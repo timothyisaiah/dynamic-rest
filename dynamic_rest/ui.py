@@ -2,6 +2,7 @@ from random import randint
 import json
 import uuid
 
+from django.utils.functional import cached_property
 from django.utils import six
 from decimal import Decimal
 from django.template import loader
@@ -75,15 +76,17 @@ class UIField(object):
             (self.__class__.__name__, self._field.field_name, self.value,
              self.errors, self.instance))
 
-    def get_rendered_value(self):
-        if not hasattr(self, '_rendered_value'):
-            if callable(getattr(self._field, 'admin_render', None)):
-                self._rendered_value = self._field.admin_render(
-                    instance=self.instance, value=self.value)
-            else:
-                self._rendered_value = self.value
-        return self._rendered_value
+    @cached_property
+    def rendered_value(self):
+        if callable(getattr(self._field, 'admin_render', None)):
+            return self._field.admin_render(
+                instance=self.instance,
+                value=self.value
+            )
+        else:
+            return
 
+    @cached_property
     def should_render(self):
         field = self._field
         read_only = field.read_only
@@ -157,8 +160,9 @@ class UISection(object):
 
         self.main = main
 
+    @cached_property
     def should_render(self):
-        return any([f.should_render() for f in self.fields])
+        return any([f.should_render for f in self.fields])
 
 
 class UIFilter(object):

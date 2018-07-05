@@ -938,7 +938,7 @@ class WithDynamicSerializerMixin(
             serializer_fields,
             immutable_field_names,
             'read_only',
-            value=method in ('PUT', 'PATCH'))
+            value=method in ('GET', 'PUT', 'PATCH'))
 
         # Toggle read_only for only-update fields
         only_update_field_names = self._get_flagged_field_names(
