@@ -467,10 +467,6 @@
 .drest-form .drest-field:last-child {
     margin-bottom: 0;
 }
-.drest-form.drest-form--readonly .drest-field .mdc-text-field__input,
-.drest-form.drest-form--readonly .drest-field .select2-selection__rendered {
-    color: rgba(0,0,0,0.7);
-}
 .drest-form .drest-field:first-child {
     margin-top: 0;
 }
