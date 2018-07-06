@@ -31,7 +31,12 @@ mapping[fields.DynamicNullBooleanField] = {
 }
 mapping[fields.DynamicDecimalField] = {
     'base_template': 'input.html',
-    'input_type': 'number'
+    'input_type': 'number',
+    'step': '.01'
+}
+mapping[fields.DynamicPasswordField] = {
+    'base_template': 'input.html',
+    'input_type': 'password'
 }
 mapping[fields.DynamicMoneyField] = {
     'base_template': 'input.html',

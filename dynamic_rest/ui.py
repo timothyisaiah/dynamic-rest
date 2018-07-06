@@ -99,11 +99,9 @@ class UIField(object):
 
         if request_method == 'GET':
             if (
-                field.write_only or (
-                    getattr(field, 'hide', None) and
-                    field.read_only and not getattr(field, 'create', None)
-                    and self.is_empty
-                )
+                getattr(field, 'hide', None) and
+                field.read_only and not getattr(field, 'create', None)
+                and self.is_empty
             ):
                 return False
 

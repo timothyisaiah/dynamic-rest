@@ -333,6 +333,15 @@ $(document).ready(function() {
                 }
             } else if (this.type === 'list') {
                 this.$input.val(value).trigger('change');
+            } else if (this.type === 'boolean') {
+                if (value === null) {
+                    this.$input[0].indeterminate = true;
+                    this.$input[0].checked = false;
+                } else {
+                    this.$input[0].indeterminate = false;
+                    this.$input[0].checked = !!value;
+                }
+                this.$input.val(value);
             } else {
                 this.$input.val(value);
             }

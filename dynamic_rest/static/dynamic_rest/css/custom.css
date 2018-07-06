@@ -636,6 +636,9 @@
     font-size: 1rem;
     padding: 0;
 }
+.drest-form--readonly .drest-field--writeonly {
+    display: none;
+}
 .drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container--material .select2-selection--multiple .select2-selection__choice,
 .drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container--material .select2-selection__rendered {
     color: var(--mdc-theme-primary);

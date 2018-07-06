@@ -1,7 +1,7 @@
 {% load dynamic_rest %}
 
 {% if style.input_type == "text" or style.input_type == "password" or style.input_type == "number" %}
-    <div id="{{ field.id }}" class="drest-field {% if field.errors %}drest-field--invalid{% endif %}">
+    <div id="{{ field.id }}" class="drest-field {% if field.errors %}drest-field--invalid{% endif %} {% if field.read_only %}drest-field--disabled{% endif %} {% if field.write_only %}drest-field--writeonly{% endif %}">
         <div
             class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if field.value %}mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}"
             data-mdc-auto-init="MDCTextField">
@@ -24,6 +24,7 @@
                     required
                 {% endif %}
                 value="{{ field.value }}"
+                {% if style.step %}step={{ style.step }}{% endif %}
             />
             <label
                 class="mdc-floating-label{% if field.value %} mdc-floating-label--float-above{% endif %}"
