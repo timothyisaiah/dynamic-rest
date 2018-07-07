@@ -268,6 +268,7 @@ class WithDynamicSerializerMixin(
                  dynamic=True,
                  embed=False,
                  envelope=False,
+                 request_method=None,
                  **kwargs):
         """
         Custom initializer that builds `request_fields`.
@@ -289,6 +290,9 @@ class WithDynamicSerializerMixin(
             envelope: If True, wrap `.data` in an envelope.
                 If False, do not use an envelope.
         """
+        if request_method:
+            self.set_request_method(request_method)
+
         name = self.get_name()
         if data is not empty and name in data and len(data) == 1:
             # support POST/PUT key'd by resource name
@@ -354,13 +358,13 @@ class WithDynamicSerializerMixin(
                     continue
                 kwargs = {
                     'request_fields': None,
+                    'request_method': 'POST',
                     'many': False
                 }
                 inverse_field_name = field.get_inverse_field_name()
                 if inverse_field_name:
                     kwargs['exclude_fields'] = [inverse_field_name]
                 related_serializer = field.get_serializer(**kwargs)
-                related_serializer.set_request_method('POST')
                 has_permission = (
                     not getattr(related_serializer, 'permissions', None) or
                     related_serializer.permissions.create
@@ -932,8 +936,10 @@ class WithDynamicSerializerMixin(
         # Toggle read_only flags for immutable fields.
         # Note: This overrides `read_only` if both are set, to allow
         #       inferred DRF fields to be made immutable.
+
         immutable_field_names = self._get_flagged_field_names(
             serializer_fields, 'immutable')
+
         self.flag_fields(
             serializer_fields,
             immutable_field_names,
@@ -952,6 +958,7 @@ class WithDynamicSerializerMixin(
         hidden_fields = getattr(meta, 'hidden_fields', [])
         self.flag_fields(serializer_fields, hidden_fields, 'read_only', True)
         self.flag_fields(serializer_fields, hidden_fields, 'write_only', True)
+
         return serializer_fields
 
     def is_field_sideloaded(self, field_name):
