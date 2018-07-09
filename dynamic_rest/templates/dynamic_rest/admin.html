@@ -140,6 +140,14 @@
                                                         Delete
                                                     </li>
                                                 {% endif %}
+                                                {% for action in actions %}
+                                                    <li data-goto="{{ action.url }}" tabindex="0" role="menuitem" class="drest-goto mdc-list-item">
+                                                        {% if action.icon %}
+                                                            <span class="material-icons mr-2">{{ action.icon }}</span>
+                                                        {% endif %}
+                                                        {{ action.label }}
+                                                    </li>
+                                                {% endfor %}
                                                 {% if request.user.is_authenticated %}
                                                     <li data-goto="{{ logout_url }}" tabindex="0" role="menuitem" class="drest-goto mdc-list-item">
                                                         <span class="material-icons mr-2">lock_open</span>
@@ -548,7 +556,11 @@
                                         $parent.addClass('drest-field--selected');
                                     }
                                 });
-                                $this.on('open', function() {
+                                $this.on('open', function(e) {
+                                    if ($parent.hasClass('drest-field--disabled')) {
+                                        e.stopPropagation();
+                                        return false;
+                                    }
                                     $parent.addClass('drest-field--focused');
                                     $parent.find('.mdc-line-ripple').addClass('mdc-line-ripple--active');
                                 });

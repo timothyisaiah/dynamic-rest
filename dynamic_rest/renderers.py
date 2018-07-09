@@ -281,6 +281,12 @@ class DynamicAdminRenderer(AdminRenderer):
 
         from dynamic_rest.routers import get_directory
 
+        if hasattr(view, 'get_actions'):
+            actions = view.get_actions()
+        else:
+            actions = []
+
+        context['actions'] = actions
         context['render_style'] = render_style
         context['directory'] = get_directory(request, icons=True)
         context['filters'] = filters
@@ -314,6 +320,7 @@ class DynamicAdminRenderer(AdminRenderer):
         else:
             sorted_field = None
 
+        context['actions'] = actions
         context['create_related_forms'] = create_related_forms
         context['sorted_field'] = sorted_field
         context['sorted_ascending'] = sorted_ascending

@@ -19,15 +19,19 @@ resource_map = {}
 resource_name_map = {}
 
 
-def get_directory(request, icons=False):
-    """Get API directory as a dictionary of name -> URL"""
+def get_router(request):
     view = resolve(request.path)
     view = view.func
     if hasattr(view, 'view_class'):
         view = view.view_class
     elif hasattr(view, 'cls'):
         view = view.cls
-    router = view._router
+    return getattr(view, '_router', None)
+
+
+def get_directory(request, icons=False):
+    """Get API directory as a dictionary of name -> URL"""
+    router = get_router(request)
     return router.get_directory(request, icons=icons)
 
 
@@ -150,7 +154,7 @@ class DynamicRouter(DefaultRouter):
             resource_key = serializer.get_resource_key()
             resource_name = serializer.get_name()
             path_name = serializer.get_plural_name()
-        except:
+        except Exception:
             import traceback
             traceback.print_exc()
             raise Exception(

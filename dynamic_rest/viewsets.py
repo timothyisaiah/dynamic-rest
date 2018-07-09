@@ -1,10 +1,12 @@
 """This module contains custom viewset classes."""
 import csv
+
 from io import StringIO
 import inflection
 
 from django.http import QueryDict
 from django.utils import six
+from django.utils.functional import cached_property
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
@@ -16,6 +18,7 @@ from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.utils import is_truthy
+
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
@@ -141,6 +144,22 @@ class WithDynamicViewSetBase(object):
             pass
 
         return request
+
+    @cached_property
+    def _actions(self):
+        actions = []
+        cls = self.__class__
+        for name in dir(cls):
+            fn = getattr(cls, name)
+            action = getattr(fn, 'drest_action', None)
+            if action:
+                action.bind(self, name)
+                actions.append(action)
+        return actions
+
+    def get_actions(self):
+        actions = self._actions
+        return actions
 
     def get_renderers(self):
         """Optionally block browsable/admin API rendering. """
