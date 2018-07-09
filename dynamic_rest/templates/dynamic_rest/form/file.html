@@ -6,7 +6,10 @@
         id="{{ field.id }}-input"
         name="{{ field.name }}"
         type="file"
-        {% if field.value %}value="{{ field.value }}"{% endif %}
+        {% if field.value %}
+            value="{{ field.value }}"
+            data-default-file="{{ field.value.url }}"
+        {% endif %}
         {% if field.errors or field.help_text %}
             aria-controls="{{ field.id }}-helper"
             aria-describedby="{{ field.id }}-helper"

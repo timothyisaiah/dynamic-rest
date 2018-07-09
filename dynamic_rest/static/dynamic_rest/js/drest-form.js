@@ -1,6 +1,10 @@
 window.drest = {};
 
 $(document).ready(function() {
+    Dropify.prototype.isTouchDevice = function() { return false; }
+    Dropify.prototype.getFileType = function() {
+        return this.file.name.split('.').pop().split('?').shift().toLowerCase();
+    };
     function DRESTForm(_form) {
         this.getFields = function() {
             if (this._fields === null) {
@@ -314,8 +318,11 @@ $(document).ready(function() {
             this.clearError();
 
             if (this.type === 'file') {
+                var d = this.$input.data('dropify');
+                d.resetPreview();
                 if (value) {
-                    this.$field.find('.dropify-render img').attr('src', value);
+                    d.file.name = d.cleanFilename(value);
+                    d.setPreview(d.isImage(), value);
                 }
             } else if (this.type === 'relation') {
                 if (this.relation.image) {
@@ -619,9 +626,13 @@ $(document).ready(function() {
             }
         } else if (type === 'file') {
             $input.dropify();
-            $field.find('.dropify-render').append(
+            $input.on('dropify.afterClear', function(evt, el) {
+                // clearing the dropify doesnt trigger input's change
+                this.onChange();
+            }.bind(this));
+            /* $field.find('.dropify-render').append(
                 '<img src="' + value + '">'
-            );
+            ); */
         }
 
         // bind change handler
