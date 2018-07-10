@@ -644,6 +644,9 @@
     font-size: 1rem;
     padding: 0;
 }
+.drest-field--select2.drest-field--selected .select2-container--material .select2-selection--multiple .select2-selection__rendered {
+    padding-top: 0.5rem;
+}
 .drest-form--readonly .drest-field--writeonly {
     display: none;
 }
@@ -884,6 +887,9 @@
 }
 .drest-field .drest-field__select {
     padding: 15px 0 1px;
+}
+.drest-field.many .drest-field__select {
+    padding: 5px 0 1px;
 }
 .mdc-card__fields {
     padding-top: 1rem;
