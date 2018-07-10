@@ -392,13 +392,15 @@
 }
 
 .drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-text-field:not(.mdc-text-field--focused) .mdc-floating-label,
-.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-select__native-control:not(:focus) + .mdc-floating-label,
+.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-select__native-control:not(:focus) ~ .mdc-floating-label,
 .drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .drest-field__label,
-.drest-field.drest-field--changed:not(.drest-field--invalid) .drest-field__block-label {
+.drest-field.drest-field--changed:not(.drest-field--invalid) .drest-field__block-label,
+.drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .select2-search__field::placeholder,
+.drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .select2-selection__placeholder {
     color: var(--mdc-theme-secondary);
 }
 .drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .mdc-text-field:not(.mdc-text-field--focused) .mdc-line-ripple,
-.drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .mdc-select .mdc-line-ripple {
+.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-select__native-control:not(:focus) ~ .mdc-line-ripple {
     background-color: var(--mdc-theme-secondary);
     transform: scaleX(1);
     opacity: 1;

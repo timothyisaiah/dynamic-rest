@@ -632,7 +632,6 @@ $(document).ready(function() {
                 this.$results.removeClass('has-results');
             });
             select2.on('results:all', function(data) {
-                console.log(data.data.results);
                 if (data.data.results && data.data.results.length) {
                     this.$results.addClass('has-results');
                 } else {
