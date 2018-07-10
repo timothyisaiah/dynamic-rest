@@ -393,6 +393,7 @@
 }
 
 .drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-floating-label,
+.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-select__native-control .mdc-floating-label,
 .drest-field.drest-field--changed:not(.drest-field--invalid) .drest-field__label,
 .drest-field.drest-field--changed:not(.drest-field--invalid) label {
     color: var(--mdc-theme-secondary);
