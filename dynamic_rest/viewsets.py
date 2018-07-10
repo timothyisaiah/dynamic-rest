@@ -6,7 +6,6 @@ import inflection
 
 from django.http import QueryDict
 from django.utils import six
-from django.utils.functional import cached_property
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
@@ -145,8 +144,8 @@ class WithDynamicViewSetBase(object):
 
         return request
 
-    @cached_property
-    def _actions(self):
+    @property
+    def actions(self):
         actions = []
         cls = self.__class__
         for name in dir(cls):
@@ -158,8 +157,17 @@ class WithDynamicViewSetBase(object):
         return actions
 
     def get_actions(self):
-        actions = self._actions
-        return actions
+        actions = self.actions
+        is_list = self.is_list()
+        is_detail = self.is_get()
+        result = []
+        for action in actions:
+            if (
+                (action.on_list and is_list) or
+                (action.on_detail and is_detail)
+            ):
+                result.append(action)
+        return result
 
     def get_renderers(self):
         """Optionally block browsable/admin API rendering. """
@@ -172,6 +180,10 @@ class WithDynamicViewSetBase(object):
             ]
         else:
             return renderers
+
+    @classmethod
+    def get_url(self, pk=None):
+        return self.serializer_class.get_url(pk)
 
     def get_success_headers(self, data):
         serializer = getattr(data, 'serializer', None)
@@ -340,6 +352,13 @@ class WithDynamicViewSetBase(object):
             return True
         else:
             return False
+
+    def get_pk(self):
+        if self.is_get():
+            return self.kwargs.get(
+                self.lookup_url_kwarg or self.lookup_field
+            )
+        return None
 
     def is_get(self):
         if (

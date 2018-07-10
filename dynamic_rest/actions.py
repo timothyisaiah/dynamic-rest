@@ -7,6 +7,8 @@ class Action(object):
         icon=None,
         label=None,
         permissions=None,
+        on_detail=False,
+        on_list=False,
         url=None,
         **kwargs
     ):
@@ -17,13 +19,15 @@ class Action(object):
         # set during binding
         self.view = None
         self.name = None
+        self.on_detail = on_detail
+        self.on_list = on_list
 
     def bind(self, view, name):
         self.name = name
         self.view = view
         if not self.url:
             self.url = os.path.join(
-                view.request.get_full_path(),
+                view.get_url(view.get_pk()),
                 name
             )
         elif callable(self.url):
