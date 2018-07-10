@@ -330,6 +330,10 @@ $(document).ready(function() {
                 } else {
                     if (this.many) {
                         this.$input.val(value).trigger('change');
+                        if (this.disabled) {
+                            // disable to trigger relinking
+                            this.relation__disable();
+                        }
                     } else {
                         if (value) {
                             this.$input.select2('trigger', 'select', {data: {id: value}});
@@ -441,6 +445,8 @@ $(document).ready(function() {
         this.helpText = args.helpText;
         this.writeOnly = args.writeOnly;
 
+        var select2;
+
         //  set classes
         $field.addClass('drest-field--js');
         if (!this.isEmpty(value)) {
@@ -471,17 +477,7 @@ $(document).ready(function() {
                 },
                 dropdownParent: $field
             });
-            $input.on('select2:open', function(e){
-                $field.addClass('drest-field--focused');
-            });
-            $input.on('select2:close', function(e){
-                $field.removeClass('drest-field--focused');
-                $field.removeClass('drest-field--invalid');
-            });
-            $input.data('select2').on('results:message', function() {
-                this.dropdown._resizeDropdown();
-                this.dropdown._positionDropdown();
-            });
+            select2 = $input.data('select2');
         } else if (type === 'relation') {
             if (relation.image) {
                 // images
@@ -596,20 +592,10 @@ $(document).ready(function() {
             // set selection
             $input.val(selected);
 
+            select2 = $input.data('select2');
             // reset value from object form to canonical ID form
             // e.g. if the object form is {"id": "x", "name": "y", ...},
             // the canonical ID form is just "x"
-            $input.on('select2:open', function(e){
-                $field.addClass('drest-field--focused');
-            });
-            $input.on('select2:close', function(e){
-                $field.removeClass('drest-field--focused');
-                $field.removeClass('drest-field--invalid');
-            });
-            $input.data('select2').on('results:message', function() {
-                this.dropdown._resizeDropdown();
-                this.dropdown._positionDropdown();
-            });
             this.value = this.initial = selected;
           }
 
@@ -630,11 +616,30 @@ $(document).ready(function() {
                 // clearing the dropify doesnt trigger input's change
                 this.onChange();
             }.bind(this));
-            /* $field.find('.dropify-render').append(
-                '<img src="' + value + '">'
-            ); */
         }
 
+        if (select2) {
+            $input.on('select2:open', function(e){
+                $field.addClass('drest-field--focused');
+            });
+            $input.on('select2:close', function(e){
+                $field.removeClass('drest-field--focused');
+                $field.removeClass('drest-field--invalid');
+            });
+            select2.on('results:message', function() {
+                this.dropdown._resizeDropdown();
+                this.dropdown._positionDropdown();
+                this.$results.removeClass('has-results');
+            });
+            select2.on('results:all', function(data) {
+                console.log(data.data.results);
+                if (data.data.results && data.data.results.length) {
+                    this.$results.addClass('has-results');
+                } else {
+                    this.$results.removeClass('has-results');
+                }
+            });
+        }
         // bind change handler
         $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
 
