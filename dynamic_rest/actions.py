@@ -10,6 +10,8 @@ class Action(object):
         on_detail=False,
         on_list=False,
         url=None,
+        name=None,
+        view=None,
         **kwargs
     ):
         self.icon = icon
@@ -17,21 +19,31 @@ class Action(object):
         self.permissions = permissions
         self.url = url
         # set during binding
-        self.view = None
-        self.name = None
+        self.name = name
+        self.view = view
+        self.bound = bool(view)
         self.on_detail = on_detail
         self.on_list = on_list
 
     def bind(self, view, name):
-        self.name = name
-        self.view = view
-        if not self.url:
-            self.url = os.path.join(
+        """Create an action bound to one request"""
+        url = self.url
+        if not url:
+            url = os.path.join(
                 view.get_url(view.get_pk()),
                 name
             )
-        elif callable(self.url):
-            self.url = self.url(view)
+        elif callable(url):
+            url = url(view)
+        return Action(
+            icon=self.icon,
+            label=self.label,
+            on_detail=self.on_detail,
+            on_list=self.on_list,
+            url=url,
+            view=view,
+            name=name
+        )
 
 
 def action(**kwargs):

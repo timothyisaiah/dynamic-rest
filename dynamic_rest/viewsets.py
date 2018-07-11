@@ -152,7 +152,7 @@ class WithDynamicViewSetBase(object):
             fn = getattr(cls, name)
             action = getattr(fn, 'drest_action', None)
             if action:
-                action.bind(self, name)
+                action = action.bind(self, name)
                 actions.append(action)
         return actions
 
@@ -354,11 +354,12 @@ class WithDynamicViewSetBase(object):
             return False
 
     def get_pk(self):
+        pk = None
         if self.is_get():
-            return self.kwargs.get(
+            pk = self.kwargs.get(
                 self.lookup_url_kwarg or self.lookup_field
             )
-        return None
+        return pk
 
     def is_get(self):
         if (

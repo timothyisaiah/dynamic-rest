@@ -1,6 +1,7 @@
 from rest_framework import exceptions
 
 from dynamic_rest.viewsets import DynamicModelViewSet
+from dynamic_rest.actions import action
 from django.contrib.auth import models as auth
 from tests.models import (
     Car,
@@ -49,6 +50,10 @@ class UserViewSet(DynamicModelViewSet):
             qs = qs.filter(location=location)
         return qs
 
+    @action(label='foo')
+    def dummy(self):
+        pass
+
     def list(self, request, *args, **kwargs):
         query_params = self.request.query_params
         # for testing query param injection
@@ -88,7 +93,7 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
                     raise exceptions.ValidationError(
                         "request.data is not a dict"
                     )
-            except:
+            except Exception:
                 pass
 
         return response
