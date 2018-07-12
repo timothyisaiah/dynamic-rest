@@ -95,20 +95,20 @@
         <body>
             {% block header %}
                 <header
-                    class="mdc-theme--on-primary mdc-top-app-bar mdc-top-app-bar--fixed"
+                    id="drest-header"
+                    class="drest-app mdc-theme--on-primary mdc-top-app-bar mdc-top-app-bar--fixed"
                     data-mdc-auto-init="MDCTopAppBar"
                 >
                     <div class="mdc-top-app-bar__row">
-                        <section class="mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
-                            {% block header_nav_button %}
-                                {% if allow_nav %}
-                                    <a data-no-spin=true href="#" class="material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</a>
-                                {% endif %}
-                                {% if is_auth_error %}
-                                    <span data-no-spin=true class="material-icons mdc-top-app-bar__navigation-icon">error</span>
-                                {% endif %}
-                            {% endblock %}
-                            <span class="mdc-top-app-bar__title">
+                        <section class="drest-app__navigation mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
+                            {% if allow_nav %}
+                                <span data-no-spin=true class="drest-app__back-button material-icons mdc-top-app-bar__navigation-icon">arrow_back</span>
+                                <a data-no-spin=true href="#" class="drest-app__nav-button material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</a>
+                            {% endif %}
+                            {% if is_auth_error %}
+                                <span id="drest-header-error" data-no-spin=true class="drest-app__error-button material-icons mdc-top-app-bar__navigation-icon">error</span>
+                            {% endif %}
+                            <span class="mdc-top-app-bar__title drest-app__title">
                                 {% block header_content %}
                                     {% if is_auth_error %}
                                         Authentication Failed
@@ -118,15 +118,15 @@
                                 {% endblock %}
                             </span>
                         </section>
-                        <section class="mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
+                        <section class="drest-app__toolbar mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
                             {% if allow_filter %}
-                                <a data-no-spin=true data-toggle="modal" data-target="#drest-filter-modal" href="#" class="material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
+                                <a data-no-spin=true data-toggle="modal" data-target="#drest-filter-modal" href="#" class="drest-app__search-button material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
                             {% endif %}
                             {% if allow_menu %}
-                                <span id="drest-header-more" class="mdc-top-app-bar__action-item">
+                                <span class="drest-app__more-button mdc-top-app-bar__action-item">
                                     <span class="material-icons" aria-label="More" alt="More options">more_vert</span>
                                     <span class="mdc-menu-anchor" style="position: absolute; bottom: -4px; right: -2px;">
-                                        <div class="mdc-menu" id="drest-header-more-menu">
+                                        <div class="mdc-menu drest-app__more-menu">
                                             <ul class="mdc-menu__items mdc-list">
                                                 {% if allow_create %}
                                                     <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#drest-create-modal" class="mdc-list-item">
@@ -159,6 +159,14 @@
                                     </span>
                                 </span>
                             {% endif %}
+                            <span class="drest-app__save-button mdc-top-app-bar__action-item">
+                                <span class="material-icons" aria-label="Save" alt="save">check</span>
+                            </span>
+                            <span class="drest-app__spinner mdc-top-app-bar__action-item">
+                                <svg class="drest-spinner" width="23px" height="23px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                   <circle class="drest-spinner__path" fill="none" stroke-width="3" stroke-linecap="round" cx="12" cy="12" r="10"></circle>
+                                </svg>
+                            </span>
                         </section>
                     </div>
                 </header>
@@ -246,7 +254,7 @@
                 <div id="drest-progress-bar"></div>
                 {% if style == 'detail' %}
                     {% if allow_edit %}
-                        <div id="drest-edit-fab" class="mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
+                        <div id="drest-fab" class="drest-fab--edit mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
                             <span class="mdc-fab__icon material-icons">edit</span>
                         </div>
                         <div style="display: none" id="drest-clear-fab" class="mdc-fab mdc-theme--background mdc-fab--fixed-br-2">
@@ -271,7 +279,7 @@
                             </div>
                             <div class="nav-item drest-nav-right">
                                 {% if allow_create %}
-                                    <div class="mdc-fab--fixed-br mdc-theme--primary-bg mdc-fab" data-toggle="modal" data-target="#drest-create-modal">
+                                    <div class="drest-fab drest-fab--create mdc-fab--fixed-br mdc-theme--primary-bg mdc-fab" data-toggle="modal" data-target="#drest-create-modal">
                                         <span class="mdc-fab__icon material-icons">add</span>
                                     </div>
                                 {% endif %}
@@ -578,108 +586,23 @@
                 });
                 mdc.autoInit();
 
-                var navButton = document.querySelector('#drest-header-nav');
-                var drawer = new mdc.drawer.MDCTemporaryDrawer(
-                    document.querySelector('#drest-drawer')
-                );
-                var moreButton = document.querySelector('#drest-header-more')
-                if (navButton) {
-                    navButton.addEventListener('click',
-                        function() {
-                            drawer.open = true;
-                        }
-                    );
-                }
-                if (moreButton) {
-                    var moreMenuSelector = document.querySelector('#drest-header-more-menu')
-                    var moreMenu = new mdc.menu.MDCMenu(moreMenuSelector);
-                    moreMenuSelector.MDCMenu = moreMenu;
-
-                    moreButton.addEventListener('click',
-                        function() {
-                            moreMenu.open = !moreMenu.open;
-                        }
-                    );
-                }
-
                 $('.drest-goto').on('click', function() {
                     var goto = $(this).data('goto');
+                    var target = $(this).data('goto-target') || '_self';
                     if (goto) {
-                        window.location = goto;
+                        window.open(goto, target);
                     }
                 });
 
-                var $editFab = $('#drest-edit-fab');
-                var $clearFab = $('#drest-clear-fab');
-                var $editFabIcon = $editFab.find('.mdc-fab__icon');
-                var $clearFabIcon = $clearFab.find('.mdc-fab__icon');
-                var $editForm = $('#form-inline-edit');
-
-                $editForm.on('drest-form:submit-succeeded', function() {
-                    window.stopSpinner();
-                    $editFab.removeClass('submitting').addClass('mdc-theme--primary-bg').removeClass('mdc-theme--background');
-                    $editFabIcon.html('edit').removeClass('mdc-theme--on-surface');
-
-                    $clearFab.hide();
-
-                    $editForm[0].DRESTForm.toggleDisabled();
-
-                    $('html').animate({ scrollTop: window.submitOffset }, 1);
+                window.app = new drest.DRESTApp({
+                    resourceName: '{{ singular_name }}',
+                    resourceNamePlural: '{{ plural_name }}',
+                    drawerId: 'drest-drawer',
+                    headerId: 'drest-header',
+                    fabId: 'drest-fab',
+                    mainFormId: 'drest-edit-form'
                 });
 
-                $editForm.on('drest-form:submit-failed', function() {
-                    window.stopSpinner();
-                    $editFab.removeClass('submitting').addClass('mdc-theme--primary-bg').removeClass('mdc-theme--background');
-                    $editFabIcon.html('check').removeClass('mdc-theme--on-surface');
-
-                    $clearFab.show();
-                });
-
-                $editForm.on('drest-form:submit-noop', function() {
-                    window.stopSpinner();
-                    $editFab.removeClass('submitting').addClass('mdc-theme--primary-bg').removeClass('mdc-theme--background');
-                    $editFabIcon.html('check').removeClass('mdc-theme--on-surface');
-
-                    $clearFab.show();
-                    $clearFab.click();
-                });
-
-                $editFab.on('click.drest', function() {
-                    if ($editFab.hasClass('submitting')) {
-                        return;
-                    }
-
-                    var editForm = $editForm[0].DRESTForm;
-                    if (editForm.disabled) {
-                        // enable
-                        $editFabIcon.html('check').removeClass('mdc-theme--on-surface');
-                        $clearFabIcon.html('close');
-
-                        $clearFab.show();
-                        editForm.toggleDisabled();
-                    } else {
-                        // save
-                        window.spin();
-                        window.submitOffset = $('html').scrollTop();
-                        $editFab.addClass('submitting').removeClass('mdc-theme--primary-bg').addClass('mdc-theme--background');
-                        $editFabIcon.addClass('mdc-theme--on-surface').html('more_horiz');
-
-                        $clearFab.hide();
-                        $editForm.submit();
-                    }
-                });
-                $clearFab.on('click.drest', function() {
-                    if ($editFab.hasClass('submitting')) {
-                        return;
-                    }
-                    var editForm = $editForm[0].DRESTForm;
-                    $editFabIcon.html('edit');
-                    if (editForm.hasChanged()) {
-                        editForm.reset();
-                    }
-                    $clearFab.hide();
-                    editForm.toggleDisabled();
-                });
                 // delete dialog
                 // TODO
                 $('#drest-delete-form').on('drest-form:submit-succeeded', function() {

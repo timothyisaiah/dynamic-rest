@@ -1,4 +1,117 @@
 window.drest = {};
+function DRESTApp(config) {
+    this.getMainForm = function() {
+        if (this._mainForm === null) {
+            var form = this.$mainForm[0];
+            form = form ? form.DRESTForm : null;
+            this._mainForm = form;
+        }
+        return this._mainForm;
+    };
+    this.enableEdit = function() {
+        var form = this.getMainForm();
+        this.$title.html(this.editTitle);
+        this.$header.addClass('drest-app--editing');
+        this.$fab.addClass('drest-app--editing');
+        form.toggleDisabled();
+        this.editing = true;
+    };
+    this.disableEdit = function() {
+        var form = this.getMainForm();
+        this.$title.html(this.originalTitle);
+        this.$header.removeClass('drest-app--editing');
+        this.$fab.removeClass('drest-app--editing');
+        form.toggleDisabled();
+        this.editing = false;
+    };
+    this.onEditFailed = function() {
+        this.submitting = false;
+        this.$header.removeClass('drest-app--submitting');
+        this.$fab.removeClass('drest-app--submitting');
+    };
+    this.onEditNoop = function() {
+        this.submitting = false;
+        this.$header.removeClass('drest-app--submitting');
+        this.$fab.removeClass('drest-app--submitting');
+        this.disableEdit();
+    };
+    this.onEditOk = function() {
+        this.submitting = false;
+        this.$fab.removeClass('drest-app--submitting');
+        this.$header.removeClass('drest-app--submitting');
+
+        this.disableEdit();
+    };
+    this.save = function() {
+        if (this.submitting) {
+            return;
+        }
+        // save primary record
+        this.$header.addClass('drest-app--submitting');
+        this.submitting = true;
+        this.getMainForm().submit();
+    };
+    this.back = function() {
+        if (this.submitting) {
+            return;
+        }
+        var form = this.getMainForm();
+        if (form.hasChanged()) {
+            form.reset();
+        }
+        this.disableEdit();
+    };
+    this.onLoad = function() {
+        var config = this.config;
+        this.$mainForm = $('#' + config.mainFormId);
+        var $header = this.$header = $('#' + config.headerId);
+        this.$fab = $('#' + config.fabId);
+        this.$drawer = $('#' + config.drawerId);
+        this.$cancelButton = $header.find('.drest-app__cancel-button');
+        this.$moreButton = $header.find('.drest-app__more-button');
+        this.$searchButton = $header.find('.drest-app__search-button');
+        this.$saveButton = $header.find('.drest-app__save-button');
+        this.$spinner = $header.find('drest-app__spinner');
+        this.$navButton = $header.find('.drest-app__nav-button');
+        this.$backButton = $header.find('.drest-app__back-button');
+        this.$title = $header.find('.drest-app__title');
+        this.$moreMenu = $header.find('.drest-app__more-menu');
+        this.originalTitle = this.$title.html();
+        this.editTitle = '<span class="mdi mdi-pencil"/>  Editing ' + config.resourceName;
+        if (this.$drawer.length) {
+            this.drawer = new mdc.drawer.MDCTemporaryDrawer(this.$drawer[0]);
+        }
+        if (this.$moreMenu.length) {
+            this.moreMenu = new mdc.menu.MDCMenu(this.$moreMenu[0]);
+            this.$moreButton.on('click.drest', function() {
+                this.moreMenu.open = !this.moreMenu.open;
+            }.bind(this));
+        }
+        this.$navButton.on('click', function() {
+            this.drawer.open = true;
+        }.bind(this));
+
+        this.$mainForm.on('drest-form:submit-succeeded', this.onEditOk.bind(this));
+        this.$mainForm.on('drest-form:submit-failed', this.onEditFailed.bind(this));
+        this.$mainForm.on('drest-form:submit-noop', this.onEditNoop.bind(this));
+        if (this.$fab.hasClass('drest-fab--edit')) {
+            this.$fab.on('click.drest', this.enableEdit.bind(this));
+        }
+        this.$saveButton.on('click.drest', this.save.bind(this));
+        this.$backButton.on('click.drest', this.back.bind(this));
+    };
+
+    this._mainForm = null;
+    this.editing = false;
+    this.submitting = false;
+    this.config = config;
+
+    $(this.onLoad.bind(this));
+}
+
+window.drest = {
+    DRESTApp: DRESTApp
+};
 
 $(document).ready(function() {
     Dropify.prototype.isTouchDevice = function() { return false; }
@@ -6,6 +119,9 @@ $(document).ready(function() {
         return this.file.name.split('.').pop().split('?').shift().toLowerCase();
     };
     function DRESTForm(_form) {
+        this.submit = function() {
+            return this.$form.submit();
+        };
         this.getFields = function() {
             if (this._fields === null) {
                 var fields = this.$fields.map(function() {
@@ -24,6 +140,19 @@ $(document).ready(function() {
                 }
             }
             return this._fields;
+        };
+        this.hasFiles = function(changedOnly) {
+            var fields = this.getFields();
+            for (var i=0; i<fields.length; i++) {
+                var field = fields[i];
+                if (field.type !== 'file') {
+                    continue;
+                }
+                if (changedOnly && !field.hasChanged()) {
+                    continue;
+                }
+                return true;
+            }
         };
         this.getFieldsByName = function() {
             if (this._fieldsByName === null) {
@@ -57,15 +186,13 @@ $(document).ready(function() {
         };
         this.hasChanged = function() {
             var fields = this.getFields();
-            var changed = false;
             for (var i=0; i<fields.length; i++) {
                 var field = fields[i];
                 if (field.hasChanged()) {
-                    changed = true;
-                    break;
+                    return true;
                 }
             }
-            return changed;
+            return false;
         };
         this.onSubmit = function(e) {
               var form = this.$form;
@@ -79,23 +206,43 @@ $(document).ready(function() {
 
               var url = form.attr('action');
               var data;
-              var contentType = form.attr('enctype') || form.attr('encoding') || 'multipart/form-data';
-
+              var multipart = false;
+              var contentType = 'application/json';
+              // by default, try using JSON
+              if (this.hasFiles(method === 'PATCH')) {
+                  // if we need to save files, use multipart/form-data
+                  contentType = false;
+                  multipart = true;
+              }
               if (method === 'DELETE') {
                   data = null;
-              } else if (contentType === 'multipart/form-data') {
-                  contentType = false;
-                  data = new FormData();
+              } else {
+                  if (multipart) {
+                      data = new FormData();
+                  } else {
+                      data = {};
+                  }
                   var fields = this.getFields();
                   var anyChanges = false;
                   for (var i=0; i<fields.length; i++) {
                     var f = fields[i];
                     if (method === 'PUT' || f.hasChanged()) {
                         var val = f.getSubmitValue();
-                        if (val === null) {
-                            val = "";
+                        if (multipart) {
+                            // convert null to empty string
+                            if (val === null) {
+                                val = "";
+                            }
+                            if ($.isArray(val)) {
+                                for (var j=0; j<val.length; j++) {
+                                    data.append(f.name, val[j]);
+                                }
+                            } else {
+                                data.append(f.name, val);
+                            }
+                        } else {
+                            data[f.name] = val;
                         }
-                        data.append(f.name, val);
                         anyChanges = true;
                     }
                   }
@@ -104,10 +251,9 @@ $(document).ready(function() {
                     form.trigger('drest-form:submit-noop');
                     return;
                   }
-
-              } else {
-                  contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
-                  data = form.serialize();
+                  if (!multipart) {
+                    data = JSON.stringify(data);
+                  }
               }
 
               form.trigger('drest-form:submitting');
@@ -230,12 +376,15 @@ $(document).ready(function() {
             }
             return false;
         };
-        this.hasChanged = function() {
-            if ($.isArray(this.initial) || $.isPlainObject(this.initial)) {
-                return JSON.stringify(this.value) !== JSON.stringify(this.initial);
+        this.equal = function(a, b) {
+            if ($.isArray(a) || $.isPlainObject(a)) {
+                return JSON.stringify(a) === JSON.stringify(b);
             } else {
-                return this.value != this.initial;
+                return a == b;
             }
+        };
+        this.hasChanged = function() {
+            return !this.equal(this.initial, this.value);
         };
         this.enable = function() {
             this.$field.removeClass('drest-field--disabled');
@@ -305,62 +454,62 @@ $(document).ready(function() {
             }
         };
         this.reset = function(value) {
-            if (this.isEmpty(value)) {
-                this.$field.removeClass('drest-field--selected');
-                this.$label.removeClass('mdc-floating-label--float-above');
-            } else {
-                this.$field.addClass('drest-field--selected');
-                if (this.$label.hasClass('mdc-floating-label')) {
-                    this.$label.addClass('mdc-floating-label--float-above');
-                }
-            }
-
-            this.clearError();
-
-            if (this.type === 'file') {
-                var d = this.$input.data('dropify');
-                d.resetPreview();
-                if (value) {
-                    d.file.name = d.cleanFilename(value);
-                    d.setPreview(d.isImage(), value);
-                }
-            } else if (this.type === 'relation') {
-                if (this.relation.image) {
-                    // noop
+            if (!this.equal(this.value, value)) {
+                if (this.isEmpty(value)) {
+                    this.$field.removeClass('drest-field--selected');
+                    this.$label.removeClass('mdc-floating-label--float-above');
                 } else {
-                    if (this.many) {
-                        this.$input.val(value).trigger('change');
-                        if (this.disabled) {
-                            // disable to trigger relinking
-                            this.relation__disable();
-                        }
-                    } else {
-                        if (value) {
-                            this.$input.select2('trigger', 'select', {data: {id: value}});
-                        } else {
-                            this.$input.val(null).trigger('change');
-                        }
+                    this.$field.addClass('drest-field--selected');
+                    if (this.$label.hasClass('mdc-floating-label')) {
+                        this.$label.addClass('mdc-floating-label--float-above');
                     }
                 }
-            } else if (this.type === 'list') {
-                this.$input.val(value).trigger('change');
-            } else if (this.type === 'boolean') {
-                if (value === null) {
-                    this.$input[0].indeterminate = true;
-                    this.$input[0].checked = false;
-                } else {
-                    this.$input[0].indeterminate = false;
-                    this.$input[0].checked = !!value;
-                }
-                this.$input.val(value);
-            } else {
-                this.$input.val(value);
-            }
-            this.value = value;
 
+                if (this.type === 'file') {
+                    var d = this.$input.data('dropify');
+                    d.resetPreview();
+                    if (value) {
+                        d.file.name = d.cleanFilename(value);
+                        d.setPreview(d.isImage(), value);
+                    }
+                } else if (this.type === 'relation') {
+                    if (this.relation.image) {
+                        // noop
+                    } else {
+                        this.$input.val(value).trigger('change');
+                    }
+                } else if (this.type === 'list') {
+                    // make sure the select has all of the options required
+                    for (var i=0; i<value.length; i++) {
+                        var v = value[i];
+                        if (!this.$input.find('option[value="' + v + '"]').length) {
+                            this.$input.append(
+                                '<option value="' + v + '">' + v + '</option>'
+                            );
+                        }
+                        this.$input.val(value).trigger('change');
+                    }
+                    this.$input.val(value).trigger('change');
+                } else if (this.type === 'boolean') {
+                    if (value === null) {
+                        this.$input[0].indeterminate = true;
+                        this.$input[0].checked = false;
+                    } else {
+                        this.$input[0].indeterminate = false;
+                        this.$input[0].checked = !!value;
+                    }
+                    this.$input.val(value);
+                } else {
+                    this.$input.val(value);
+                }
+                this.value = value;
+            }
             this.initial = value;
             this.$field.removeClass('drest-field--changed');
-
+            this.clearError();
+            if (this.type === 'relation' && this.many && this.disabled) {
+                this.relation__disable();
+            }
         };
         this.setError = function(errors) {
             this.$field.addClass('drest-field--invalid');
@@ -392,12 +541,12 @@ $(document).ready(function() {
                     }
                     var name = $field.find('textarea, input, select')[0].name;
                     if (!show || show.length === 0) {
-                        $field.show();
+                        $field.removeClass('drest-hidden');
                     } else {
                         if (show.indexOf(name) > -1)  {
-                            $field.show();
+                            $field.removeClass('drest-hidden');
                         } else {
-                            $field.hide();
+                            $field.addClass('drest-hidden');
                         }
                     }
                 });
@@ -664,9 +813,9 @@ $(document).ready(function() {
 
     window.drest = {
         DRESTForm: DRESTForm,
-        DRESTField: DRESTField
+        DRESTField: DRESTField,
+        DRESTApp: DRESTApp
     };
-
 });
 
 // https://github.com/peledies/select2-tab-fix

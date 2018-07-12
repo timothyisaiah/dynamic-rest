@@ -1,7 +1,7 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<form id="form-inline-edit" class="drest-form drest-form--readonly" action="{{ request.get_full_path }}" method="PATCH">
+<form id="drest-edit-form" class="drest-form drest-form--readonly" action="{{ request.get_full_path }}" method="PATCH">
     <div class="mdc-layout-grid mb-5">
         <div class="mdc-layout-grid__inner">
             {% if not results.serializer %}
