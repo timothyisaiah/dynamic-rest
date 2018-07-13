@@ -393,14 +393,26 @@ $(document).ready(function() {
             this.$select.removeClass('mdc-select--disabled');
             this.disabled = false;
         };
-        this.relation__disable = function() {
+        this.addSelect2ChoiceHandlers = function() {
             var $choice;
-            var url = this.relation.url;
-          	var linkMe = function() {
-                var url = $(this).data('url');
-                if (url && $(this).closest('.drest-form').hasClass('drest-form--readonly')) {
-                    // only link in readonly mode
+            var field = this;
+            var relation = this.type === 'relation';
+            var url = relation ? this.relation.url : null;
+
+            var onClick = function(e) {
+                var $el = $(this);
+                var url = $el.data('url');
+                if (url && $el.closest('.drest-form').hasClass('drest-form--readonly')) {
                     window.location = url;
+                }
+            };
+            var onChoiceClick = function(e) {
+                if (field.disabled) {
+                    (onClick.bind(this))(e);
+                } else {
+                    field.$field.addClass('drest-field--focused');
+                    var $search = field.$input.find('.select2-search--inline .select2-search__field');
+                    $search.focus();
                 }
             };
             if (this.many) {
@@ -411,20 +423,27 @@ $(document).ready(function() {
                     var t = $choice.attr('title');
                     if ($choice.text().indexOf(t) === -1) {
                         // fix select2 bug where selection text is not set
+
                         $choice.html(
                             '<span class="select2-selection__choice__remove">&times;</span>' + t
                         );
                     }
                     $choice.addClass('drest--clickable');
-                    $choice.attr('data-url', url + '/' + v);
-                    $choice.off('click.drest-field').on('click.drest-field', linkMe);
+                    if (url) {
+                        $choice.attr('data-url', url + '/' + v);
+                    }
+                    $choice.off('click.drest-field').on('click.drest-field', onChoiceClick);
                 }
             } else {
-                $choice = this.$field.find('.select2-selection__rendered');
-                if (!this.isEmpty(this.value)) {
-                    $choice.addClass('drest--clickable');
-                    $choice.attr('data-url', url + '/' + this.value);
-                    $choice.off('click.drest-field').on('click.drest-field', linkMe);
+                if (relation) {
+                    $choice = this.$field.find('.select2-selection__rendered');
+                    if (!this.isEmpty(this.value)) {
+                        $choice.addClass('drest--clickable');
+                        if (url) {
+                            $choice.attr('data-url', url + '/' + this.value);
+                        }
+                        $choice.off('click.drest-field').on('click.drest-field', onClick);
+                    }
                 }
             }
         };
@@ -436,8 +455,8 @@ $(document).ready(function() {
             this.$select.addClass('mdc-select--disabled');
             this.disabled = true;
 
-            if (this.type === 'relation') {
-                this.relation__disable();
+            if (this.type === 'relation' || this.type === 'list') {
+                this.addSelect2ChoiceHandlers();
             }
         };
         this.toggleDisabled = function() {
@@ -482,6 +501,7 @@ $(document).ready(function() {
                     // make sure the select has all of the options required
                     for (var i=0; i<value.length; i++) {
                         var v = value[i];
+
                         if (!this.$input.find('option[value="' + v + '"]').length) {
                             this.$input.append(
                                 '<option value="' + v + '">' + v + '</option>'
@@ -507,8 +527,8 @@ $(document).ready(function() {
             this.initial = value;
             this.$field.removeClass('drest-field--changed');
             this.clearError();
-            if (this.type === 'relation' && this.many && this.disabled) {
-                this.relation__disable();
+            if (this.type === 'relation' || this.type === 'list') {
+                this.addSelect2ChoiceHandlers();
             }
         };
         this.setError = function(errors) {
@@ -583,9 +603,9 @@ $(document).ready(function() {
         var value = this.initial = field.value = args.value;
         var label = this.label = args.label;
         var name = this.name = args.name;
-        var many = this.many = args.many || field.type === 'list';
-        var required = this.required = args.required;
         var type = this.type = args.type;
+        var many = this.many = args.many || this.type === 'list';
+        var required = this.required = args.required;
         var disabled = this.disabled = !$form.length || $form.hasClass('drest-form--readonly');
 
         this.controls = args.controls;
@@ -609,7 +629,7 @@ $(document).ready(function() {
                 for (var v in value) {
                     if (value.hasOwnProperty(v)) {
                         $input.append(
-                            '<option selected="selected">' + value[v] + '</option>'
+                            '<option value="' + value[v] + '" selected="selected">' + value[v] + '</option>'
                         );
                     }
                 }
@@ -768,6 +788,11 @@ $(document).ready(function() {
         }
 
         if (select2) {
+            $field.off('click.drest-field').on('click.drest-field', function() {
+                if (!$form.hasClass('drest-form--readonly')) {
+                    $field.addClass('drest-field--focused');
+                }
+            });
             $input.on('select2:open', function(e){
                 $field.addClass('drest-field--focused');
             });
@@ -792,7 +817,7 @@ $(document).ready(function() {
         $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
 
         // trigger change
-        if (field.controls || type === 'relation') {
+        if (field.controls || type === 'relation' || type === 'list') {
             $input.trigger('change');
         }
 

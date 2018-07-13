@@ -394,6 +394,13 @@
     content: '*';
 }
 
+.drest-form--readonly .drest-field .mdc-floating-label,
+.drest-form--readonly .drest-field .drest-field__label,
+.drest-form--readonly .drest-field label
+{
+    color: rgba(0, 0, 0, 0.8) !important;
+}
+
 .drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-text-field:not(.mdc-text-field--focused) .mdc-floating-label,
 .drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-select__native-control:not(:focus) ~ .mdc-floating-label,
 .drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .drest-field__label,
@@ -415,9 +422,13 @@
     letter-spacing: 0.00937em;
     font-weight: 400;
 }
-.drest-field .mdc-text-field-helper-text.push-up {
-    position: relative;
-    top: -10px;
+.drest-field .mdc-text-field-helper-text {
+    position: absolute;
+    bottom: -1rem;
+    left: 1px;
+}
+.drest-field.drest-field--select2 .mdc-text-field-helper-text {
+    bottom: -0.5rem;
 }
 
 .drest-field > td {
@@ -479,7 +490,6 @@
 .drest-form .drest-field:first-child {
     margin-top: 0;
 }
-.drest-form.drest-form--readonly .drest-field .mdc-text-field-helper-text,
 .drest-form.drest-form--readonly .drest-field .drest-btn {
     display: none;
 }
@@ -663,20 +673,20 @@
 .drest-field--select2.drest-field--selected .select2-container--material .select2-selection--multiple .select2-selection__rendered {
     padding-top: 0.5rem;
 }
-.drest-form--readonly .drest-field--writeonly {
-    display: none;
+.drest-form--readonly .drest-field.drest-field--writeonly {
+    height: 0;
+    margin: 0;
+    overflow-y: hidden;
 }
 .drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container--material .select2-selection--multiple .select2-selection__choice,
 .drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container--material .select2-selection__rendered {
     color: var(--mdc-theme-primary);
 }
-.drest-field--select2 .select2-container--material .select2-selection--multiple .select2-selection__choice {
-  /* @extend .mdl-chip */
-
+.drest-field--select2 .select2-container .select2-selection--multiple .select2-selection__choice {
   height: 30px;
   line-height: 30px;
   padding: 0 10px;
-
+  position: relative;
   border: 0;
   border-radius: 16px;
   background-color: #dedede;
@@ -697,7 +707,7 @@
   opacity: 0.38;
   cursor: pointer;
   position: absolute;
-  right: 1rem;
+  right: 0.5rem;
   margin-top: 4px;
   margin-left: 6px;
   transition: opacity;
@@ -726,11 +736,22 @@
 .drest-field.drest-field--select2 .select2-container--material .select2-selection--multiple .select2-selection__choice__remove:hover {
   opacity: 0.54;
 }
-.drest-field.drest-field--select2 .select2-container--material .select2-search--inline .select2-search__field {
+.drest-field.drest-field--select2.many .select2-search--inline {
+    transition: all .2s ease;
+    height: 0;
+}
+.drest-field.drest-field--select2.many:not(.drest-field--selected) .select2-search--inline {
+    height: 30px;
+}
+.drest-field.drest-field--select2.many.drest-field--selected.drest-field--disabled .select2-search--inline {
+    height: 0;
+}
+.drest-field.drest-field--focused.drest-field--select2.many .select2-search--inline {
+    height: 30px;
+}
+.drest-field.drest-field--select2 .select2-container .select2-search--inline .select2-search__field {
   width: 100%;
   margin-top: 0;
-  /* Match input[type=text] */
-  height: 34px;
   -webkit-font-smoothing: antialiased;
   background: transparent;
   line-height: 1;
@@ -877,7 +898,7 @@
 }
 .drest-field--select2 .select2-container--disabled .select2-selection {
   /* @extend .select-wrapper input.select-dropdown:disabled */
-  color: rgba(0, 0, 0, 0.2);
+  color: rgba(0, 0, 0, 0.4);
   cursor: default;
   border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
@@ -934,9 +955,11 @@
 /*** drest-field--select ***/
 
 .drest-field--select .mdc-select:not(.mdc-select--disabled) .mdc-select__native-control {
-    border-bottom-color: rgba(0,0,0,0.2);
+    border-bottom-color: rgba(0,0,0,0.4);
 }
-
+.drest-field--select.drest-field--disabled .mdc-select__native-control {
+    color: rgba(0,0,0,0.4);
+}
 .drest-field--select .mdc-select__native-control {
     -webkit-appearance: none;
     -moz-appearance: none;
