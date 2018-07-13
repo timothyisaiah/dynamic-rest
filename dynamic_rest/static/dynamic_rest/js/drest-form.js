@@ -118,6 +118,15 @@ $(document).ready(function() {
     Dropify.prototype.getFileType = function() {
         return this.file.name.split('.').pop().split('?').shift().toLowerCase();
     };
+    Dropify.prototype.cleanFilename = function(src)
+    {
+        var filename = src.split('\\').pop();
+        if (filename == src) {
+            filename = src.split('/').pop();
+        }
+        filename = filename.split('?')[0];
+        return src !== "" ? filename : '';
+    };
     function DRESTForm(_form) {
         this.submit = function() {
             return this.$form.submit();
@@ -297,9 +306,9 @@ $(document).ready(function() {
                 var error = errors[key];
                 var f = fields[key];
                 if (error) {
-                    f.setError(error);
+                    f.setError(error[0]);
                 } else {
-                    f.clearError();
+                    f.clearError(true);
                 }
               }
             }
@@ -314,7 +323,7 @@ $(document).ready(function() {
                 if (typeof d !== 'undefined') {
                     field.reset(d);
                 } else {
-                    field.clearError();
+                    field.clearError(true);
                 }
             }
         };
@@ -359,11 +368,23 @@ $(document).ready(function() {
             }
             return val;
         };
+        this.getTextField = function() {
+            if (typeof this._textField === 'undefined') {
+                var el = this.$textField.length ? this.$textField[0] : null;
+                if (el && el.MDCTextField) {
+                    this._textField = el.MDCTextField;
+                } else {
+                    this._textField = null;
+                }
+            }
+            return this._textField;
+        };
         this.getForm = function() {
-            if (this._form === null) {
-                var form = this.$form[0];
-                form = form ? form.DRESTForm : null;
-                this._form = form;
+            if (typeof this._form === 'undefined') {
+                var el = this.$form[0];
+                if (form.DRESTForm) {
+                    this._form = el.DRESTForm;
+                }
             }
             return this._form;
         };
@@ -499,15 +520,16 @@ $(document).ready(function() {
                     }
                 } else if (this.type === 'list') {
                     // make sure the select has all of the options required
-                    for (var i=0; i<value.length; i++) {
-                        var v = value[i];
+                    if (value && value.length) {
+                        for (var i=0; i<value.length; i++) {
+                            var v = value[i];
 
-                        if (!this.$input.find('option[value="' + v + '"]').length) {
-                            this.$input.append(
-                                '<option value="' + v + '">' + v + '</option>'
-                            );
+                            if (!this.$input.find('option[value="' + v + '"]').length) {
+                                this.$input.append(
+                                    '<option value="' + v + '">' + v + '</option>'
+                                );
+                            }
                         }
-                        this.$input.val(value).trigger('change');
                     }
                     this.$input.val(value).trigger('change');
                 } else if (this.type === 'boolean') {
@@ -526,21 +548,41 @@ $(document).ready(function() {
             }
             this.initial = value;
             this.$field.removeClass('drest-field--changed');
-            this.clearError();
+            this.clearError(true);
             if (this.type === 'relation' || this.type === 'list') {
                 this.addSelect2ChoiceHandlers();
             }
         };
-        this.setError = function(errors) {
+        this.setError = function(error) {
+            this.error = error;
+            // this is sticky through change until submit
+            this.valueOnError = this.getInputValue();
             this.$field.addClass('drest-field--invalid');
-            this.$textField.addClass('mdc-text-field--invalid');
+            var textField = this.getTextField();
+            if (textField) {
+                textField.valid = false;
+            }
             this.$select.addClass('mdc-text-field--invalid');
-            this.$helper.addClass('mdc-text-field-helper-text--persistent').html(errors[0]);
+            this.$helper
+                .addClass('mdc-text-field-helper-text--persistent')
+                .addClass('mdc-text-field-helper-text--validation-msg')
+                .html(error);
         };
-        this.clearError = function() {
+        this.clearError = function(permanent) {
+            if (permanent) {
+                this.error = null;
+                this.valueOnError = undefined;
+            }
+
             this.$field.removeClass('drest-field--invalid');
-            this.$textField.removeClass('mdc-text-field--invalid');
-            this.$helper.removeClass('mdc-text-field-helper-text--persistent').html(this.helpTextShort);
+            var textField = this.getTextField();
+            if (textField) {
+                textField.valid = true;
+            }
+            this.$helper
+                .removeClass('mdc-text-field-helper-text--persistent')
+                .removeClass('mdc-text-field-helper-text--validation-msg')
+                .html(this.helpTextShort);
         };
         this.onChange = function() {
             var value = this.getInputValue();
@@ -571,9 +613,17 @@ $(document).ready(function() {
                     }
                 });
             }
-            this.clearError();
             var was = field.value;
             this.value = value;
+
+            if (this.error) {
+                // set or temp-clear error
+                if (this.equal(this.value, this.valueOnError)) {
+                    this.setError(this.error);
+                } else {
+                    this.clearError();
+                }
+            }
             if (this.hasChanged()) {
                 this.$field.addClass('drest-field--changed');
             } else {
@@ -780,25 +830,35 @@ $(document).ready(function() {
                 $input.attr('value', $input.is(':checked'));
             }
         } else if (type === 'file') {
-            $input.dropify();
+            $input.dropify({
+                tpl: {
+                    clearButton: '<span class="material-icons small drest-field__clear">cancel</span>'
+                }
+            });
             $input.on('dropify.afterClear', function(evt, el) {
                 // clearing the dropify doesnt trigger input's change
                 this.onChange();
+            }.bind(this));
+            $field.find('.dropify-preview')
+            .addClass('drest--clickable')
+            .off('click.drest').on('click.drest', function() {
+                if (this.disabled && this.value) {
+                    window.open(this.value, '_blank');
+                }
             }.bind(this));
         }
 
         if (select2) {
             $field.off('click.drest-field').on('click.drest-field', function() {
-                if (!$form.hasClass('drest-form--readonly')) {
-                    $field.addClass('drest-field--focused');
+                if (!this.disabled && !$form.hasClass('drest-form--readonly')) {
+                    $input.select2('open');
                 }
-            });
+            }.bind(this));
             $input.on('select2:open', function(e){
                 $field.addClass('drest-field--focused');
             });
             $input.on('select2:close', function(e){
                 $field.removeClass('drest-field--focused');
-                $field.removeClass('drest-field--invalid');
             });
             select2.on('results:message', function() {
                 this.dropdown._resizeDropdown();

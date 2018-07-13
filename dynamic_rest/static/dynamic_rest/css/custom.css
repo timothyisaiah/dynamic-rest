@@ -16,28 +16,22 @@
 }
 /** Container **/
 
-.drest-content-container {
+#drest-content-container {
+    padding-top: 55px;
+    width: 100%;
     display: flex;
     justify-content: center;
-    top: 0;
-    bottom: 0;
-    right: 0;
-    left: 0;
-    margin-left: auto;
-    margin-right: auto;
 }
-.drest-content {
-    position: relative;
-    margin-top: 54px;
+.drest-content-wrapper {
     width: 100%;
     height: 100%;
-    max-width: 1200px;
-    overflow-x: hidden;
-    overflow-y: auto;
+}
+.drest-content-wrapper:not(.wide) {
+    max-width: 800px;
 }
 @media screen and (min-width: 600px) {
-    .drest-content {
-        margin-top: 63px;
+    #drest-content-container {
+        padding-top: 65px;
     }
 }
 .drest-content.drest-content--thin {
@@ -269,6 +263,9 @@
 
 /** Tables **/
 
+.table.drest-table-list.fixedHeader-floating {
+    z-index: 1;
+}
 .table.drest-table-detail td, .table.drest-table-detail th {
     border: 0;
 }
@@ -369,6 +366,9 @@
 .drest-field.drest-field--changed .mdc-checkbox__background::before {
     background-color: var(--mdc-theme-secondary);
 }
+.drest-field--changed .mdc-checkbox__native-control:enabled:not(:checked):not(:indeterminate) ~ .mdc-checkbox__background {
+    border-color: var(--mdc-theme-secondary);
+}
 .drest-field .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background, .mdc-checkbox__native-control:enabled:indeterminate ~ .mdc-checkbox__background {
     border-color: var(--mdc-theme-primary);
     background-color: var(--mdc-theme-primary);
@@ -383,7 +383,7 @@
 .drest-field--changed.drest-field--select2:not(.drest-field--invalid):not(.drest-field--focused) .select2-container .select2-selection {
   /* @extend input[type=text]:focus */
   border-bottom: 1px solid var(--mdc-theme-secondary);
-  box-shadow: 0 1px 0 0 var(--mdc-theme-secondary);
+  /* box-shadow: 0 1px 0 0 var(--mdc-theme-secondary); */
 }
 .mdc-text-field__input:required + .drest-field__label::after {
     margin-left: 1px;
@@ -409,13 +409,16 @@
 .drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .select2-selection__placeholder {
     color: var(--mdc-theme-secondary);
 }
-.drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .mdc-text-field:not(.mdc-text-field--focused) .mdc-line-ripple,
-.drest-field.drest-field--changed:not(.drest-field--invalid) .mdc-select__native-control:not(:focus) ~ .mdc-line-ripple {
-    background-color: var(--mdc-theme-secondary);
+.drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .mdc-text-field:not(.mdc-text-field--focused),
+.drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .mdc-select .mdc-select__native-control:not(:focus) {
+    border-bottom-color: var(--mdc-theme-secondary);
+    /* background-color: var(--mdc-theme-secondary);
     transform: scaleX(1);
-    opacity: 1;
+    opacity: 1; */
 }
-
+.drest-field.drest-field--file.drest-field--changed:not(.drest-field--invalid) .dropify-wrapper {
+    border: 1px solid var(--mdc-theme-secondary);
+}
 .drest-field label,
 .drest-field .select2-selection__placeholder {
     color: rgba(0, 0, 0, 0.6);
@@ -527,7 +530,8 @@
 .drest-field.drest-field--file {
     height: auto;
 }
-.drest-field--disabled .dropify-wrapper .dropify-clear {
+.drest-field--disabled .dropify-wrapper .dropify-clear,
+.drest-field--disabled .dropify-wrapper .drest-field__clear {
     display: none;
 }
 .drest-field.drest-field--file .dropify-wrapper {
@@ -535,6 +539,12 @@
 }
 .drest-field.drest-field--file.drest-field--selected .dropify-preview {
     display: block;
+}
+.drest-field.drest-field--disabled .dropify-wrapper .dropify-preview {
+    z-index: 1;
+}
+.drest-field.drest-field--disabled .dropify-wrapper input[type="file"] {
+    z-index: 0;
 }
 .drest-field.drest-field--file .drest-field__label {
     display: block;
@@ -614,7 +624,10 @@
 .drest-field--select2 .select2-container--material ::placeholder {
     color: inherit;
 }
-.drest-field--select2 .select2-container--material .select2-selection {
+.drest-field--select2.drest-field--invalid .select2-container .select2-selection {
+    border-bottom: 1px solid #b00020;
+}
+.drest-field--select2 .select2-container .select2-selection {
   /* @extend input */
   overflow: visible;
   font: inherit;
@@ -654,6 +667,9 @@
 .drest-field--select2.drest-field--focused .select2-container .select2-selection--single {
     /* opacity: 0; */
     transition: all 0.2s ease;
+}
+.drest-field--select2.drest-field--selected.drest-field--focused .select2-container .select2-selection--single {
+    opacity: 0;
 }
 
 .drest-field--select2 .select2-container--material .select2-selection--single .select2-selection__rendered {
@@ -827,9 +843,9 @@
   box-shadow: 0 1px 0 0 var(--mdc-theme-primary);
   transition: all .3s ease;
 }
-.drest-field--select2.drest-field--changed:not(.drest-field--focused) .select2-search--dropdown .select2-search__field {
+.drest-field--select2.drest-field--changed:not(.drest-field--focused):not(.drest-field--invalid) .select2-search--dropdown .select2-search__field {
   border-bottom: 1px solid var(--mdc-theme-secondary);
-  box-shadow: 0 1px 0 0 var(--mdc-theme-secondary);
+  /* box-shadow: 0 1px 0 0 var(--mdc-theme-secondary); */
 }
 .drest-field--select2 .select2-results__options {
   background-color: #fff;
@@ -878,10 +894,15 @@
   border-bottom: 1px solid var(--mdc-theme-primary);
   box-shadow: 0 1px 0 0 var(--mdc-theme-primary);
 }
-.drest-field--select2.drest-field--changed:not(.drest-field--focused) .select2-container--focus .select2-selection {
+.drest-field--invalid.drest-field--select2 .select2-container--focus .select2-selection {
+  /* @extend input[type=text]:focus */
+  border-bottom: 1px solid #b00020;
+  box-shadow: 0 1px 0 0 #b00020;
+}
+.drest-field--select2.drest-field--changed:not(.drest-field--focused):not(.drest-field--invalid) .select2-container--focus .select2-selection {
   /* @extend input[type=text]:focus */
   border-bottom: 1px solid var(--mdc-theme-secondary);
-  box-shadow: 0 1px 0 0 var(--mdc-theme-secondary);
+  /* box-shadow: 0 1px 0 0 var(--mdc-theme-secondary); */
 }
 .drest-field--select2:not(.drest-field--disabled) .select2-container--disabled .select2-selection {
   -webkit-user-select: none;
@@ -1166,3 +1187,10 @@
   }
 }
 
+.drest-field__clear {
+    color: white;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 7;
+}
