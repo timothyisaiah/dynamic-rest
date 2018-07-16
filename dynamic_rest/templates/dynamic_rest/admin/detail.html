@@ -1,61 +1,46 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<form id="drest-edit-form" class="drest-form drest-form--readonly" action="{{ request.get_full_path }}" method="PATCH">
-    <div class="mdc-layout-grid mb-5">
-        <div class="mdc-layout-grid__inner">
-            {% if not results.serializer %}
-                {% for key in details %}
-                    <div class="mdc-layout-grid__cell mdc-layout-grid__cell--span-12">
-                        <div class="mdc-card">
-                            <div class="mdc-card__title">
-                                <span class="mdi mdi-alert-circle-outline"></span>
-                                Error
-                            </div>
-                            <div class="mdc-card__fields">
-                                <div class="mdc-card__field">
-                                    <div class="mdc-card__label">
-                                        {{ key }}
-                                    </div>
-                                    <div class="mdc-card__value">
-                                        {% get_value_from_dict results key %}
-                                    </div>
+<form
+    id="drest-edit-form"
+    class="drest-form drest-form--readonly drest-form--edit"
+    action="{{ request.get_full_path }}"
+    method="PATCH">
+
+    <div class="drest-grid">
+            {% get_sections results.serializer as sections %}
+            {% for section in sections %}
+                <div class="drest-grid__item">
+                    <div class="drest-section mdc-card {% if section.field %}mdc-card--solo{% endif %}">
+                        {% if section.name %}
+                            <div class="mdc-card__title">{{ section.name }}</div>
+                        {% endif %}
+                        {% if section.field and section.field.name in create_related_forms %}
+                            <div class="mdc-card__mainaction">
+                                <div
+                                    class="drest-btn btn btn-secondary drest-app__slide-to"
+                                    data-target="#drest-add-form-{{ section.field.name }}">
+                                    <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                                    <span class="drest-btn-label">Add</span>
                                 </div>
                             </div>
+                        {% endif %}
+                        <div class="mdc-card__fields {% if section.field and section.field.is_empty and section.field.read_only %}hide{% endif %}">
+                            {% for field in section.fields %}
+                                {% if field.should_render %}
+                                    {% render_field field style=render_style %}
+                                {% endif %}
+                            {% endfor %}
                         </div>
                     </div>
-                {% endfor %}
-            {% else %}
-                {% get_sections results.serializer as sections %}
-                {% for section in sections %}
-                    <div class="
-                        mdc-layout-grid__cell
-                        mdc-layout-grid__cell--span-{% if sections|length > 1 %}12{% else %}12{% endif %}-desktop
-                        mdc-layout-grid__cell--span-12-phone
-                        mdc-layout-grid__cell--span-12-tablet">
-                        <div class="drest-section mdc-card {% if section.field %}mdc-card--solo{% endif %}">
-                            {% if section.name %}
-                                <div class="mdc-card__title">{{ section.name }}</div>
-                            {% endif %}
-                            {% if section.field and section.field.name in create_related_forms %}
-                                <div class="mdc-card__mainaction">
-                                    <div class="drest-btn btn btn-secondary" data-toggle="modal" data-target="#drest-create-modal-{{ section.field.name }}">
-                                        <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
-                                        <span class="drest-btn-label">Create</span>
-                                    </div>
-                                </div>
-                            {% endif %}
-                            <div class="mdc-card__fields {% if section.field and section.field.is_empty  and section.field.read_only %}hide{% endif %}">
-                                {% for field in section.fields %}
-                                    {% if field.should_render %}
-                                        {% render_field field style=render_style %}
-                                    {% endif %}
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        </div>
+                </div>
+            {% endfor %}
     </div>
 </form>
+<script>
+    new DRESTForm({
+        container: '#drest-edit-form',
+        type: 'edit',
+        resourceName: '{{ singular_name }}'
+    });
+</script>

@@ -42,9 +42,6 @@
                     <link rel="stylesheet" href="//cdn.materialdesignicons.com/2.3.54/css/materialdesignicons.min.css">
                     <link href="{% static "dynamic_rest/css/material.css" %}" rel="stylesheet" type="text/css"/>
                 {% endblock %}
-                {% block css__mprogress %}
-                    <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/mprogress.min.css" %}"/>
-                {% endblock %}
                 {% block css__drest %}
                     <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
                 {% endblock %}
@@ -67,6 +64,9 @@
                         src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js"
                         integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous">
                     </script>
+                {% endblock %}
+                {% block script__masonry %}
+                    <script src="https://unpkg.com/masonry-layout@4/dist/masonry.pkgd.min.js"></script>
                 {% endblock %}
                 {% block script__bootstrap %}
                     <script
@@ -97,9 +97,6 @@
                 {% block script__material %}
                     <script src="https://unpkg.com/material-components-web@latest/dist/material-components-web.min.js"></script>
                 {% endblock %}
-                {% block script__mprogress %}
-                    <script type="text/javascript" src="{% static "dynamic_rest/js/mprogress.min.js" %}"/></script>
-                {% endblock %}
                 {% block script__datetimepicker %}
                     <script src="{% static "dynamic_rest/js/bootstrap-material-datetimepicker.min.js" %}"></script>
                 {% endblock %}
@@ -119,41 +116,28 @@
                 >
                     <div class="mdc-top-app-bar__row">
                         <section class="drest-app__navigation mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
-                            {% if allow_nav %}
-                                <span data-no-spin=true class="drest-app__back-button material-icons mdc-top-app-bar__navigation-icon">arrow_back</span>
-                                <a data-no-spin=true href="#" class="drest-app__nav-button material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</a>
-                            {% endif %}
-                            {% if is_auth_error %}
-                                <span id="drest-header-error" data-no-spin=true class="drest-app__error-button material-icons mdc-top-app-bar__navigation-icon">error</span>
+                            {% if show_nav %}
+                                <span class="drest-app__back-button material-icons mdc-top-app-bar__navigation-icon">arrow_back</span>
+                                <span class="drest-app__nav-button material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</span>
                             {% endif %}
                             <span class="mdc-top-app-bar__title drest-app__title">
                                 {% block header_content %}
-                                    {% if is_auth_error %}
-                                        Authentication Failed
-                                    {% else %}
-                                        {{ header }}
-                                    {% endif %}
+                                    {{ header }}
                                 {% endblock %}
                             </span>
                         </section>
                         <section class="drest-app__toolbar mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
                             {% if allow_filter %}
-                                <a data-no-spin=true data-toggle="modal" data-target="#drest-filter-modal" href="#" class="drest-app__search-button material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</a>
+                                <span data-target="#drest-filter-form" class="drest-app__slide-to drest-app__search-button material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</span>
                             {% endif %}
-                            {% if allow_menu %}
+                            {% if show_menu %}
                                 <span class="drest-app__more-button mdc-top-app-bar__action-item">
                                     <span class="material-icons" aria-label="More" alt="More options">more_vert</span>
                                     <span class="mdc-menu-anchor" style="position: absolute; bottom: -4px; right: -2px;">
                                         <div class="mdc-menu drest-app__more-menu">
                                             <ul class="mdc-menu__items mdc-list">
-                                                {% if allow_create %}
-                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#drest-create-modal" class="mdc-list-item">
-                                                        <span class="material-icons mr-2">add</span>
-                                                        Add
-                                                    </li>
-                                                {% endif %}
                                                 {% if allow_delete %}
-                                                    <li role="menuitem" tabindex="0" data-toggle="modal" data-target="#drest-delete-modal" class="mdc-list-item">
+                                                    <li role="menuitem" tabindex="0" class="drest-app__delete-button mdc-list-item">
                                                         <span class="material-icons mr-2">delete</span>
                                                         Delete
                                                     </li>
@@ -209,384 +193,162 @@
             {% endblock %}
             {% block content %}
                 <div id="drest-content-container">
-                    <div class="drest-content-wrapper {% if style == 'list' %}wide{% endif %}">
+                    <div class="drest-content">
                         <div class="swiper-container">
                             <div class="swiper-wrapper">
-                                {% if is_auth_error %}
-                                    <div class="swiper-slide">
-                                        <h5 class="p-4">
-                                            <span class="mdi mdi-alert"></span> You are not authorized to view
-                                            this page. Click <a href="{{ login_url }}">here</a> to login.
-                                        </h5>
+                                {% if style == 'list' %}
+                                    <div class="swiper-slide swiper-no-swiping">
+                                        {% include "dynamic_rest/admin/list.html" %}
                                     </div>
-                                {% else %}
-                                    {% if style == 'list' %}
-                                        <div class="swiper-slide swiper-no-swiping">
-                                            {% include "dynamic_rest/admin/list.html" %}
-                                        </div>
-                                    {% else %}
-                                        {% if style == 'directory' %}
-                                            <div class="swiper-slide swiper-no-swiping">
-                                                {% include "dynamic_rest/admin/directory.html" %}
-                                            </div>
-                                        {% else %}
-                                            <div class="swiper-slide swiper-no-swiping">
-                                                {% include "dynamic_rest/admin/detail.html" %}
-                                            </div>
-                                        {% endif %}
-                                    {% endif %}
                                 {% endif %}
+                                {% if style == 'directory' %}
+                                    <div class="swiper-slide swiper-no-swiping">
+                                        {% include "dynamic_rest/admin/directory.html" %}
+                                    </div>
+                                {% endif %}
+                                {% if style == 'detail' %}
+                                    <div class="swiper-slide swiper-no-swiping">
+                                        {% include "dynamic_rest/admin/detail.html" %}
+                                    </div>
+                                {% endif %}
+                                {% if style == 'error' %}
+                                    <div class="swiper-slide swiper-no-swiping">
+                                        {% include "dynamic_rest/admin/error.html" %}
+                                    </div>
+                                {% endif %}
+                                {% if allow_add %}
+                                    <div class="swiper-slide swiper-no-swiping">
+                                        <form
+                                            id="drest-add-form"
+                                            action="{{ request.get_full_path }}"
+                                            method="POST"
+                                            class="drest-form drest-form--add">
+                                            {% csrf_token %}
+                                            {{ post_form }}
+                                        </form>
+                                        <script>
+                                            new DRESTForm({
+                                                container: '#drest-add-form',
+                                                type: 'add',
+                                                resourceName: '{{ singular_name }}'
+                                            });
+                                        </script>
+                                    </div>
+                                {% endif %}
+                                {% if allow_filter %}
+                                    <div class="swiper-slide swiper-no-swiping">
+                                        <form
+                                            id="drest-filter-form"
+                                            class="drest-form drest-form--filter"
+                                            method="GET"
+                                            action="{{ filter_endpoint }}">
+                                            {% for filter in filters.values %}
+                                                {% render_filter filter %}
+                                            {% endfor %}
+                                        </form>
+                                        <script>
+                                            new DRESTForm({
+                                                container: '#drest-filter-form',
+                                                type: 'filter',
+                                                resourceName: '{{ plural_name }}'
+                                            });
+                                        </script>
+                                    </div>
+                                {% endif %}
+                                {% for related_name, serializer_and_form in create_related_forms.items %}
+                                    <div class="swiper-slide swiper-no-swiping">
+                                        <form
+                                            id="drest-add-form-{{ related_name }}"
+                                            action="{{ serializer | get_related_url:related_name }}/"
+                                            method="POST"
+                                            class="drest-form drest-form--add-related">
+                                                <div class="mdc-layout-grid pb-0">
+                                                    <div class="drest-field drest-field--fake">
+                                                        <div class="mdc-text-field mdc-text-field--disabled mdc-text-field--fullwidth">
+                                                            <label class="mdc-floating-label mdc-floating-label--float-above">
+                                                                {{ singular_name }}
+                                                            </label>
+                                                            <input
+                                                                class="mdc-text-field__input"
+                                                                type="text"
+                                                                disabled
+                                                                name="{{ related_name }}"
+                                                                value="{{ name }}"
+                                                            ></input>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {{ serializer_and_form.1 }}
+                                        </form>
+                                        <script>
+                                            new DRESTForm({
+                                                container: '#drest-add-form-{{ related_name }}',
+                                                resourceName: '{{ serializer_and_form.0.get_name | humanize }}',
+                                                type: 'add-related'
+                                            });
+                                        </script>
+                                    </div>
+                                {% endfor %}
                             </div>
                         </div>
                     </div>
                 </div>
             {% endblock %} <!-- /content -->
 
-            {% block alert %}
-                {% if alert %}
-                    <div class="alert alert-dismissable drest-nav-alert alert-{{alert_class}}">
-                        <span>{{ alert }}</span>
-                        <span class="close" data-dismiss="alert" aria-label="close">&times;</span>
-                    </div>
-                {% endif %}
-            {% endblock %}
-
             {% block footer %}
-                <div id="drest-progress-bar"></div>
                 {% if style == 'detail' %}
                     {% if allow_edit %}
                         <div id="drest-fab" class="drest-fab--edit mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
                             <span class="mdc-fab__icon material-icons">edit</span>
                         </div>
-                        <div style="display: none" id="drest-clear-fab" class="mdc-fab mdc-theme--background mdc-fab--fixed-br-2">
-                            <span class="mdc-theme--on-surface mdc-fab__icon material-icons">close</span>
+                    {% endif %}
+                {% endif %}
+                {% if style == 'list' %}
+                    {% if allow_add %}
+                        <div data-target="#drest-add-form" id="drest-fab" class="drest-app__slide-to drest-fab--add mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
+                            <span class="mdc-fab__icon material-icons">add</span>
                         </div>
                     {% endif %}
-                {% else %}
-                    <nav class="navbar drest-navbar-bottom">
-                        <div class="navbar-nav drest-nav">
-                            <div class="nav-item drest-nav-left">
-                                {% if allow_delete %}
-                                    <div data-toggle="modal" data-target="#drest-delete-modal" class="drest-btn btn btn-danger">
-                                        <span class="drest-btn-icon mdi mdi-delete" aria-hidden="true"></span>
-                                        <span class="drest-btn-label">Delete</span>
-                                    </div>
-                                {% endif %}
-                            </div>
-                            <div class="nav-item">
-                                {% if paginator %}
-                                    {% get_pagination_html paginator %}
-                                {% endif %}
-                            </div>
-                            <div class="nav-item drest-nav-right">
-                                {% if allow_create %}
-                                    <div class="drest-fab drest-fab--create mdc-fab--fixed-br mdc-theme--primary-bg mdc-fab" data-toggle="modal" data-target="#drest-create-modal">
-                                        <span class="mdc-fab__icon material-icons">add</span>
-                                    </div>
-                                {% endif %}
+
+                    {% if paginator %}
+                        <div class="drest-pagination-container">
+                            <div class="drest-pagination">
+                                {% get_pagination_html paginator %}
                             </div>
                         </div>
-                    </nav>
+                    {% endif %}
                 {% endif %}
             {% endblock %} <!-- /footer -->
-            {% block create_related_modals %}
-                {% for related_name, serializer_and_form in create_related_forms.items %}
-                    <div class="drest modal left fade" id="drest-create-modal-{{ related_name }}">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <form id="drest-create-form-{{ related_name }}" action="{{ serializer | get_related_url:related_name }}/" method="POST" enctype="multipart/form-data" class="drest-form" novalidate>
-                                    <div class="modal-header bg-primary">
-                                        <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Back">arrow_back</button>
-                                        <h5 class="modal-title">
-                                            <span class="mdi mdi-plus"></span>
-                                            <span>Add {{ serializer_and_form.0.get_name | humanize }}</span>
-                                        </h5>
-                                    </div>
-                                    <div class="modal-body p-md-4">
-                                        <div class="drest-modal-content">
-                                            <fieldset>
-                                                {% csrf_token %}
-                                                <div class="drest-field drest-field--fake">
-                                                    <div class="mdc-text-field mdc-text-field--disabled mdc-text-field--fullwidth">
-                                                        <label class="mdc-floating-label mdc-floating-label--float-above">
-                                                            {{ singular_name }}
-                                                        </label>
-                                                        <input class="mdc-text-field__input" type="text" disabled name="{{ related_name }}" value="{{ name }}"></input>
-                                                    </div>
-                                                </div>
-                                                {{ serializer_and_form.1 }}
-                                            </fieldset>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer bg-faded">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                    <button type="submit" class="btn btn-primary">Save</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% endblock %}
-
-            {% block create_modal %}
-                <div class="drest modal left fade" id="drest-create-modal">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary">
-                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
-                                    arrow_back
-                                </button>
-                                <h5 class="modal-title">
-                                    <span class="mdi mdi-plus"></span>
-                                    <span>Add {{ singular_name }}</span>
-                                </h5>
-                            </div>
-                            <form id="drest-create-form" action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="drest-form" novalidate>
-                                <div class="modal-body p-md-4">
-                                    <div class="drest-modal-content">
-                                    <fieldset>
-                                        {% csrf_token %}
-                                        {{ post_form }}
-                                    </fieldset>
-                                    </div>
-                                </div>
-                                <div class="modal-footer bg-faded">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                    <button type="submit" class="btn btn-primary">Save</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            {% endblock %} <!-- /create_modal -->
-
-            {% block delete_modal %}
-                <div class="drest modal left fade" id="drest-delete-modal">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-danger">
-                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
-                                    arrow_back
-                                </button>
-                                <h5 class="modal-title">
-                                    <span class="mdi mdi-delete"></span>
-                                    <span>Delete {{ title }}</span>
-                                </h5>
-                            </div>
-                            <form id="drest-delete-form" action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="drest-form" novalidate>
-                                <div class="modal-body p-md-4">
-                                    <div class="drest-modal-content">
-                                        <p>Are you sure you want to delete?</p>
-                                        <p class="text-danger">
-                                            <span class="mdi mdi-alert"></span>
-                                            <span>This operation cannot be undone!</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="modal-footer bg-faded">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                    <button type="submit" class="btn btn-danger btn-primary">Confirm</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            {% endblock %} <!-- /delete_modal -->
-
-            {% block error_form %}
-                {% if error_form %}
-                    <div class="drest modal" id="drest-error-modal">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header bg-primary">
-                                    <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
-                                        arrow_back
-                                    </button>
-                                    <h5 class="modal-title">{{ error_title }}</h5>
-                                </div>
-                                <form id="drest-error-form" action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="drest-form" novalidate>
-                                    <div class="modal-body p-md-4">
-                                        <div class="drest-modal-content">
-                                        <fieldset>
-                                            {{ error_form }}
-                                        </fieldset>
-                                        </div>
-                                    </div>
-                                    <div class="modal-footer bg-faded">
-                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                        <button type="submit" class="btn btn-primary">Save</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-            {% endblock %} <!-- /error_form -->
-
-            {% block filter_form %}
-                <div class="drest modal left fade" id="drest-filter-modal">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary">
-                                <button type="button" class="material-icons mdc-icon-button" data-dismiss="modal" aria-label="Close">
-                                    arrow_back
-                                </button>
-                                <h5 class="modal-title">
-                                    <span class="fa fa-search"></span>
-                                    <span>Find {{plural_name}}</span>
-                                </h5>
-                            </div>
-                            <form class="filter-form" method="get" action="{{ search_endpoint }}">
-                                <div class="modal-body p-md-4">
-                                    <div class="drest-modal-content">
-                                    <fieldset>
-                                        {% for filter in filters.values %}
-                                            {% render_filter filter %}
-                                        {% endfor %}
-                                    </fieldset>
-                                    </div>
-                                </div>
-                                <div class="modal-footer bg-faded">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                                    <button type="submit" class="drest-apply-filters btn btn-primary">Apply</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            {% endblock %}
-
         </body>
     {% endblock %} <!-- /body -->
     {% block initializer %}
          <script>
-                window.drf = {
-                    csrfHeaderName: "{{ csrf_header_name|default:'X-CSRFToken' }}",
-                    csrfCookieName: "{{ csrf_cookie_name|default:'csrftoken' }}"
-                };
-                $(document).ready(function() {
-                    // fix select2 + modal interaction
-                    // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
-                    $.fn.modal.Constructor.prototype._enforceFocus = function() {};
-                    // initialize the form
+            window.drf = {
+                csrfHeaderName: "{{ csrf_header_name|default:'X-CSRFToken' }}",
+                csrfCookieName: "{{ csrf_cookie_name|default:'csrftoken' }}"
+            };
 
-                    // show the error modal
-                    $('#drest-error-modal').modal('show');
-                    // enable responsible tables
-                    $('.drest-nav-alert').delay(5000).slideUp(200, function() {
-                        $(this).alert('close');
-                    });
+            mdc.autoInit();
+            window.app = new drest.DRESTApp({
+                resourceName: '{{ singular_name }}',
+                resourceNamePlural: '{{ plural_name }}',
+                drawer: '#drest-drawer',
+                header: '#drest-header',
+                table: '#drest-table',
+                fab: '#drest-fab',
+                style: '{{ style }}',
+                content: '#drest-content-container'
+            });
 
-                    $('[data-toggle="tooltip"]').tooltip();
-                    tippy('.drest-tooltip');
-                    $('.drest-content-container').show();
-
-                    var spin = function() {
-                        if (!window.spinner) {
-                            var mprogress = new Mprogress({
-                                template: 3,
-                                parent: '#drest-progress-bar'
-                            });
-                            window.spinner = mprogress;
-                        }
-                        window.spinner.start();
-                    };
-                    var stopSpinner = function() {
-                        if (window.spinner) {
-                            window.spinner.end();
-                        }
-                    };
-                    window.spin = spin;
-                    window.stopSpinner = stopSpinner;
-                    $('a').filter(function() {
-                        if (this.target === "_blank") {
-                            return false;
-                        }
-                        return this.href && !this.href.match(/^\s*(mailto:|#|tel:)/) && !$(this).data('no-spin');
-                    }).click(spin);
-
-                    $('button[type="submit"]').click(spin);
-
-                    $('.drest-link').click(spin);
-
-                    $('#drest-data-table').DataTable({
-                        "paging": false,
-                        "ordering": false,
-                        "info": false,
-                        "searching": false,
-                        "fixedHeader": {
-                            "headerOffset": 55,
-                        },
-                        "responsive": {
-                            "details": false
-                        },
-                    });
-
-                    $('.drest-json').each(function(index){
-                        var json = $(this).data('json');
-                        if (json) {
-                            $(this)[0].appendChild(renderjson(json));
-                        }
-                    });
-
-                    $(".select2-selection__arrow")
-                    .addClass("material-icons")
-                    .html("arrow_drop_down");
-
-                    $('input').each(function() {
-                        var type = $(this).data('type');
-                        var opts = { clearButton: true };
-                        var $this = $(this);
-                        var $parent = $this.closest('.drest-field')
-                        var dtp = false;
-
-                        if (type == 'time') {
-                            opts.date = false;
-                            $this.bootstrapMaterialDatePicker(opts);
-                            dtp = true;
-                        } else if (type == 'date') {
-                            opts.time = false;
-                            opts.format = 'YYYY-MM-DD';
-                            $this.bootstrapMaterialDatePicker(opts);
-                            dtp = true;
-                        } else if (type == 'datetime' || type == 'datetime-local') {
-                            opts.format = 'YYYY-MM-DD hh:mm';
-                            $this.bootstrapMaterialDatePicker(opts);
-                            dtp = true;
-                        }
-                        if ($parent.length === 1) {
-                            if (dtp) {
-                                $this.on('change', function() {
-                                    var val = $this.val();
-                                    if (!val || typeof val === 'undefined') {
-                                        $parent.removeClass('drest-field--selected');
-                                    } else {
-                                        $parent.addClass('drest-field--selected');
-                                    }
-                                });
-                                $this.on('open', function(e) {
-                                    if ($parent.hasClass('drest-field--disabled')) {
-                                        e.stopPropagation();
-                                        return false;
-                                    }
-                                    $parent.addClass('drest-field--focused');
-                                    $parent.find('.mdc-line-ripple').addClass('mdc-line-ripple--active');
-                                });
-                                $this.on('close', function() {
-                                    $parent.removeClass('drest-field--focused');
-                                    $parent.find('.mdc-line-ripple').removeClass('mdc-line-ripple--active');
-                                });
-                            }
-                            var val = $this.val();
-                            if (val && typeof val !== 'undefined') {
-                                $parent.addClass('drest-field--selected');
-                            }
-                        }
-                    });
+            $(function() {
+                // drest-json
+                $('.drest-json').each(function(index){
+                    var json = $(this).data('json');
+                    if (json) {
+                        $(this)[0].appendChild(renderjson(json));
+                    }
                 });
-                mdc.autoInit();
-
+                // drest-goto
                 $('.drest-goto').on('click', function() {
                     var goto = $(this).data('goto');
                     var target = $(this).data('goto-target') || '_self';
@@ -594,23 +356,7 @@
                         window.open(goto, target);
                     }
                 });
-
-                window.app = new drest.DRESTApp({
-                    resourceName: '{{ singular_name }}',
-                    resourceNamePlural: '{{ plural_name }}',
-                    drawerId: 'drest-drawer',
-                    headerId: 'drest-header',
-                    fabId: 'drest-fab',
-                    mainFormId: 'drest-edit-form'
-                });
-                var swiper = new Swiper('#drest-content-container .swiper-container', {
-                });
-                // delete dialog
-                // TODO
-                $('#drest-delete-form').on('drest-form:submit-succeeded', function() {
-                    window.history.back();
-                });
-            </script>
-        {% endblock %} <!-- /script -->
-
+            });
+        </script>
+    {% endblock %} <!-- /script -->
 </html>

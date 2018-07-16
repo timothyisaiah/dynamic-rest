@@ -365,6 +365,11 @@ class WithDynamicSerializerMixin(
                 if inverse_field_name:
                     kwargs['exclude_fields'] = [inverse_field_name]
                 related_serializer = field.get_serializer(**kwargs)
+                if inverse_field_name:
+                    inverse = related_serializer.get_field(inverse_field_name)
+                    inverse.read_only = True
+                else:
+                    pass
                 has_permission = (
                     not getattr(related_serializer, 'permissions', None) or
                     related_serializer.permissions.create

@@ -1,16 +1,10 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div class="mdc-layout-grid mb-5">
-    <div class="mdc-layout-grid__inner">
+<div class="drest-grid">
         {% get_sections form as sections %}
         {% for section in sections %}
-              <div class="
-                mdc-layout-grid__cell
-                mdc-layout-grid__cell--span-{% if sections|length > 1 %}12{% else %}12{% endif %}-desktop
-                mdc-layout-grid__cell--span-12-phone
-                mdc-layout-grid__cell--span-12-tablet
-              ">
+              <div class="drest-grid__item">
                 <div class="drest-section mdc-card {% if section.field %}mdc-card--relation{% endif %}">
                     {% if section.name %}
                         <div class="mdc-card__title">{{ section.name }}</div>
@@ -28,5 +22,4 @@
                </div>
             </div>
     {% endfor %}
-    </div>
 </div>

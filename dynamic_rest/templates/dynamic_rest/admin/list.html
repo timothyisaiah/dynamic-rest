@@ -2,17 +2,19 @@
 {% load dynamic_rest %}
 
 {% if results %}
-    <table id="drest-data-table" class="table drest-table-list">
-      <thead class=''>
+    <table id="drest-table" class="table drest-table">
+      <thead>
         <tr>
             {% for column in columns %}
                 {% get_value_from_dict fields column as field %}
                 {% if field %}
                     <th>
-                        <span class="drest-column-header">
+                        <span class="drest-table__column-header">
                             {% if column in sortable_fields %}
                                 {% get_sort_query_value column sorted_field sorted_ascending as sort_query_value %}
-                                <div class="drest-link" onclick="window.location = '{% replace_query_param url "sort[]" sort_query_value %}';">
+                                <div
+                                    class="drest-goto"
+                                    data-goto='{% replace_query_param url "sort[]" sort_query_value %}'>
                                     {{ field.label }}
                                     {% if column == sorted_field %}
                                         <span class="text-primary fa fa-sort-{% if sorted_ascending %}up{% else %}down{% endif %}"></span>
@@ -43,5 +45,7 @@
       </tbody>
     </table>
 {% else %}
-    <div class="p-3 no-results"><span class="mdi mdi-alert-circle-outline"></span> No results</div>
+    <div class="drest-error">
+        <span class="mdi mdi-alert-circle-outline"></span> No results
+    </div>
 {% endif %}

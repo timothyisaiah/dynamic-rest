@@ -73,8 +73,7 @@ class DynamicAdminRenderer(AdminRenderer):
         request = context.get('request')
         is_error = response.status_code > 399
         is_auth_error = response.status_code in (401, 403)
-        user = request.user if request else None
-        referer = request.META.get('HTTP_REFERER') if request else None
+        is_not_found_error = response.status_code == 404
 
         # remove envelope for successful responses
         if getattr(data, 'serializer', None):
@@ -91,16 +90,15 @@ class DynamicAdminRenderer(AdminRenderer):
 
         # add context
         meta = None
-        is_update = getattr(view, 'is_update', lambda: False)()
+        is_detail = context['style'] == 'detail'
+        is_list = context['style'] == 'list'
         is_directory = view and view.__class__.__name__ == 'API'
         header = ''
 
         title = settings.API_NAME or ''
-        description = ''
+        singular_name = plural_name = description = ''
 
         results = context.get('results')
-
-        style = context.get('style')
 
         render_style = {}
         render_style['template_pack'] = self.form_renderer_class.template_pack
@@ -110,18 +108,26 @@ class DynamicAdminRenderer(AdminRenderer):
         columns = context.get('columns')
         serializer = getattr(results, 'serializer', None)
         instance = serializer.instance if serializer else None
+        filters = {}
+        fields = {}
+        create_related_forms = {}
+
         if isinstance(instance, list):
             instance = None
 
-        if is_directory:
-            style = context['style'] = 'directory'
+        if is_error:
+            context['style'] = 'error'
+            if is_auth_error:
+                title = header = 'Unauthorized'
+            if is_not_found_error:
+                title = header = 'Not Found'
+
+        elif is_directory:
+            context['style'] = 'directory'
             title = header = settings.API_NAME or ''
             description = settings.API_DESCRIPTION
 
-        filters = {}
-        create_related_forms = {}
-
-        if serializer:
+        elif serializer:
             related_serializers = serializer.create_related_serializers or []
             if related_serializers:
                 related_serializers = related_serializers.items()
@@ -141,19 +147,18 @@ class DynamicAdminRenderer(AdminRenderer):
             icon = serializer.get_icon()
             header = serializer.get_plural_name().title().replace('_', ' ')
 
-            if is_auth_error:
-                header = "Authentication Failed"
-            elif style == 'list':
+            if is_list:
                 if paginator:
                     paging = paginator.get_page_metadata()
                     count = paging['total_results']
                 else:
                     count = len(results)
                 header = '%d %s' % (count, header)
-            elif not is_error:
+            elif is_detail:
                 header = serializer.get_name().title().replace('_', ' ')
 
             title = header
+
             if icon:
                 header = mark_safe('<span class="{0} {0}-{1}"></span>&nbsp;{2}'.format(  # noqa
                     settings.ADMIN_ICON_PACK,
@@ -161,23 +166,17 @@ class DynamicAdminRenderer(AdminRenderer):
                     header
                 ))
 
-            if style == 'list':
+            if is_list:
                 list_fields = getattr(meta, 'list_fields', None) or meta.fields
-            else:
-                list_fields = meta.fields
-
-            blacklist = ('id', )
-            if not isinstance(list_fields, six.string_types):
-                # respect serializer field ordering
-                columns = [
-                    f for f in list_fields
-                    if f in columns and f not in blacklist
-                ]
+                blacklist = ('id', )
+                if not isinstance(list_fields, six.string_types):
+                    # respect serializer field ordering
+                    columns = [
+                        f for f in list_fields
+                        if f in columns and f not in blacklist
+                    ]
 
             fields = serializer.get_all_fields()
-        else:
-            fields = {}
-            singular_name = plural_name = ''
 
         # login and logout
         login_url = ''
@@ -205,38 +204,6 @@ class DynamicAdminRenderer(AdminRenderer):
                 )
             except NoReverseMatch:
                 pass
-
-        # alerts
-        alert = None
-        alert_class = None
-        if is_error:
-            error = response.data
-            if isinstance(error, dict):
-                values = error.values()
-                if len(values) == 1:
-                    error = values[0]
-                else:
-                    error = 'see above for details'
-            if isinstance(error, list) and len(error) == 1:
-                error = error[0]
-            alert = 'An error has occurred: %s' % error
-            alert_class = 'danger'
-        elif is_update:
-            alert = 'Saved successfully'
-            alert_class = 'success'
-        elif (
-            login_url and user and
-            referer and login_url in referer
-        ):
-            alert = 'Welcome back'
-            name = getattr(user, 'name', None)
-            if name:
-                alert += ', %s!' % name
-            else:
-                alert += '!'
-            alert_class = 'success'
-        if alert and not alert_class:
-            alert_class = 'info'
 
         if getattr(serializer, 'child', None):
             permissions = getattr(serializer.child, 'permissions', None)
@@ -325,11 +292,9 @@ class DynamicAdminRenderer(AdminRenderer):
         context['sorted_field'] = sorted_field
         context['sorted_ascending'] = sorted_ascending
         context['details'] = context['columns']
-        context['is_error'] = is_error
         context['description'] = description
         context['singular_name'] = singular_name
         context['plural_name'] = plural_name
-        context['is_auth_error'] = is_auth_error
         context['login_url'] = login_url
         context['logout_url'] = logout_url
         context['header'] = header
@@ -339,32 +304,30 @@ class DynamicAdminRenderer(AdminRenderer):
         context['allow_filter'] = (
             'list' in allowed
         ) and bool(filters)
-        context['search_endpoint'] = (
+        context['filter_endpoint'] = (
             '/' if serializer is None
             else serializer.get_url()
         )
         context['allow_delete'] = (
-            'delete' in allowed and style == 'detail'
+            'delete' in allowed and is_detail
             and bool(instance)
         )
         context['allow_edit'] = (
             'update' in allowed and
-            style == 'detail' and
+            is_detail and
             bool(instance)
         )
-        context['allow_create'] = (
-            'create' in allowed and style == 'list'
+        context['allow_add'] = (
+            'create' in allowed and is_list
         )
-        context['allow_nav'] = (
+        context['show_nav'] = (
             not is_auth_error and
             not is_directory
         )
-        context['allow_menu'] = (
+        context['show_menu'] = (
             not is_auth_error and
             not is_directory
         )
-        context['alert'] = alert
-        context['alert_class'] = alert_class
         return context
 
     def get_filter_form(self, *args, **kwargs):
@@ -385,36 +348,3 @@ class DynamicAdminRenderer(AdminRenderer):
             self.accepted_media_type,
             {'style': {'template_pack': 'dynamic_rest/form'}}
         )
-
-    def render(self, data, accepted_media_type=None, renderer_context=None):
-        # add redirects for successful creates and deletes
-        renderer_context = renderer_context or {}
-        response = renderer_context.get('response')
-        serializer = getattr(data, 'serializer', None)
-        # Creation and deletion should use redirects in the admin style.
-        location = None
-
-        did_create = response and response.status_code == 201
-        did_delete = response and response.status_code == 204
-
-        if (
-            did_create
-            and serializer
-        ):
-            location = response.get(
-                'Location',
-                serializer.get_url(pk=serializer.instance.pk)
-            )
-
-        result = super(DynamicAdminRenderer, self).render(
-            data,
-            accepted_media_type,
-            renderer_context
-        )
-
-        if did_delete:
-            location = response.get('Location', '/')
-
-        if response and location:
-            response['Location'] = location
-        return result
