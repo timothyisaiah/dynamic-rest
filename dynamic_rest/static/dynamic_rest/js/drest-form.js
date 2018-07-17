@@ -90,7 +90,7 @@ function DRESTApp(config) {
     };
     this.confirmDelete = function() {
         this.showDialog({
-            title: 'You are about to delete a record',
+            title: 'You are about to delete a record!',
             body: 'Are you sure? This operation cannot be undone!',
             onAccept: this.doDelete.bind(this)
         });
@@ -99,9 +99,9 @@ function DRESTApp(config) {
         opts = opts || {};
         var title = opts.title;
         var body = opts.body;
-        var showAccept = opts.showAccept || true;
-        var showCancel = opts.showCancel || true;
         var onAccept = opts.onAccept;
+        var showAccept = !!onAccept;
+        var showCancel = true;
         var acceptLabel = opts.acceptLabel || 'Ok';
         var cancelLabel = opts.cancelLabel || 'Cancel';
 
@@ -211,7 +211,7 @@ function DRESTApp(config) {
 
         if (form.hasChanged()) {
             this.showDialog({
-                title: 'You have unsaved changed',
+                title: 'You have unsaved changed!',
                 body: 'Are you sure you want to go back and discard them?',
                 onAccept: onAccept
             });
@@ -557,17 +557,26 @@ function DRESTForm(config) {
     };
     this.onSubmitFailed = function(e, response) {
         var errors = response.error || {};
+        console.log(errors);
         var fields = this.getFieldsByName();
+        var hasFieldErrors = false;
         for (var key in fields) {
           if (fields.hasOwnProperty(key)) {
             var error = errors[key];
             var f = fields[key];
             if (error) {
+                hasFieldErrors = true;
                 f.setError(error[0]);
             } else {
                 f.clearError(true);
             }
           }
+        }
+        if (!hasFieldErrors) {
+            window.app.showDialog({
+                title: 'Failed to save!',
+                body: errors.error || errors,
+            });
         }
     };
     this.onSubmitSucceeded = function(e, response) {
@@ -611,6 +620,10 @@ function DRESTField(config) {
             var input = this.$input[0];
             var files = input.files;
             return (files && files.length) ? files[0] : null;
+        } else if (this.type === 'datetime' || this.type === 'date' || this.type === 'time' || this.type === 'select') {
+            if (this.value === '') {
+                return null;
+            }
         }
         return this.value;
     };
@@ -960,8 +973,8 @@ function DRESTField(config) {
                 dropdownParent: $field
             });
             select2 = $input.data('select2');
-        } else if (type === 'datetime') {
-            var inputType = $input.data('type');
+        } else if (type === 'datetime' || type === 'date' || type === 'time') {
+            var inputType = type;
             var opts = { clearButton: true };
 
             if (inputType == 'time') {
