@@ -318,6 +318,25 @@
                     {% endif %}
                 {% endif %}
             {% endblock %} <!-- /footer -->
+            {% block dialog %}
+                <aside id="drest-dialog"
+                    class="mdc-dialog"
+                    role="alertdialog"
+                    aria-labelledby="drest-dialog-label"
+                    aria-describedby="drest-dialog-description">
+                    <div class="mdc-dialog__surface">
+                        <header class="mdc-dialog__header">
+                            <h2 id="drest-dialog-label" class="mdc-dialog__header__title drest-dialog__title"></h2>
+                        </header>
+                        <section id="drest-dialog-description" class="mdc-dialog__body drest-dialog__body"></section>
+                        <footer class="mdc-dialog__footer">
+                            <button type="button" class="mdc-button mdc-dialog__footer__button drest-dialog__cancel"></button>
+                            <button type="button" class="mdc-button mdc-dialog__footer__button drest-dialog__accept"></button>
+                        </footer>
+                    </div>
+                    <div class="mdc-dialog__backdrop"></div>
+                </aside>
+            {% endblock %}
         </body>
     {% endblock %} <!-- /body -->
     {% block initializer %}
@@ -336,7 +355,10 @@
                 table: '#drest-table',
                 fab: '#drest-fab',
                 style: '{{ style }}',
-                content: '#drest-content-container'
+                content: '#drest-content-container',
+                dialog: '#drest-dialog',
+                listEndpoint: '{{ filter_endpoint }}',
+                detailEndpoint: '{{ request.get_full_path }}'
             });
 
             $(function() {

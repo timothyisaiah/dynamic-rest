@@ -7,7 +7,7 @@
     action="{{ request.get_full_path }}"
     method="PATCH">
 
-    <div class="drest-grid {% if sections|length == 1 %}drest-grid--wide{% endif %}">
+    <div class="drest-grid">
             {% get_sections results.serializer as sections %}
             {% for section in sections %}
                 <div class="drest-grid__item">

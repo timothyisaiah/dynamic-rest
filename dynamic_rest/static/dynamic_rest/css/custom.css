@@ -13,6 +13,7 @@
 
 html {
     box-sizing: border-box;
+    font-family: Roboto, sans-serif;
 }
 
 *,
@@ -20,14 +21,26 @@ html {
 *:after {
     box-sizing: inherit;
 }
+.drest-hidden {
+    height: 0 !important;
+    overflow: hidden;
+    margin: 0 !important;
+}
 .drest-grid {
     width: 100%;
     column-gap: 0;
     margin-bottom: 1rem;
-    column-count: 1;
 }
-.drest-grid--wide {
+.drest-grid--1x {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     column-count: 1 !important;
+}
+.drest-grid--2x {
+    column-count: 2;
 }
 .drest-grid__item {
     padding: 1rem;
@@ -40,18 +53,27 @@ html {
   .drest-grid {
       column-count: 3;
   }
+  .drest-grid.drest-grid--2x {
+      column-count: 2;
+  }
 }
 
 /* Masonry on medium-sized screens */
 @media only screen and (max-width: 1023px) and (min-width: 768px) {
   .drest-grid {
       column-count: 2;
-    }
+  }
+  .drest-grid.drest-grid--2x {
+      column-count: 2;
+  }
 }
 
 /* Masonry on small screens */
-@media only screen and (max-width: 767px) and (min-width: 540px) {
+@media only screen and (max-width: 767px) {
     .drest-grid {
+        column-count: 1 !important;
+    }
+    .drest-grid.drest-grid--2x {
         column-count: 1;
     }
 }
@@ -62,7 +84,6 @@ html {
 /** Container **/
 
 #drest-content-container {
-    font-family: Roboto, sans-serif;
     padding-top: 55px;
     width: 100%;
     display: flex;
@@ -381,7 +402,7 @@ html {
 .drest-form__header {
     display: block;
     width: 100%;
-    height: 1rem;
+    box-sizing: border-box;
     font-size: 1rem;
     padding: 1rem;
     line-height: 1rem;
