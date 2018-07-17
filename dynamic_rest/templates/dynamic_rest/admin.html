@@ -18,6 +18,14 @@
                 </title>
             {% endblock %}
             {% block css %}
+                <style>
+                    textarea, input, select {
+                        -webkit-appearance: none !important;
+                        -moz-appearance: none !important;
+                        appearance: none !important;
+                        outline: none;
+                    }
+                </style>
                 {% block bootstrap_css %}
                     <link
                     rel="stylesheet"
@@ -102,6 +110,9 @@
                 {% endblock %}
                 {% block script__swiper %}
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/js/swiper.min.js"></script>
+                {% endblock %}
+                {% block script__autosize %}
+                    <script src="https://cdn.jsdelivr.net/npm/autosize@4.0.2/dist/autosize.min.js"></script>
                 {% endblock %}
             {% endblock %}
        </head>
@@ -192,7 +203,7 @@
                 </aside>
             {% endblock %}
             {% block content %}
-                <div id="drest-content-container">
+                <div id="drest-content-container" style="display: none">
                     <div class="drest-content">
                         <div class="swiper-container">
                             <div class="swiper-wrapper">
@@ -337,6 +348,19 @@
                     <div class="mdc-dialog__backdrop"></div>
                 </aside>
             {% endblock %}
+            {% block notice %}
+                <div
+                    id="drest-notice"
+                    class="mdc-snackbar mdc-snackbar--align-start"
+                    aria-live="assertive"
+                    aria-atomic="true"
+                    aria-hidden="true">
+                    <div class="mdc-snackbar__text drest-notice__body"></div>
+                    <div class="mdc-snackbar__action-wrapper">
+                        <button type="button" class="drest-notice__action mdc-snackbar__action-button"></button>
+                    </div>
+                </div>
+            {% endblock %}
         </body>
     {% endblock %} <!-- /body -->
     {% block initializer %}
@@ -357,6 +381,7 @@
                 style: '{{ style }}',
                 content: '#drest-content-container',
                 dialog: '#drest-dialog',
+                notice: '#drest-notice',
                 listEndpoint: '{{ filter_endpoint }}',
                 detailEndpoint: '{{ request.get_full_path }}'
             });

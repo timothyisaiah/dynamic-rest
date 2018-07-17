@@ -5,27 +5,48 @@
         <div
             class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if field.value %}mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}"
             data-mdc-auto-init="MDCTextField">
-            <input
-                class="mdc-text-field__input"
-                name="{{ field.name }}"
-                type="{{ style.input_type }}"
-                id="{{ field.id }}-input"
-                {% if field.read_only %}
-                    disabled
-                {% endif %}
-                {% if field.errors or field.help_text %}
-                    aria-controls="{{ field.id }}-helper"
-                    aria-describedby="{{ field.id }}-helper"
-                {% endif %}
-                {% if field.errors %}
-                    invalid
-                {% endif %}
-                {% if field.required %}
-                    required
-                {% endif %}
-                value="{{ field.value }}"
-                {% if style.step %}step={{ style.step }}{% endif %}
-            />
+            {% if style.input_type == "text" %}
+                <textarea
+                    rows=1
+                    name="{{field.name}}"
+                    id="{{field.id}}-input" class="mdc-text-field__input"
+                    {% if field.read_only %}
+                        disabled
+                    {% endif %}
+                    {% if field.errors or field.help_text %}
+                        aria-controls="{{ field.id }}-helper"
+                        aria-describedby="{{ field.id }}-helper"
+                    {% endif %}
+                    {% if field.errors %}
+                        invalid
+                    {% endif %}
+                    {% if field.required %}
+                        required
+                    {% endif %}
+                >{{ field.value }}</textarea>
+            {% else %}
+                <input
+                    class="mdc-text-field__input"
+                    name="{{ field.name }}"
+                    type="{{ style.input_type }}"
+                    id="{{ field.id }}-input"
+                    {% if field.read_only %}
+                        disabled
+                    {% endif %}
+                    {% if field.errors or field.help_text %}
+                        aria-controls="{{ field.id }}-helper"
+                        aria-describedby="{{ field.id }}-helper"
+                    {% endif %}
+                    {% if field.errors %}
+                        invalid
+                    {% endif %}
+                    {% if field.required %}
+                        required
+                    {% endif %}
+                    value="{{ field.value }}"
+                    {% if style.step %}step={{ style.step }}{% endif %}
+                />
+            {% endif %}
             <label
                 class="mdc-floating-label{% if field.value %} mdc-floating-label--float-above{% endif %}"
                 data-mdc-auto-init="MDCFloatingLabel"

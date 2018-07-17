@@ -86,6 +86,7 @@ function DRESTApp(config) {
     this.onDeleteOk = function() {
         this.$header.removeClass('drest-app--submitting');
         this.submitting = false;
+        this.showNotice('Deleted successfully, redirecting...');
         window.location = this.listEndpoint;
     };
     this.confirmDelete = function() {
@@ -94,6 +95,16 @@ function DRESTApp(config) {
             body: 'Are you sure? This operation cannot be undone!',
             onAccept: this.doDelete.bind(this)
         });
+    };
+    this.showNotice = function(opts) {
+        if (typeof opts === 'string') {
+            opts = {
+                message: opts
+            }
+        }
+        opts = opts || {};
+        var notice = this.notice;
+        notice.show(opts);
     };
     this.showDialog = function(opts) {
         opts = opts || {};
@@ -160,6 +171,7 @@ function DRESTApp(config) {
         if ($error.length) {
             $('body, html').animate({scrollTop: $error.offset().top}, 200);
             $error.find('input').focus();
+            this.showNotice('An error occurred, see above');
         }
     };
     this.onEditNoop = function() {
@@ -171,6 +183,7 @@ function DRESTApp(config) {
         this.submitting = false;
         this.$header.removeClass('drest-app--submitting');
         this.disableEdit();
+        this.showNotice('Saved successfully');
     };
     this.onAddFailed = function() {
         this.submitting = false;
@@ -179,10 +192,12 @@ function DRESTApp(config) {
         if ($error.length) {
             $error.find('input').focus();
             $('body, html').animate({scrollTop: $error.offset().top - 60}, 300);
+            this.showNotice('An error occurred, see above');
         }
     };
     this.onAddOk = function(e, response) {
         var url = response.data.links.self;
+        this.showNotice('Saved successfully, redirecting...');
         window.location = url;
     };
     this.save = function() {
@@ -241,6 +256,7 @@ function DRESTApp(config) {
         var config = this.config;
         var $header = this.$header = $(config.header);
         this.$ = $(config.content);
+        this.$.show();
         this.$table = $(config.table);
         this.$fab = $(config.fab);
         this.$drawer = $(config.drawer);
@@ -261,6 +277,9 @@ function DRESTApp(config) {
         this.originalTitle = this.$title.html();
         this.dialog = new mdc.dialog.MDCDialog(document.querySelector(config.dialog));
         this.$dialog = $(config.dialog);
+
+        this.notice = new mdc.snackbar.MDCSnackbar(document.querySelector(config.notice));
+        this.$notice = $(config.notice);
 
         if (this.$deleteButton.length) {
             this.$deleteButton.off('click.drest').on('click.drest', this.confirmDelete.bind(this));
@@ -927,6 +946,9 @@ function DRESTField(config) {
         this.id = config.id;
         var $field = this.$ = this.$field = $('#' + field.id);
         var $input = this.$input = $('#' + field.id + '-input');
+        if ($input.is('textarea') && autosize) {
+            autosize($input[0]);
+        }
         var $helper = this.$helper = $('#' + field.id + '-helper');
         var $form = this.$form = $field.closest('.drest-form');
         var $textField = this.$textField = $field.find('.mdc-text-field');

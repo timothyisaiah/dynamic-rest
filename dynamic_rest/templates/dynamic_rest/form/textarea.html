@@ -1,36 +1,49 @@
 {% load dynamic_rest %}
-<div id="{{ field.id }}" class="drest-field drest-field--textarea">
-    <div data-mdc-auto-init="MDCTextField" class="mdc-text-field mdc-text-field--textarea mdc-text-field--fullwidth {% if field.errors %}has-error mdc-text-field--invalid{% endif %}">
+
+<div id="{{ field.id }}" class="drest-field {% if field.errors %}drest-field--invalid{% endif %} {% if field.read_only %}drest-field--disabled{% endif %} {% if field.write_only %}drest-field--writeonly{% endif %}">
+    <div
+        class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if field.value %}mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}"
+        data-mdc-auto-init="MDCTextField">
         <textarea
-            class="mdc-text-field__input"
-            id="{{ field.id }}-input"
-            name="{{ field.name }}"
+            rows=1
+            name="{{field.name}}"
+            id="{{field.id}}-input" class="mdc-text-field__input"
+            {% if field.read_only %}
+                disabled
+            {% endif %}
             {% if field.errors or field.help_text %}
                 aria-controls="{{ field.id }}-helper"
                 aria-describedby="{{ field.id }}-helper"
             {% endif %}
-            {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
-            rows=4
-
             {% if field.errors %}
                 invalid
             {% endif %}
-            {% if field.required and not field.allow_null %}
+            {% if field.required %}
                 required
             {% endif %}
-        >{% if field.value %}{{ field.value }}{% endif %}</textarea>
-        <label class="mdc-floating-label" data-mdc-auto-init="MDCFloatingLabel" for="{{ field.id }}-input">{{ field.label }}</label>
+        >{{ field.value }}</textarea>
+        <label
+            class="mdc-floating-label{% if field.value %} mdc-floating-label--float-above{% endif %}"
+            data-mdc-auto-init="MDCFloatingLabel"
+            for="{{ field.id }}-input"
+        >
+            {{ field.label }}
+        </label>
+        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
     </div>
-    <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
-        {% if field.errors %}
-            {% for error in field.errors %}
-                <span>{{error}}</span>
-            {% endfor %}
-        {% else %}
-            {% if field.help_text %}
-                {{ field.help_text | help_text_short_format | safe }}
+    <p
+        id="{{ field.id }}-helper"
+        class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text"
+        aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+            {% if field.errors %}
+                {% for error in field.errors %}
+                    <span>{{error}}</span>
+                {% endfor %}
+            {% else %}
+                {% if field.help_text %}
+                    {{ field.help_text | help_text_short_format | safe }}
+                {% endif %}
             {% endif %}
-        {% endif %}
     </p>
+    {% include "./field-js.html" %}
 </div>
-{% include "./field-js.html" %}
