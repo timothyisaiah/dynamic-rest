@@ -20,7 +20,7 @@
                 {% if field.errors %}
                     invalid
                 {% endif %}
-                {% if field.required and not field.allow_null %}
+                {% if field.required %}
                     required
                 {% endif %}
                 value="{{ field.value }}"
@@ -67,7 +67,7 @@
                 {% if field.errors %}
                     invalid
                 {% endif %}
-                {% if field.required and not field.allow_null %}
+                {% if field.required %}
                     required
                 {% endif %}
                 {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}/>

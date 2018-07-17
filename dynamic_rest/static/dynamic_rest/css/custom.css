@@ -22,9 +22,8 @@ html {
     box-sizing: inherit;
 }
 .drest-hidden {
-    height: 0 !important;
-    overflow: hidden;
-    margin: 0 !important;
+    display: none;
+    /* background-color: rgba(0,0,0,0.2); */
 }
 .drest-grid {
     width: 100%;
@@ -92,6 +91,8 @@ html {
 .drest-content {
     width: 100%;
     height: 100%;
+    box-sizing: border-box;
+    padding-bottom: 3rem;
 }
 @media only screen and (min-width: 600px) {
     #drest-content-container {
@@ -381,7 +382,7 @@ html {
     .drest-grid__item {
         padding: 0.5rem;
     }
-    .drest-grid__item:not(:last-child) {
+    .drest-grid__item {
         border-bottom: 1px solid #ccc;
     }
     .drest-section.mdc-card {

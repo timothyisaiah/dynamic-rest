@@ -110,6 +110,8 @@ class DynamicField(fields.Field, DynamicBase):
                 ):
                     self.allow_null = True
 
+                if 'allow_blank' not in self.kwargs and self.allow_null:
+                    self.allow_blank = True
                 help_text = getattr(model_field, 'help_text', None)
 
                 if 'help_text' not in self.kwargs and help_text:

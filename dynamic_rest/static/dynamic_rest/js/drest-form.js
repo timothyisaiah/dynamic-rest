@@ -301,6 +301,8 @@ function DRESTApp(config) {
         }
         if (this.$swiper.length) {
             this.swiper = new Swiper(config.content + ' .swiper-container', {
+                noSwipingSelector: '*',
+                speed: 10,
                 on: {
                     transitionEnd: function() {
                         var $slide = $(app.currentSlide);
@@ -620,15 +622,16 @@ function DRESTField(config) {
             var input = this.$input[0];
             var files = input.files;
             return (files && files.length) ? files[0] : null;
-        } else if (this.type === 'datetime' || this.type === 'date' || this.type === 'time' || this.type === 'select') {
-            if (this.value === '') {
-                return null;
-            }
+        } else if (this.type !== 'text' && this.value === '') {
+            return null;
         }
         return this.value;
     };
     this.getInputValue = function() {
         var val = this.$input.val();
+        if (val === '' && this.type !== 'text') {
+            val = null;
+        }
         if (val === null && this.many) {
             // replace null with empty list for
             // any "many" field
@@ -769,6 +772,9 @@ function DRESTField(config) {
         }
     };
     this.reset = function(value) {
+        if (value === '' && this.type !== 'text') {
+            value = null;
+        }
         if (!this.equal(this.value, value)) {
             if (this.isEmpty(value)) {
                 this.$field.removeClass('drest-field--selected');
@@ -870,6 +876,7 @@ function DRESTField(config) {
             this.$field.addClass('drest-field--selected');
         }
         if (this.controls) {
+            // TODO: make this good
             var show = this.controls[value || ''];
             $form.find('.drest-field')
             .each(function() {
@@ -925,11 +932,17 @@ function DRESTField(config) {
         var $textField = this.$textField = $field.find('.mdc-text-field');
         var $select = this.$select = $field.find('.mdc-select');
         var $label = this.$label = field.$field.find('label, .drest-field__label');
+        var type = this.type = config.type;
         var relation = this.relation = config.relation;
-        var value = this.initial = field.value = config.value;
+
+        var value = config.value;
+        if (value === '' && this.type !== 'text') {
+            value = null;
+        }
+
+        this.initial = this.value = value;
         var label = this.label = config.label;
         var name = this.name = config.name;
-        var type = this.type = config.type;
         var many = this.many = config.many || this.type === 'list';
         var required = this.required = config.required;
         var disabled = this.disabled = !$form.length || $form.hasClass('drest-form--readonly');
