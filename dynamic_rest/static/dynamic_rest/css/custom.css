@@ -424,8 +424,7 @@ html {
 .drest-form__header > span {
 }
 .drest-form .drest-field {
-    margin-bottom: 2rem;
-    margin-top: 2rem;
+    margin-bottom: 2.5rem;
     height: auto;
 }
 .drest-form .drest-field .mdc-text-field {
