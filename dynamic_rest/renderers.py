@@ -325,8 +325,7 @@ class DynamicAdminRenderer(AdminRenderer):
             not is_directory
         )
         context['show_menu'] = (
-            not is_auth_error and
-            not is_directory
+            not is_auth_error
         )
         return context
 

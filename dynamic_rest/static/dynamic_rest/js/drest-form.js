@@ -79,6 +79,34 @@ function DRESTApp(config) {
         }).done(this.onDeleteOk.bind(this))
         .fail(this.onDeleteFailed.bind(this))
     };
+    this.getTime = function() {
+        return Math.round((new Date()).getTime());
+    };
+    this.onScroll = function() {
+        this.$.addClass('drest-app--scrolling');
+        var scrollHideTime = 1000 * this.scrollHideSeconds;
+        this.scrollEndTime = this.getTime() + scrollHideTime;
+        if (!this._scrollTimeout) {
+            this._scrollTimeout = setTimeout(
+                this.scrollCancel.bind(this),
+                scrollHideTime
+            );
+        }
+    };
+    this.scrollCancel = function() {
+        var time = this.getTime();
+        var diff = this.scrollEndTime - time;
+        if (diff <= 0) {
+            this.$.removeClass('drest-app--scrolling');
+            delete this.scrollEndTime;
+            delete this._scrollTimeout;
+        } else {
+            this._scrollTimeout = setTimeout(
+                this.scrollCancel.bind(this),
+                diff
+            );
+        }
+    };
     this.onDeleteFailed = function() {
         this.$header.removeClass('drest-app--submitting');
         this.submitting = false;
@@ -234,6 +262,10 @@ function DRESTApp(config) {
             onAccept();
         }
     };
+    this.resetHeight = function() {
+        this.$.find('.swiper-wrapper')
+            .css('height', $(this.currentSlide).outerHeight());
+    };
     this.getForms = function() {
         this.$.find('.drest-form').map(function(el) { el.DRESTForm });
     };
@@ -256,6 +288,7 @@ function DRESTApp(config) {
         var config = this.config;
         var $header = this.$header = $(config.header);
         this.$ = $(config.content);
+        this.scrollHideSeconds = config.scrollHideSeconds || 2;
         this.$.show();
         this.$table = $(config.table);
         this.$fab = $(config.fab);
@@ -322,11 +355,13 @@ function DRESTApp(config) {
             this.swiper = new Swiper(config.content + ' .swiper-container', {
                 noSwipingSelector: '*',
                 speed: 10,
+                autoHeight: true,
                 on: {
                     transitionEnd: function() {
                         var $slide = $(app.currentSlide);
                         var scrollTop = $slide.attr('data-scroll-top') || 0;
                         $('body, html').scrollTop(scrollTop);
+                        app.resetHeight();
                     }
                 }
             });
@@ -368,6 +403,8 @@ function DRESTApp(config) {
         if (this.$backButton.length) {
             this.$backButton.on('click.drest', this.back.bind(this));
         }
+        $(window).scroll(this.onScroll.bind(this));
+        this.resetHeight();
     };
 
     this.editing = false;
@@ -914,6 +951,9 @@ function DRESTField(config) {
                     }
                 }
             });
+            if (window.app) {
+                window.app.resetHeight();
+            }
         }
         var was = this.value;
         this.value = value;

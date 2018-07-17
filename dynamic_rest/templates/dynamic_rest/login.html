@@ -3,12 +3,12 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-{% block header_nav_button %}
-    <span class="mdc-top-app-bar__navigation-icon material-icons">lock</span>
+{% block header_nav %}
+    <span class="material-icons mdc-top-app-bar__navigation-icon">lock_open</span>
 {% endblock %}
 
 {% block header_content %}
-    <span class="mdi mdi-login"/>  Login
+    {% drest_settings 'API_NAME' %}
 {% endblock %}
 
 {% block content %}
@@ -17,12 +17,15 @@
             <form
                 action="{% url 'dynamic_rest:login' %}"
                 role="form"
+                class="drest-form"
                 method="post"
             >
               {% csrf_token %}
-              <div class="drest-grid--1x">
+              <div class="drest-grid--1x drest-grid">
               <div class="drest-grid__item">
-
+              <div class="drest-section mdc-card">
+              <div class="mdc-card__title">Login</div>
+              <div class="mdc-card__fields">
                     <input type="hidden" name="next" value="{{ next }}">
 
                     <div class="drest-field">
@@ -94,6 +97,8 @@
                     {% endif %}
 
                     <button type="submit" class="w-100 mdc-button mdc-button--raised">Log in</button>
+                </div>
+                </div>
                 </div>
                 </div>
             </form>

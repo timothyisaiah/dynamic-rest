@@ -26,7 +26,6 @@ html {
 }
 .drest-hidden {
     display: none;
-    /* background-color: rgba(0,0,0,0.2); */
 }
 .drest-grid {
     width: 100%;
@@ -40,6 +39,7 @@ html {
     justify-content: center;
     align-items: center;
     column-count: 1 !important;
+    max-width: 800px;
 }
 .drest-grid--2x {
     column-count: 2;
@@ -146,10 +146,14 @@ html {
 
 /** Navigation **/
 
+.drest-app--scrolling ~ .drest-pagination-container {
+    transform: translateY(-100px);
+}
 .drest-pagination-container {
+    transition: all 0.3s ease;
     position: fixed;
     right: 0;
-    bottom: 10px;
+    bottom: -84px;
     left: 0;
     display: flex;
     justify-content: center;
@@ -158,6 +162,11 @@ html {
 .drest-pagination .pagination .page-link {
     border: none;
     padding: 0.65rem 1rem;
+}
+@media only screen and (max-width: 340px) {
+    .drest-pagination .pagination .page-link {
+        padding: 0.5rem 0.75rem;
+    }
 }
 .drest-pagination .pagination .page-item:first-child .page-link {
     border-bottom-left-radius: 2rem;
@@ -388,7 +397,7 @@ html {
     .drest-grid__item {
         padding: 0.5rem;
     }
-    .drest-grid__item {
+    .drest-grid__item:not(:last-child) {
         border-bottom: 1px solid #ccc;
     }
     .drest-section.mdc-card {
@@ -423,7 +432,7 @@ html {
 }
 .drest-form__header > span {
 }
-.drest-form .drest-field {
+.drest-field {
     margin-bottom: 2.5rem;
     height: auto;
 }
@@ -988,18 +997,12 @@ html {
 .drest-app.drest-app--editing {
     background-color: var(--mdc-theme-secondary);
 }
+#drest-fab {
+    transition: all .3s ease;
+}
 #drest-fab.drest-app--editing ,
 #drest-fab.drest-app--submitting {
-    display: none;
-}
-.drest-app.drest-app--submitting {
-    /*
-    background-size: 30px 30px;
-    background-image: -webkit-linear-gradient(135deg,#F6F6F6 25%,transparent 25%,transparent 50%,#F6F6F6 50%,#F6F6F6 75%,transparent 75%,transparent);
-    background-image: linear-gradient(-45deg,#F6F6F6 25%,transparent 25%,transparent 50%,#F6F6F6 50%,#F6F6F6 75%,transparent 75%,transparent);
-    -webkit-animation: stripes 2s linear infinite;
-    animation: stripes 2s linear infinite;
-    */
+    transform: translateY(100px);
 }
 .drest-app .drest-app__title {
     padding-left: 0;

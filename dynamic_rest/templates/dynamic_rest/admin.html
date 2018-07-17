@@ -18,14 +18,6 @@
                 </title>
             {% endblock %}
             {% block css %}
-                <style>
-                    textarea, input, select {
-                        -webkit-appearance: none !important;
-                        -moz-appearance: none !important;
-                        appearance: none !important;
-                        outline: none;
-                    }
-                </style>
                 {% block bootstrap_css %}
                     <link
                     rel="stylesheet"
@@ -127,10 +119,18 @@
                 >
                     <div class="mdc-top-app-bar__row">
                         <section class="drest-app__navigation mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
-                            {% if show_nav %}
-                                <span class="drest-app__back-button material-icons mdc-top-app-bar__navigation-icon">arrow_back</span>
-                                <span class="drest-app__nav-button material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</span>
-                            {% endif %}
+                             {% block header_nav %}
+                                {% if show_nav %}
+                                    <span class="drest-app__back-button material-icons mdc-top-app-bar__navigation-icon">arrow_back</span>
+                                    <span class="drest-app__nav-button material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</span>
+                                {% endif %}
+                                {% if style == 'directory' %}
+                                        <span class="material-icons mdc-top-app-bar__action-item">mood</span>
+                                {% endif %}
+                                {% if style == 'error' %}
+                                        <span class="material-icons mdc-top-app-bar__action-item">error</span>
+                                {% endif %}
+                            {% endblock %}
                             <span class="mdc-top-app-bar__title drest-app__title">
                                 {% block header_content %}
                                     {{ header }}
@@ -253,7 +253,7 @@
                                             class="drest-form drest-form--filter"
                                             method="GET"
                                             action="{{ filter_endpoint }}">
-                                            <div class="drest-grid drest-grid--wide">
+                                            <div class="drest-grid drest-grid--1x">
                                                 <div class="drest-grid__item">
                                                     <div class="mdc-card drest-section">
                                                         <div class="mdc-card__title">
@@ -320,13 +320,13 @@
                         </div>
                     {% endif %}
 
-                    {% if paginator %}
-                        <div class="drest-pagination-container">
-                            <div class="drest-pagination">
-                                {% get_pagination_html paginator %}
-                            </div>
+                {% endif %}
+                {% if paginator %}
+                    <div class="drest-pagination-container">
+                        <div class="drest-pagination">
+                            {% get_pagination_html paginator %}
                         </div>
-                    {% endif %}
+                    </div>
                 {% endif %}
             {% endblock %} <!-- /footer -->
             {% block dialog %}
