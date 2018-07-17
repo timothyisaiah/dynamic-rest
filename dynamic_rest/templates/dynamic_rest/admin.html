@@ -242,9 +242,20 @@
                                             class="drest-form drest-form--filter"
                                             method="GET"
                                             action="{{ filter_endpoint }}">
-                                            {% for filter in filters.values %}
-                                                {% render_filter filter %}
-                                            {% endfor %}
+                                            <div class="drest-grid drest-grid--wide">
+                                                <div class="drest-grid__item">
+                                                    <div class="mdc-card drest-section">
+                                                        <div class="mdc-card__title">
+                                                            Filters
+                                                        </div>
+                                                        <div class="mdc-card__fields">
+                                                            {% for filter in filters.values %}
+                                                                {% render_filter filter %}
+                                                            {% endfor %}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </form>
                                         <script>
                                             new DRESTForm({
@@ -257,27 +268,15 @@
                                 {% endif %}
                                 {% for related_name, serializer_and_form in create_related_forms.items %}
                                     <div class="swiper-slide swiper-no-swiping">
+                                        <div class="drest-form__header">
+                                            <label>{{ singular_name }}:</label>
+                                            <span>{{ name }}</span>
+                                        </div>
                                         <form
                                             id="drest-add-form-{{ related_name }}"
                                             action="{{ serializer | get_related_url:related_name }}/"
                                             method="POST"
                                             class="drest-form drest-form--add-related">
-                                                <div class="mdc-layout-grid pb-0">
-                                                    <div class="drest-field drest-field--fake">
-                                                        <div class="mdc-text-field mdc-text-field--disabled mdc-text-field--fullwidth">
-                                                            <label class="mdc-floating-label mdc-floating-label--float-above">
-                                                                {{ singular_name }}
-                                                            </label>
-                                                            <input
-                                                                class="mdc-text-field__input"
-                                                                type="text"
-                                                                disabled
-                                                                name="{{ related_name }}"
-                                                                value="{{ name }}"
-                                                            ></input>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                                 {{ serializer_and_form.1 }}
                                         </form>
                                         <script>

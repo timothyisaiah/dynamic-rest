@@ -27,6 +27,10 @@ function DRESTApp(config) {
         if (!$slide.length) {
             throw 'invalid slideTo argument';
         }
+        // save the scroll position on scroll back
+        var scrollTop = $('html, body').scrollTop();
+        $(this.currentSlide).attr('data-scroll-top', scrollTop);
+
         var currentIndex = this.currentIndex;
         var newIndex = $slide.index();
         var toEditMode = newIndex > 0;
@@ -77,6 +81,11 @@ function DRESTApp(config) {
     this.onEditFailed = function() {
         this.submitting = false;
         this.$header.removeClass('drest-app--submitting');
+        var $error = this.currentForm.$.find('.drest-field--invalid').first();
+        if ($error.length) {
+            $('body, html').animate({scrollTop: $error.offset().top}, 200);
+            $error.find('input').focus();
+        }
     };
     this.onEditNoop = function() {
         this.submitting = false;
@@ -91,6 +100,11 @@ function DRESTApp(config) {
     this.onAddFailed = function() {
         this.submitting = false;
         this.$header.removeClass('drest-app--submitting');
+        var $error = this.currentForm.$.find('.drest-field--invalid').first();
+        if ($error.length) {
+            $error.find('input').focus();
+            $('body, html').animate({scrollTop: $error.offset().top - 60}, 300);
+        }
     };
     this.onAddOk = function(e, response) {
         var url = response.data.links.self;
@@ -164,9 +178,7 @@ function DRESTApp(config) {
                 "ordering": false,
                 "info": false,
                 "searching": false,
-                "fixedHeader": {
-                    "headerOffset": 60,
-                },
+                "fixedHeader": true,
                 "responsive": {
                     "details": false
                 },
@@ -191,7 +203,12 @@ function DRESTApp(config) {
                 autoHeight: true,
                 on: {
                     transitionEnd: function() {
-                        $('.swiper-wrapper').css('height', $(app.currentSlide).innerHeight());
+                        var $slide = $(app.currentSlide);
+                        var height = $slide.innerHeight();
+                        var scrollTop = $slide.attr('data-scroll-top') || 0;
+                        $slide.closest('.swiper-wrapper').css('height', height);
+                        app.swiper.updateAutoHeight();
+                        $('body, html').scrollTop(scrollTop);
                     }
                 }
             });
@@ -211,10 +228,14 @@ function DRESTApp(config) {
             this.editForm.$.on('drest-form:submit-failed', this.onEditFailed.bind(this));
             this.editForm.$.on('drest-form:submit-noop', this.onEditNoop.bind(this));
             this.$fab.on('click.drest', this.enableEdit.bind(this));
+            this.$.find('.drest-form--add-related')
+                .on('drest-form:submit-succeeded', this.onAddOk.bind(this))
+                .on('drest-form:submit-failed', this.onAddFailed.bind(this));
         } else if (this.style === 'list') {
             this.addForm = this.getAddForm();
-            this.addForm.$.on('drest-form:submit-succeeded', this.onAddOk.bind(this));
-            this.addForm.$.on('drest-form:submit-failed', this.onAddFailed.bind(this));
+            this.$.find('.drest-form--add')
+                .on('drest-form:submit-succeeded', this.onAddOk.bind(this))
+                .on('drest-form:submit-failed', this.onAddFailed.bind(this));
         }
         $('.drest-app__slide-to').each(function() {
             var $button = $(this);
@@ -289,7 +310,9 @@ function DRESTForm(config) {
         }
         this.$.removeClass('drest-form--readonly');
         this.getFields().each(function() {
-            this.enable();
+            if (!this.readOnly) {
+                this.enable();
+            }
         });
         this.disabled = false;
     };

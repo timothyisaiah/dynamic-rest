@@ -1,8 +1,8 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div class="drest-grid">
-        {% get_sections form as sections %}
+{% get_sections form as sections %}
+<div class="drest-grid {% if sections|length == 1%}drest-grid--wide{% endif %}">
         {% for section in sections %}
               <div class="drest-grid__item">
                 <div class="drest-section mdc-card {% if section.field %}mdc-card--relation{% endif %}">
