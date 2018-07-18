@@ -6,6 +6,7 @@
 
 :root {
     --mdc-theme-secondary-lighter: #5fb3e0;
+    --mdc-theme-error: #b00020;
 }
 /* Outputs */
 
@@ -456,7 +457,7 @@ html {
 
 .drest-field.drest-field--invalid,
 .drest-field.drest-field--invalid .drest-field__label {
-    color: #b00020;
+    color: var(--mdc-theme-error);
 }
 
 /** drest-field--datetime **/
@@ -578,7 +579,7 @@ html {
     color: inherit;
 }
 .drest-field--select2.drest-field--invalid .select2-container .select2-selection {
-    border-bottom: 1px solid #b00020;
+    border-bottom: 1px solid var(--mdc-theme-error);
 }
 .drest-field--select2 .select2-container .select2-selection {
   /* @extend input */
@@ -850,8 +851,8 @@ html {
 }
 .drest-field--invalid.drest-field--select2 .select2-container--focus .select2-selection {
   /* @extend input[type=text]:focus */
-  border-bottom: 1px solid #b00020;
-  box-shadow: 0 1px 0 0 #b00020;
+  border-bottom: 1px solid var(--mdc-theme-error);
+  box-shadow: 0 1px 0 0 var(--mdc-theme-error);
 }
 .drest-field--select2.drest-field--changed:not(.drest-field--focused):not(.drest-field--invalid) .select2-container--focus .select2-selection {
   /* @extend input[type=text]:focus */
@@ -994,8 +995,11 @@ html {
 .drest-app {
     transition: all .3s ease;
 }
-.drest-app.drest-app--editing {
+.drest-app.drest-app--changed:not(.drest-app--error) {
     background-color: var(--mdc-theme-secondary);
+}
+.drest-app.drest-app--error {
+    background-color: var(--mdc-theme-error);
 }
 #drest-fab {
     transition: all .3s ease;
@@ -1019,7 +1023,7 @@ html {
 .drest-app.drest-app--submitting .drest-app__spinner {
     display: block;
 }
-.drest-app.drest-app--editing:not(.drest-app--submitting) .drest-app__save-button {
+.drest-app.drest-app--changed:not(.drest-app--submitting) .drest-app__save-button {
     display: block;
 }
 .drest-app.drest-app--editing .drest-app__back-button {

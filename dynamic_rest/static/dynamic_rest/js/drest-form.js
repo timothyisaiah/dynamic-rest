@@ -57,6 +57,9 @@ function DRESTApp(config) {
         var $form = $(this.currentSlide).find('.drest-form');
         this.currentForm = $form.length ? $form[0].DRESTForm : null;
 
+        this.clearError();
+        this.clearChanged();
+
         if (toEditMode) {
             // set edit styles
             this.enableEdit();
@@ -66,9 +69,7 @@ function DRESTApp(config) {
         }
     };
     this.doDelete = function() {
-        this.submitting = true;
-        this.$header.addClass('drest-app--submitting');
-
+        this.setSubmitting();
         $.ajax({
             url: this.detailEndpoint,
             method: 'DELETE',
@@ -83,7 +84,8 @@ function DRESTApp(config) {
         return Math.round((new Date()).getTime());
     };
     this.onScroll = function() {
-        this.$.addClass('drest-app--scrolling');
+        this.setScrolling();
+
         var scrollHideTime = 1000 * this.scrollHideSeconds;
         this.scrollEndTime = this.getTime() + scrollHideTime;
         if (!this._scrollTimeout) {
@@ -97,7 +99,8 @@ function DRESTApp(config) {
         var time = this.getTime();
         var diff = this.scrollEndTime - time;
         if (diff <= 0) {
-            this.$.removeClass('drest-app--scrolling');
+            this.clearScrolling();
+
             delete this.scrollEndTime;
             delete this._scrollTimeout;
         } else {
@@ -108,12 +111,10 @@ function DRESTApp(config) {
         }
     };
     this.onDeleteFailed = function() {
-        this.$header.removeClass('drest-app--submitting');
-        this.submitting = false;
+        this.clearSubmitting();
+        this.setError();
     };
     this.onDeleteOk = function() {
-        this.$header.removeClass('drest-app--submitting');
-        this.submitting = false;
         this.showNotice('Deleted successfully, redirecting...');
         window.location = this.listEndpoint;
     };
@@ -177,24 +178,65 @@ function DRESTApp(config) {
     this.enableEdit = function() {
         var form = this.currentForm;
         this.$title.html(form.getTitle());
-        this.$header.addClass('drest-app--editing');
-        this.$fab.addClass('drest-app--editing');
         form.enable();
-        this.editing = true;
+        this.setEditing();
     };
     this.disableEdit = function() {
         var form = this.currentForm;
         this.$title.html(this.originalTitle);
-        this.$header.removeClass('drest-app--editing');
-        this.$fab.removeClass('drest-app--editing');
         if (form && form.type === 'edit') {
             form.disable();
         }
-        this.editing = false;
+        this.clearEditing();
     };
-    this.onEditFailed = function() {
+    this.setEditing = function() {
+        this.editing = true;
+        this.$header.addClass('drest-app--editing');
+        this.$fab.addClass('drest-app--editing');
+    };
+    this.clearEditing = function() {
+        this.editing = false;
+        this.$header.removeClass('drest-app--editing');
+        this.$fab.removeClass('drest-app--editing');
+    }
+    this.setScrolling = function() {
+        this.scrolling = true;
+        this.$.addClass('drest-app--scrolling');
+    };
+    this.clearScrolling = function() {
+        this.scrolling = false;
+        this.$.removeClass('drest-app--scrolling');
+    };
+    this.setError = function() {
+        this.error = true;
+        this.$.addClass('drest-app--error');
+        this.$header.addClass('drest-app--error');
+    };
+    this.clearError = function() {
+        this.error = false;
+        this.$.removeClass('drest-app--error');
+        this.$header.removeClass('drest-app--error');
+    };
+    this.clearSubmitting = function() {
         this.submitting = false;
         this.$header.removeClass('drest-app--submitting');
+    };
+    this.setSubmitting = function() {
+        this.submitting = true;
+        this.$header.addClass('drest-app--submitting');
+    };
+    this.setChanged = function() {
+        this.changed = true;
+        this.$header.addClass('drest-app--changed');
+    };
+    this.clearChanged = function() {
+        this.changed = false;
+        this.$header.removeClass('drest-app--changed');
+    };
+    this.onEditFailed = function() {
+        this.clearSubmitting();
+        this.setError();
+
         var $error = this.currentForm.$.find('.drest-field--invalid').first();
         if ($error.length) {
             $('body, html').animate({scrollTop: $error.offset().top}, 200);
@@ -203,19 +245,19 @@ function DRESTApp(config) {
         }
     };
     this.onEditNoop = function() {
-        this.submitting = false;
-        this.$header.removeClass('drest-app--submitting');
+        this.clearSubmitting();
         this.disableEdit();
     };
     this.onEditOk = function() {
-        this.submitting = false;
-        this.$header.removeClass('drest-app--submitting');
+        this.clearSubmitting();
+        this.clearChanged();
         this.disableEdit();
         this.showNotice('Saved successfully');
     };
     this.onAddFailed = function() {
-        this.submitting = false;
-        this.$header.removeClass('drest-app--submitting');
+        this.clearSubmitting();
+        this.setError();
+
         var $error = this.currentForm.$.find('.drest-field--invalid').first();
         if ($error.length) {
             $error.find('input').focus();
@@ -225,6 +267,9 @@ function DRESTApp(config) {
     };
     this.onAddOk = function(e, response) {
         var url = response.data.links.self;
+        this.clearError();
+        this.clearChanged();
+
         this.showNotice('Saved successfully, redirecting...');
         window.location = url;
     };
@@ -233,8 +278,7 @@ function DRESTApp(config) {
             return;
         }
         // save primary record
-        this.$header.addClass('drest-app--submitting');
-        this.submitting = true;
+        this.setSubmitting();
         this.currentForm.submit();
     };
     this.back = function() {
@@ -245,6 +289,9 @@ function DRESTApp(config) {
         }
         var onAccept = function() {
             form.reset();
+            app.clearError();
+            app.clearChanged();
+
             if (form === app.editForm) {
                 app.disableEdit();
             } else {
@@ -267,7 +314,12 @@ function DRESTApp(config) {
             .css('height', $(this.currentSlide).outerHeight());
     };
     this.getForms = function() {
-        this.$.find('.drest-form').map(function(el) { el.DRESTForm });
+        var $forms = this.$.find('.drest-form');
+        var forms = [];
+        for (var i=0; i<$forms.length; i++) {
+            forms.push($forms[i].DRESTForm);
+        }
+        return forms;
     };
     this.getEditForm = function() {
         if (this.style === 'detail') {
@@ -282,6 +334,21 @@ function DRESTApp(config) {
             return form.length ? form[0].DRESTForm : null;
         }
         return null;
+    };
+    this.onFormChange = function(e, data) {
+        var form = data.form;
+        if (form === this.currentForm) {
+            if (form.hasChanged()) {
+                this.setChanged();
+            } else {
+                this.clearChanged();
+            }
+            if (form.hasError()) {
+                this.setError();
+            } else {
+                this.clearError();
+            }
+        }
     };
     this.onLoad = function() {
         var app = this;
@@ -375,6 +442,10 @@ function DRESTApp(config) {
             this.$filterSlide = this.$swiper.find('.drest-form--filter').closest('.swiper-slide');
         }
         this.forms = this.getForms();
+        for (var i=0; i<this.forms.length; i++) {
+            var form = this.forms[i];
+            form.$.on('drest-form:change', this.onFormChange.bind(this));
+        }
         if (this.style === 'detail') {
             this.editForm = this.getEditForm();
             this.editForm.$.on('drest-form:submit-succeeded', this.onEditOk.bind(this));
@@ -507,6 +578,16 @@ function DRESTForm(config) {
                 this.clearError();
             }
         });
+    };
+    this.hasError = function() {
+        var fields = this.getFields();
+        for (var i=0; i<fields.length; i++) {
+            var field = fields[i];
+            if (field.hasError) {
+                return true;
+            }
+        }
+        return false;
     };
     this.hasChanged = function() {
         var fields = this.getFields();
@@ -892,6 +973,7 @@ function DRESTField(config) {
     };
     this.setError = function(error) {
         this.error = error;
+        this.hasError = true;
         // this is sticky through change until submit
         this.valueOnError = this.getInputValue();
         this.$field.addClass('drest-field--invalid');
@@ -911,6 +993,7 @@ function DRESTField(config) {
             this.valueOnError = undefined;
         }
 
+        this.hasError = false;
         this.$field.removeClass('drest-field--invalid');
         this.$select.removeClass('mdc-text-field--invalid');
         var textField = this.getTextField();
@@ -972,8 +1055,9 @@ function DRESTField(config) {
             this.$field.removeClass('drest-field--changed');
         }
         if (form) {
-            form.$.trigger('change', [{
+            form.$.trigger('drest-form:change', [{
                 field: this,
+                form: form,
                 before: was,
                 after: value
             }]);
