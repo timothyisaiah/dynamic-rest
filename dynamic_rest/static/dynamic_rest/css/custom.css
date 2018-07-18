@@ -1023,7 +1023,7 @@ html {
 .drest-app.drest-app--submitting .drest-app__spinner {
     display: block;
 }
-.drest-app.drest-app--changed:not(.drest-app--submitting) .drest-app__save-button {
+.drest-app.drest-app--editing:not(.drest-app--submitting) .drest-app__save-button {
     display: block;
 }
 .drest-app.drest-app--editing .drest-app__back-button {
