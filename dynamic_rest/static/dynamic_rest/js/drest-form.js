@@ -769,9 +769,9 @@ function DRESTField(config) {
         if (val === '' && this.type !== 'text') {
             val = null;
         }
-        if (val === null && this.many) {
+        if (val === null && this.type === 'relation' && this.many) {
             // replace null with empty list for
-            // any "many" field
+            // a many relation
             val = [];
         }
         if (this.type === 'boolean') {
