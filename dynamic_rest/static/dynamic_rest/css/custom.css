@@ -288,7 +288,7 @@ html {
     border-color: var(--mdc-theme-primary);
     background-color: var(--mdc-theme-primary);
 }
-.drest-field.drest-field--changed .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background, .mdc-checkbox__native-control:enabled:indeterminate ~ .mdc-checkbox__background {
+.drest-field.drest-field--changed .mdc-checkbox__native-control:enabled:checked ~ .mdc-checkbox__background {
     border-color: var(--mdc-theme-secondary);
     background-color: var(--mdc-theme-secondary);
 }
@@ -351,7 +351,7 @@ html {
     right: 0px;
 }
 .drest-field.drest-field--select2 .mdc-text-field-helper-text {
-    bottom: 1rem;
+    bottom: 0rem;
     top: auto;
 }
 
@@ -761,7 +761,7 @@ html {
 .drest-field.drest-field--select2 .select2-container--open:not(.select2) {
     top: auto !important;
     left: 0 !important;
-    bottom: 40px;
+    bottom: 42px;
 }
 .drest-field.drest-field--select2.many .select2-container--open:not(.select2) {
     bottom: 15px;

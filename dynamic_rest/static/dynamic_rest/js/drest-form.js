@@ -241,9 +241,11 @@ function DRESTApp(config) {
 
         var $error = this.currentForm.$.find('.drest-field--invalid').first();
         if ($error.length) {
-            $('body, html').animate({scrollTop: $error.offset().top}, 200);
+            $('body, html').animate({
+                scrollTop: $error.offset().top - $(window).height() / 2
+            }, 200);
             $error.find('input').focus();
-            this.showNotice('An error occurred, see above');
+            this.showNotice('An error occurred');
         }
     };
     this.onEditNoop = function() {
