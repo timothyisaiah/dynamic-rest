@@ -991,7 +991,7 @@ html {
     z-index: 1053;
 }
 .drest-drawer__header {
-    background-color: var(--mdc-theme-primary);
+    cursor: pointer;
     position: absolute;
     top: 0;
     left: 0;
@@ -999,6 +999,10 @@ html {
     height: 64px;
     overflow: hidden;
     z-index: 1;
+    background-color: var(--mdc-theme-primary);
+}
+.drest-drawer__header .mdc-list-item {
+    color: white;
 }
 .drest-drawer__content {
     padding-top: 64px;
@@ -1009,14 +1013,15 @@ html {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-.drest-drawer__header .mdc-list {
-    padding-top: 0;
-    padding-bottom: 0;
+.drest-drawer__content .drest-directory .mdc-list-item {
+    background-color: black;
+    color: white;
+    transition: all 0.2s ease;
 }
-.drest-drawer__header .mdc-list-item {
-    color: var(--mdc-theme-on-primary)
+.drest-drawer__content .drest-directory .mdc-list-item:hover {
+    background-color: rgba(0,0,0,0.7);
 }
-.drest-directory.mdc-list {
+.drest-drawer__header .mdc-list, .drest-directory.mdc-list {
     padding: 0;
 }
 .drest-icon-left {
