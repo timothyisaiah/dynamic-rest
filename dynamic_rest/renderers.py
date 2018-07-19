@@ -5,7 +5,7 @@ from rest_framework.renderers import (
     HTMLFormRenderer,
     ClassLookupDict
 )
-from django.utils.safestring import mark_safe
+from django.utils.html import mark_safe
 from dynamic_rest.compat import reverse, NoReverseMatch, AdminRenderer
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
@@ -115,6 +115,8 @@ class DynamicAdminRenderer(AdminRenderer):
         if isinstance(instance, list):
             instance = None
 
+        nav_icon = '<span class="material-icons">menu</span>'
+
         if is_error:
             context['style'] = 'error'
             if is_auth_error:
@@ -145,6 +147,11 @@ class DynamicAdminRenderer(AdminRenderer):
             plural_name = serializer.get_plural_name().title()
             description = serializer.get_description()
             icon = serializer.get_icon()
+            if icon:
+                nav_icon = '<span class="{0} {0}-{1}"></span>'.format(
+                    settings.ADMIN_ICON_PACK,
+                    icon
+                )
             header = serializer.get_plural_name().title().replace('_', ' ')
 
             if is_list:
@@ -158,13 +165,6 @@ class DynamicAdminRenderer(AdminRenderer):
                 header = serializer.get_name().title().replace('_', ' ')
 
             title = header
-
-            if icon:
-                header = mark_safe('<span class="{0} {0}-{1}"></span>&nbsp;{2}'.format(  # noqa
-                    settings.ADMIN_ICON_PACK,
-                    icon,
-                    header
-                ))
 
             if is_list:
                 list_fields = getattr(meta, 'list_fields', None) or meta.fields
@@ -320,6 +320,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['allow_add'] = (
             'create' in allowed and is_list
         )
+        context['nav_icon'] = mark_safe(nav_icon)
         context['show_nav'] = (
             not is_auth_error and
             not is_directory

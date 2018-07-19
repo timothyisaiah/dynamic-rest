@@ -122,7 +122,7 @@
                              {% block header_nav %}
                                 {% if show_nav %}
                                     <span class="drest-app__back-button material-icons mdc-top-app-bar__navigation-icon">arrow_back</span>
-                                    <span class="drest-app__nav-button material-icons mdc-top-app-bar__navigation-icon" id="drest-header-nav">menu</span>
+                                    <span class="drest-app__nav-button mdc-top-app-bar__navigation-icon" id="drest-header-nav">{{ nav_icon }}</span>
                                 {% endif %}
                                 {% if style == 'directory' %}
                                         <span class="material-icons mdc-top-app-bar__action-item">mood</span>
@@ -187,14 +187,15 @@
             {% block drawer %}
                 <aside id="drest-drawer" class="mdc-drawer mdc-drawer--temporary mdc-typography">
                     <nav class="mdc-drawer__drawer">
-                        <header class="mdc-drawer__header">
-                            {% block drawer_header %}
-                                <div class="mdc-drawer__header-content">
-                                    {% drest_settings 'API_NAME' %}
+                        <div class="drest-drawer__header">
+                            <div class="mdc-list">
+                                <div class="mdc-list-item">
+                                    <div class="drest-icon-left material-icons">close</div>
+                                    {{ header }}
                                 </div>
-                            {% endblock %}
-                        </header>
-                        <nav class="mdc-drawer__content">
+                            </div>
+                        </div>
+                        <nav class="mdc-drawer__content drest-drawer__content">
                             {% block drawer_content %}
                                 {% include "dynamic_rest/admin/directory.html" %}
                             {% endblock %}

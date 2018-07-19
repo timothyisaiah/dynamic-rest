@@ -238,14 +238,16 @@ function DRESTApp(config) {
     this.onEditFailed = function() {
         this.clearSubmitting();
         this.setError();
-
+        this.focusError();
+        this.showNotice('An error occurred');
+    };
+    this.focusError = function() {
         var $error = this.currentForm.$.find('.drest-field--invalid').first();
         if ($error.length) {
             $('body, html').animate({
                 scrollTop: $error.offset().top - $(window).height() / 2
             }, 200);
             $error.find('input').focus();
-            this.showNotice('An error occurred');
         }
     };
     this.onEditNoop = function() {
@@ -261,13 +263,8 @@ function DRESTApp(config) {
     this.onAddFailed = function() {
         this.clearSubmitting();
         this.setError();
-
-        var $error = this.currentForm.$.find('.drest-field--invalid').first();
-        if ($error.length) {
-            $error.find('input').focus();
-            $('body, html').animate({scrollTop: $error.offset().top - 60}, 300);
-            this.showNotice('An error occurred, see above');
-        }
+        this.focusError();
+        this.showNotice('An error occurred');
     };
     this.onAddOk = function(e, response) {
         var url = response.data.links.self;
@@ -285,12 +282,17 @@ function DRESTApp(config) {
         this.setSubmitting();
         this.currentForm.submit();
     };
-    this.back = function() {
+    this.back = function(e) {
         var form = this.currentForm;
         var app = this;
         if (this.submitting || !form) {
             return;
         }
+
+        // prevent click on section
+        e.preventDefault();
+        e.stopPropagation();
+
         var onAccept = function() {
             form.reset();
             app.clearError();
@@ -364,6 +366,7 @@ function DRESTApp(config) {
         this.$table = $(config.table);
         this.$fab = $(config.fab);
         this.$drawer = $(config.drawer);
+        this.$drawerHeader = this.$drawer.find('.drest-drawer__header');
         this.style = config.style; // either list, directory, detail, or error
         this.detailEndpoint = config.detailEndpoint;
         this.listEndpoint = config.listEndpoint;
@@ -373,7 +376,7 @@ function DRESTApp(config) {
         this.$saveButton = $header.find('.drest-app__save-button');
         this.$deleteButton = $header.find('.drest-app__delete-button');
         this.$spinner = $header.find('drest-app__spinner');
-        this.$navButton = $header.find('.drest-app__nav-button');
+        this.$navSection = $header.find('.drest-app__navigation');
         this.$backButton = $header.find('.drest-app__back-button');
         this.$title = $header.find('.drest-app__title');
         this.$moreMenu = $header.find('.drest-app__more-menu');
@@ -410,6 +413,11 @@ function DRESTApp(config) {
         }
         if (this.$drawer.length) {
             this.drawer = new mdc.drawer.MDCTemporaryDrawer(this.$drawer[0]);
+            if (this.$drawerHeader.length) {
+                this.$drawerHeader.on('click', function() {
+                    this.drawer.open = false;
+                }.bind(this));
+            }
         }
         if (this.$moreMenu.length) {
             this.moreMenu = new mdc.menu.MDCMenu(this.$moreMenu[0]);
@@ -417,11 +425,13 @@ function DRESTApp(config) {
                 this.moreMenu.open = !this.moreMenu.open;
             }.bind(this));
         }
-        if (this.$navButton.length) {
-            this.$navButton.on('click', function() {
+        this.$navSection.on('click', function() {
+            if (this.editing || this.submitting) {
+                return;
+            } else {
                 this.drawer.open = true;
-            }.bind(this));
-        }
+            }
+        }.bind(this));
         if (this.$swiper.length) {
             this.swiper = new Swiper(config.content + ' .swiper-container', {
                 noSwipingSelector: '*',

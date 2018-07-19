@@ -2,10 +2,7 @@
 {% load dynamic_rest %}
 {% drest_settings 'ADMIN_ICON_PACK' as icons %}
 
-<h5 class="p-3">
-    Welcome, {{request.user.name}}!
-</h5>
-<div class="mdc-list">
+<div class="drest-directory mdc-list">
 {% for key, value in directory.items %}
     {% with url=value.0 icon=value.1 %}
             <a class="mdc-list-item" href="{{ url }}">
