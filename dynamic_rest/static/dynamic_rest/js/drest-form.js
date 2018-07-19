@@ -202,10 +202,12 @@ function DRESTApp(config) {
     this.setScrolling = function() {
         this.scrolling = true;
         this.$.addClass('drest-app--scrolling');
+        this.$header.addClass('drest-app--scrolling');
     };
     this.clearScrolling = function() {
         this.scrolling = false;
         this.$.removeClass('drest-app--scrolling');
+        this.$header.removeClass('drest-app--scrolling');
     };
     this.setError = function() {
         this.error = true;
@@ -769,9 +771,11 @@ function DRESTField(config) {
         if (val === '' && this.type !== 'text') {
             val = null;
         }
-        if (val === null && this.type === 'relation' && this.many) {
+        if (val === null && this.many &&
+            (this.type === 'relation' || (this.initial && this.initial.length === 0))
+        ) {
             // replace null with empty list for
-            // a many relation
+            // a many relation, or if the initial value was an empty list
             val = [];
         }
         if (this.type === 'boolean') {

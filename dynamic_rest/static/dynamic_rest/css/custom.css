@@ -147,7 +147,7 @@ html {
 
 /** Navigation **/
 
-.drest-app--scrolling ~ .drest-pagination-container {
+#drest-header.drest-app--scrolling:not(.drest-app--editing) ~ .drest-pagination-container {
     transform: translateY(-100px);
 }
 .drest-pagination-container {
@@ -351,7 +351,8 @@ html {
     right: 0px;
 }
 .drest-field.drest-field--select2 .mdc-text-field-helper-text {
-    bottom: -0.5rem;
+    bottom: 1rem;
+    top: auto;
 }
 
 .drest-field > td {
