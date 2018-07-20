@@ -1,5 +1,12 @@
 from django.conf import settings as django_settings
 from django.test.signals import setting_changed
+from django.utils import six
+from django.utils.module_loading import import_string
+
+
+IMPORT_STRINGS = {
+    'API_GET_HOME'
+}
 
 DYNAMIC_REST = {
     # API_NAME: Name of the API
@@ -13,6 +20,8 @@ DYNAMIC_REST = {
 
     # API_ROOT_URL: API root URL
     'API_ROOT_URL': '/',
+
+    'API_GET_HOME': None,
 
     # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
     # instances of the primary resource when sideloading.
@@ -124,6 +133,9 @@ class Settings(object):
                 val = self.settings[attr]
             else:
                 val = self.defaults[attr]
+
+            if attr in IMPORT_STRINGS and isinstance(val, six.string_types):
+                val = import_string(val)
 
             # Cache the result
             self._cache[attr] = val

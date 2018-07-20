@@ -52,6 +52,7 @@ class DynamicRouter(DefaultRouter):
     def __init__(self, *args, **kwargs):
         optional_trailing_slash = kwargs.pop('optional_trailing_slash', True)
         self._serializer_classes = {}
+        self.get_home = kwargs.pop('get_home', settings.API_GET_HOME)
         super(DynamicRouter, self).__init__(*args, **kwargs)
         if optional_trailing_slash:
             self.trailing_slash = '/?'
@@ -75,6 +76,11 @@ class DynamicRouter(DefaultRouter):
                             request.path
                         )
                     )
+                elif self._router.get_home:
+                    home = self._router.get_home(request.user)
+                    if home:
+                        return redirect(home)
+
                 result = get_directory(request)
                 return Response(result)
 
