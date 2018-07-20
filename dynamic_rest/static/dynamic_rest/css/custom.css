@@ -629,10 +629,7 @@ html {
 }
 
 .drest-field--select2 .select2-container--material .select2-selection--single .select2-selection__rendered {
-  float: left;
   width: 100%;
-  text-overflow: ellipsis;
-  overflow: hidden;
 }
 .drest-field--select2 .select2-container--material .select2-selection--single .select2-selection__arrow {
   display: none;
@@ -769,13 +766,23 @@ html {
 .drest-field.drest-field--select2.many .select2-container--open:not(.select2) {
     bottom: 15px;
 }
+.drest-field.drest-field--disabled .dropify-wrapper .dropify-message p,
+.drest-field.drest-field--disabled .dropify-wrapper .drest-field__clear
+{
+    display: none;
+}
+.drest-field--disabled .dropify-font-upload:before, .drest-field--disabled .dropify-wrapper .dropify-message span.file-icon:before {
+    content: '\e801';
+}
+.drest-field--disabled .dropify-wrapper:hover {
+    background-size: 0;
+}
 .drest-field.drest-field--file .dropify-wrapper .dropify-preview {
     z-index: 0;
 }
 .drest-field--select2.drest-field--focused .select2-selection__placeholder,
 .drest-field--select2.drest-field--selected .select2-selection__placeholder
 {
-    position: absolute;
     transform: translateY(-100%) scale(0.75);
 }
 .drest-field .select2-search--dropdown {
