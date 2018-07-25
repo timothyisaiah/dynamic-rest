@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 import inflection
+import datetime
 import re
 import os
 import json
@@ -166,14 +167,18 @@ def field_to_json(field):
         'serializer',
         None
     )
-    if isinstance(value, UUID):
-        value = str(value)
-    elif isinstance(value, FieldFile):
+    if isinstance(value, FieldFile):
         try:
             value = value.url
         except ValueError:
             value = None
-    elif isinstance(value, Decimal):
+    elif isinstance(value, (
+        Decimal,
+        UUID,
+        datetime.datetime,
+        datetime.date,
+        datetime.time
+    )):
         value = str(value)
 
     if not related_serializer:
