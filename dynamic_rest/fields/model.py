@@ -3,7 +3,6 @@ from .base import DynamicField
 from rest_framework import serializers
 
 for cls_name in (
-    'CharField',
     'BooleanField',
     'NullBooleanField',
     'DecimalField',

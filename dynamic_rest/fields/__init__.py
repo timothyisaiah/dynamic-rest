@@ -14,4 +14,5 @@ from .phone import DynamicPhoneField
 from .password import DynamicPasswordField
 from .money import DynamicMoneyField, DynamicMoneyIntegerField
 from .date import DynamicDateField
+from .char import DynamicCharField, DynamicTextField
 from .model import *

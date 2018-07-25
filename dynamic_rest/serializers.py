@@ -234,6 +234,7 @@ class WithDynamicSerializerMixin(
         - immutable_fields - list of strings
         - read_only_fields - list of strings
         - untrimmed_fields - list of strings
+        - depends - dict of dependency objects
     """
 
     def __new__(cls, *args, **kwargs):
@@ -886,6 +887,13 @@ class WithDynamicSerializerMixin(
                 continue
             setattr(field, attr, value)
 
+    def change_fields(self, all_fields, fields_dict, attr):
+        for key, value in fields_dict.items():
+            field = all_fields.get(key)
+            if not field:
+                continue
+            setattr(field, attr, value)
+
     def get_fields(self):
         """Returns the serializer's field set.
 
@@ -935,6 +943,13 @@ class WithDynamicSerializerMixin(
             pw_fields,
             'trim_whitespace',
             False,
+        )
+
+        depends = getattr(meta, 'depends', {})
+        self.change_fields(
+            serializer_fields,
+            depends,
+            'depends'
         )
 
         method = self.get_request_method()

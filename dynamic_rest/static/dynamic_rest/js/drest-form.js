@@ -316,6 +316,9 @@ function DRESTApp(config) {
         }
     };
     this.resetHeight = function() {
+        if (!this.$) {
+            return;
+        }
         this.$.find('.swiper-wrapper')
             .css('height', $(this.currentSlide).outerHeight());
     };
@@ -490,6 +493,7 @@ function DRESTApp(config) {
         }
         $(window).scroll(this.onScroll.bind(this));
         this.resetHeight();
+        setTimeout(function(){ this.resetHeight(); }.bind(this), 1000);
     };
 
     this.editing = false;
@@ -513,7 +517,7 @@ function DRESTForm(config) {
         return this._fields;
     };
     this.hasFiles = function(changedOnly) {
-        var fields = this.getFields();
+        var fields = this.fields;
         for (var i=0; i<fields.length; i++) {
             var field = fields[i];
             if (field.type !== 'file') {
@@ -527,12 +531,10 @@ function DRESTForm(config) {
     };
     this.getFieldsByName = function() {
         if (typeof this._fieldsByName === 'undefined') {
-            var fields = this.getFields();
             var result = {};
-            for (var i = 0; i < fields.length; i++) {
-                var f = fields[i];
-                result[f.name] = f;
-            }
+            this.getFields().each(function() {
+                result[this.name] = this;
+            });
             this._fieldsByName = result;
         }
         return this._fieldsByName;
@@ -561,7 +563,7 @@ function DRESTForm(config) {
             return;
         }
         this.$.addClass('drest-form--readonly');
-        this.getFields().each(function() {
+        this.fields.each(function() {
             this.disable();
         });
         this.disabled = true;
@@ -612,6 +614,72 @@ function DRESTForm(config) {
             }
         }
         return false;
+    };
+    this.getFieldDependents = function() {
+        if (typeof this._fieldDependents === 'undefined') {
+            dependents = {};
+            var fields = this.getFields();
+            for (var i=0; i<fields.length; i++) {
+                var field = fields[i];
+                var depends = field.depends;
+                var name = field.name;
+                if (depends) {
+                    var key, value, dependent = {};
+                    if ($.isPlainObject(depends)) {
+                        // field: value
+                        key = Object.keys(depends)[0];
+                        value = depends[key];
+                    } else {
+                        // field
+                        key = depends;
+                        value = true;
+                    }
+                    dependent[name] = value;
+
+                    if (typeof dependents[key] === 'undefined') {
+                        dependents[key] = [];
+                    }
+
+                    dependents[key].push(dependent);
+                }
+            }
+            this._fieldDependents = dependents;
+        }
+        return this._fieldDependents;
+    };
+    this.onChange = function(e, data) {
+        var changedField = data.field;
+        var changedTo = data.after;
+        this.updateDependents(changedField, changedTo);
+        window.app.resetHeight();
+    };
+    this.updateAllDependents = function() {
+        var fields = this.getFields();
+        for (var i=0; i<fields.length; i++) {
+            var field = fields[i];
+            this.updateDependents(field, field.value);
+        }
+    };
+    this.updateDependents = function(field, value) {
+        var dependents = this.getFieldDependents();
+        var fields = this.getFieldsByName();
+        dependents = dependents[field.name];
+        if (dependents && dependents.length) {
+            // e.g. suppose field B has changed
+            // if field A depends on B=1,
+            // then dependents(B) = [{A: 1}]
+            for (var i=0; i<dependents.length; i++) {
+                var dependent = dependents[i];
+                var fieldName = Object.keys(dependent)[0];
+                var fieldValue = dependent[fieldName];
+                var field = fields[fieldName];
+                if (field.equal(fieldValue, value)) {
+                    field.show();
+                } else {
+                    field.hide();
+                }
+            }
+        }
     };
     this.onSubmit = function(e) {
         var form = this.$;
@@ -710,7 +778,6 @@ function DRESTForm(config) {
     };
     this.onSubmitFailed = function(e, response) {
         var errors = response.error || {};
-        console.log(errors);
         var fields = this.getFieldsByName();
         var hasFieldErrors = false;
         for (var key in fields) {
@@ -756,7 +823,9 @@ function DRESTForm(config) {
         this.$.on('drest-form:submit-failed', this.onSubmitFailed.bind(this));
         this.$.on('drest-form:submit-succeeded', this.onSubmitSucceeded.bind(this));
         this.$.off('submit.drest-form').on('submit.drest-form', this.onSubmit.bind(this));
-        this.$.trigger('drest-form:loaded');
+        this.$.off('drest-form:change').on('drest-form:change', this.onChange.bind(this));
+        this.updateAllDependents();
+        window.app.resetHeight();
     }
 
     this.config = config;
@@ -1021,6 +1090,18 @@ function DRESTField(config) {
             .removeClass('mdc-text-field-helper-text--validation-msg')
             .html(this.helpTextShort);
     };
+    this.hide = function() {
+        if (!this.$) {
+            this.onLoad();
+        }
+        this.$.addClass('drest-hidden');
+    };
+    this.show = function() {
+        if (!this.$) {
+            this.onLoad();
+        }
+        this.$.removeClass('drest-hidden');
+    };
     this.onChange = function() {
         var value = this.getInputValue();
         var form = this.getForm();
@@ -1030,30 +1111,7 @@ function DRESTField(config) {
         } else {
             this.$field.addClass('drest-field--selected');
         }
-        if (this.controls) {
-            // TODO: make this good
-            var show = this.controls[value || ''];
-            $form.find('.drest-field')
-            .each(function() {
-                var $field = $(this);
-                if ($field.hasClass('drest-field--fake')) {
-                    return;
-                }
-                var name = $field.find('textarea, input, select')[0].name;
-                if (!show || show.length === 0) {
-                    $field.removeClass('drest-hidden');
-                } else {
-                    if (show.indexOf(name) > -1)  {
-                        $field.removeClass('drest-hidden');
-                    } else {
-                        $field.addClass('drest-hidden');
-                    }
-                }
-            });
-            if (window.app) {
-                window.app.resetHeight();
-            }
-        }
+
         var was = this.value;
         this.value = value;
 
@@ -1079,11 +1137,18 @@ function DRESTField(config) {
             }]);
         }
     };
-
+    this.getValue = function(value) {
+        if (value === '' && this.type !== 'text') {
+            value = null;
+        }
+        return value;
+    };
     this.onLoad = function() {
+        if (this.loaded) {
+            return;
+        }
         var config = this.config;
         var field = this;
-        this.id = config.id;
         var $field = this.$ = this.$field = $('#' + field.id);
         var $input = this.$input = $('#' + field.id + '-input');
         if ($input.is('textarea') && autosize) {
@@ -1094,26 +1159,15 @@ function DRESTField(config) {
         var $textField = this.$textField = $field.find('.mdc-text-field');
         var $select = this.$select = $field.find('.mdc-select');
         var $label = this.$label = field.$field.find('label, .drest-field__label');
-        var type = this.type = config.type;
-        var relation = this.relation = config.relation;
+        var type = this.type;
+        var relation = this.relation;
 
-        var value = config.value;
-        if (value === '' && this.type !== 'text') {
-            value = null;
-        }
-
-        this.initial = this.value = value;
-        var label = this.label = config.label;
-        var name = this.name = config.name;
-        var many = this.many = config.many || this.type === 'list';
-        var required = this.required = config.required;
+        var value = this.value;
+        var label = this.label;
+        var name = this.name;
+        var many = this.many;
+        var required = this.required;
         var disabled = this.disabled = !$form.length || $form.hasClass('drest-form--readonly');
-
-        this.controls = config.controls;
-        this.readOnly = config.readOnly;
-        this.helpTextShort = config.helpTextShort;
-        this.helpText = config.helpText;
-        this.writeOnly = config.writeOnly;
 
         var select2;
 
@@ -1361,21 +1415,37 @@ function DRESTField(config) {
                 }
             });
         }
-        // bind change handler
-        $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
 
         // trigger change
-        if (field.controls || type === 'relation' || type === 'list') {
+        if (type === 'relation' || type === 'list') {
             $input.trigger('change');
         }
+
+        // bind change handler
+        $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
 
         // trigger disable
         if (this.disabled) {
             this.disable();
         }
+        this.loaded = true;
     };
 
     this.config = config;
+    this.name = config.name;
+    this.depends = config.depends;
+    this.type = config.type;
+    this.initial = this.value = this.getValue(config.value);
+    this.relation = config.relation;
+    this.label = config.label;
+    this.id = config.id;
+    this.many = config.many || this.type === 'list';
+    this.required = config.required;
+    this.readOnly = config.readOnly;
+    this.helpTextShort = config.helpTextShort;
+    this.helpText = config.helpText;
+    this.writeOnly = config.writeOnly;
+
     var container = document.querySelector('#' + this.config.id);
     container.DRESTField = this;
     $(this.onLoad.bind(this));

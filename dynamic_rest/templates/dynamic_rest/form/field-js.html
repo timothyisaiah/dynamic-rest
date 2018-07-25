@@ -8,7 +8,7 @@ $(document).ready(function() {
         readOnly: {{ field.read_only | to_json }},
         writeOnly: {{ field.write_only | to_json }},
         helpText: "{{ field.help_text | help_text_format | escapejs }}",
-        controls: {{ field.controls | to_json }},
+        depends: {{ field.depends | to_json }},
         helpTextShort: "{{ field.help_text | help_text_short_format | escapejs }}",
         type: {{ field.type | to_json }},
         many: {{ field.many | to_json }},
