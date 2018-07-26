@@ -932,6 +932,15 @@ class TestLocationsAPI(APITestCase):
                     'required': False,
                     'type': 'field'
                 },
+                'document': {
+                    'default': None,
+                    'immutable': False,
+                    'label': 'Document',
+                    'nullable': False,
+                    'read_only': False,
+                    'required': False,
+                    'type': 'file upload'
+                },
                 'id': {
                     'default': None,
                     'label': 'ID',

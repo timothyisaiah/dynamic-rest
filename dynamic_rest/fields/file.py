@@ -1,5 +1,6 @@
 from .base import DynamicField
-from rest_framework.serializers import FileField
+from rest_framework.serializers import FileField, ImageField
+from django.utils import six
 from dynamic_rest.conf import settings
 
 IMAGE_TYPES = {
@@ -7,15 +8,23 @@ IMAGE_TYPES = {
     'jpg',
     'png',
     'gif',
+    'bmp',
+    'tiff',
+    'webp',
+    'ico',
+    'eps'
 }
 
 
-class DynamicFileField(
-        DynamicField,
-        FileField,
+class DynamicFileFieldBase(
+    DynamicField
 ):
+    def __init__(self, **kwargs):
+        self.allow_remote = kwargs.pop('allow_remote', True)
+        super(DynamicFileFieldBase, self).__init__(**kwargs)
+
     def admin_render(self, instance=None, value=None):
-        ext = (value.name or '').lower().split('.')
+        ext = self.get_extension(value.name)
         ext = ext[-1] if ext else ''
         url = value.url
         name = str(value)
@@ -37,3 +46,56 @@ class DynamicFileField(
         source = self.source or self.field_name
         value = getattr(instance, source, None)
         return value
+
+    def get_extension(name):
+        if not name or '.' not in name:
+            return ''
+        return name.split('.')[-1].lower()
+
+    def to_internal_value_remote(self, name):
+        if not name:
+            self.fail('no_name')
+
+        field = self.model_field
+        storage = field.storage
+        if not storage.exists(name):
+            self.fail('invalid')
+
+        size = storage.size(name)
+        name_length = len(name)
+
+        if not self.allow_empty_file and not size:
+            self.fail('empty')
+        if self.max_length and name_length > self.max_length:
+            self.fail(
+                'max_length',
+                max_length=self.max_length,
+                length=name_length
+            )
+
+        if isinstance(self, ImageField):
+            ext = self.get_extension(name)
+            if ext not in IMAGE_TYPES:
+                return self.fail('invalid_image')
+
+        return name
+
+    def to_internal_value(self, data):
+        if isinstance(data, six.string_types) and self.allow_remote:
+            return self.to_internal_value_remote(data)
+        else:
+            return super(DynamicFileFieldBase, self).to_internal_value(data)
+
+
+class DynamicImageField(
+    DynamicFileFieldBase,
+    ImageField
+):
+    pass
+
+
+class DynamicFileField(
+    DynamicFileFieldBase,
+    FileField
+):
+    pass

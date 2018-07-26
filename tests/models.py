@@ -85,6 +85,7 @@ class Permission(models.Model):
 class Location(models.Model):
     name = models.TextField()
     blob = models.TextField()
+    document = models.FileField(null=True)
 
     def __unicode__(self):
         return str(self.pk)

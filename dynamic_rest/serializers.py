@@ -1267,6 +1267,8 @@ for field in (
         'PositiveSmallIntegerField',
         'IntegerField',
         'SlugField',
+        'FileField',
+        'ImageField',
         'TimeField',
         'URLField',
         'UUIDField',

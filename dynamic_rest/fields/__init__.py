@@ -4,7 +4,7 @@ from .base import (
     CountField,
     DynamicComputedField
 )
-from .file import DynamicFileField
+from .file import DynamicFileField, DynamicImageField
 from .relation import DynamicRelationField, DynamicCreatorField
 from .generic import DynamicGenericRelationField
 from .choice import DynamicChoiceField

@@ -12,3 +12,4 @@ psycopg2>=2.7
 tox-pyenv==1.0.2
 tox==2.3.1
 djay==0.0.4
+django-override-storage

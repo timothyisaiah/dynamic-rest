@@ -12,7 +12,6 @@ for cls_name in (
     'FloatField',
     'HiddenField',
     'IPAddressField',
-    'ImageField',
     'IntegerField',
     'ListField',
     'RegexField',

@@ -90,6 +90,7 @@ class DynamicField(fields.Field, DynamicBase):
                     self.method_name = self.getter
             return
 
+        self.source_attrs = source.split('.')
         parent_model = self.parent_model
         if parent_model:
             remote = is_field_remote(parent_model, source)

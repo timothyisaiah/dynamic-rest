@@ -3,6 +3,7 @@ from rest_framework.serializers import CharField
 from dynamic_rest.fields import (
     CountField,
     DynamicField,
+    DynamicFileField,
     DynamicGenericRelationField,
     DynamicMethodField,
     DynamicRelationField
@@ -60,9 +61,10 @@ class LocationSerializer(DynamicModelSerializer):
         name = 'location'
         fields = (
             'id', 'name', 'users', 'user_count', 'address',
-            'cats', 'friendly_cats', 'bad_cats'
+            'cats', 'friendly_cats', 'bad_cats', 'document'
         )
 
+    document = DynamicFileField(allow_null=False, deferred=True)
     users = DynamicRelationField(
         'UserSerializer',
         source='user_set',
