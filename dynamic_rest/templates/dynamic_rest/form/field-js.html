@@ -1,7 +1,6 @@
 {% load dynamic_rest %}
 
 <script>
-$(document).ready(function() {
     var field = new drest.DRESTField({
         id: "{{ field.id }}",
         label: {{ field.label | to_json }},
@@ -27,5 +26,4 @@ $(document).ready(function() {
             }
         {% endif %}
     });
-});
 </script>

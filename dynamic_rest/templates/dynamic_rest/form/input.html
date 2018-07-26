@@ -43,7 +43,7 @@
                     {% if field.required %}
                         required
                     {% endif %}
-                    value="{{ field.value }}"
+                    value={{ field | field_to_json }}
                     {% if style.step %}step={{ style.step }}{% endif %}
                 />
             {% endif %}

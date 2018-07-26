@@ -305,7 +305,7 @@ function DRESTApp(config) {
             }
         };
 
-        if (form.hasChanged()) {
+        if (form.type !== 'filter' && form.hasChanged()) {
             this.showDialog({
                 title: 'You have unsaved changed!',
                 body: 'Are you sure you want to go back and discard them?',
@@ -313,6 +313,11 @@ function DRESTApp(config) {
             });
         } else {
             onAccept();
+        }
+    };
+    this.onBeforeUnload = function(e) {
+        if (this.currentForm && this.currentForm.type !== 'filter' && this.currentForm.hasChanged()) {
+            e.returnValue = 'You have unsaved changes! Are you sure you want to go back and discard them?';
         }
     };
     this.resetHeight = function() {
@@ -478,6 +483,7 @@ function DRESTApp(config) {
                 .on('drest-form:submit-succeeded', this.onAddOk.bind(this))
                 .on('drest-form:submit-failed', this.onAddFailed.bind(this));
         }
+
         $('.drest-app__slide-to').each(function() {
             var $button = $(this);
             var target = $button.attr('data-target');
@@ -492,6 +498,7 @@ function DRESTApp(config) {
             this.$backButton.on('click.drest', this.back.bind(this));
         }
         $(window).scroll(this.onScroll.bind(this));
+        window.addEventListener('beforeunload', this.onBeforeUnload.bind(this));
         this.resetHeight();
         setTimeout(function(){ this.resetHeight(); }.bind(this), 1000);
     };
@@ -499,7 +506,6 @@ function DRESTApp(config) {
     this.editing = false;
     this.submitting = false;
     this.config = config;
-
     $(this.onLoad.bind(this));
 }
 
@@ -594,6 +600,7 @@ function DRESTForm(config) {
                 this.clearError();
             }
         });
+        this.updateAllDependents();
     };
     this.hasError = function() {
         var fields = this.getFields();
@@ -673,7 +680,7 @@ function DRESTForm(config) {
                 var fieldName = Object.keys(dependent)[0];
                 var fieldValue = dependent[fieldName];
                 var field = fields[fieldName];
-                if (field.equal(fieldValue, value)) {
+                if (field.isEqual(fieldValue, value)) {
                     field.show();
                 } else {
                     field.hide();
@@ -681,27 +688,60 @@ function DRESTForm(config) {
             }
         }
     };
+    this.serialize = function(obj) {
+        var result = [];
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                var val = obj[key];
+                if ($.isArray(val)) {
+                    for (var i=0; i<val.length; i++) {
+                        var v = val[i];
+                        if (v === null) {
+                            v = '';
+                        }
+                        result.push(
+                            encodeURIComponent(key) + '=' + encodeURIComponent(v)
+                        );
+                    }
+                } else {
+                    if (val === null) {
+                        val = '';
+                    }
+                    result.push(
+                        encodeURIComponent(key) + '=' + encodeURIComponent(val)
+                    );
+                }
+            }
+        }
+        return result.join('&');
+    };
     this.onSubmit = function(e) {
         var form = this.$;
-        var method = (form.data('method') || form.attr('method') || 'GET').toUpperCase();
-
-        if (method === 'GET') {
-            return;
-        }
+        var method = this.getMethod();
 
         e.preventDefault();
 
         var url = form.attr('action');
-        var data;
-        var multipart = false;
-        var contentType = 'application/json';
+        if (!url.match(/\/$/)) {
+            url = url + '/';
+        }
+        var data, json, multipart = false, notEmpty = false;
+        var isGet = method === 'GET';
+        var isDelete = method === 'DELETE';
+        var isPatch = method === 'PATCH';
+        var delta = isPatch;
+        var contentType = form.attr('content-type') || 'application/json';
+        var acceptType = 'application/json';
+        if (isGet) {
+            notEmpty = true;
+        }
         // by default, try using JSON
-        if (this.hasFiles(method === 'PATCH')) {
-            // if we need to save files, use multipart/form-data
+        if (this.hasFiles(delta)) {
+            // if we need to save files, require multipart/form-data
             contentType = false;
             multipart = true;
         }
-        if (method === 'DELETE') {
+        if (isDelete) {
             data = null;
         } else {
             if (multipart) {
@@ -713,7 +753,8 @@ function DRESTForm(config) {
             var anyChanges = false;
             for (var i=0; i<fields.length; i++) {
                 var f = fields[i];
-                if (method !== 'PATCH' || f.hasChanged()) {
+                if (!delta || f.hasChanged()) {
+                    anyChanges = true;
                     var val = f.getSubmitValue();
                     if (multipart) {
                         // convert null to empty string
@@ -728,21 +769,59 @@ function DRESTForm(config) {
                             data.append(f.name, val);
                         }
                     } else {
-                        data[f.name] = val;
+                        if (typeof data[f.name] === 'undefined') {
+                            data[f.name] = val;
+                        } else {
+                            // multiple fields with same name, send as an array
+                            if (!$.isArray(data[f.name])) {
+                                data[f.name] = [data[f.name]];
+                            }
+                            data[f.name].push(val)
+                        }
                     }
-                    anyChanges = true;
                 }
+            }
+            if (notEmpty) {
+                // do not include empty values
+                var result = {};
+                var fieldsByName = this.getFieldsByName();
+                for (var name in data) {
+                    if (data.hasOwnProperty(name)) {
+                        var field = fieldsByName[name];
+                        var value = data[name];
+                        if ($.isArray(value) && value.length == 2) {
+                            // check if all null
+                            if (!field.isEmpty(value[0]) || !field.isEmpty(value[1])) {
+                                result[name] = value;
+                            }
+                        } else {
+                            if (!field.isEmpty(value)) {
+                                result[name] = value;
+                            }
+                        }
+                    }
+                }
+                data = result;
             }
             if (!anyChanges) {
                 // no changes to save -> noop
                 form.trigger('drest-form:submit-noop');
                 return;
             }
-            if (!multipart) {
+            if (!multipart && !isGet) {
                 data = JSON.stringify(data);
             }
         }
 
+        if (isGet) {
+            window.app.showNotice('Submitting...')
+            data = this.serialize(data);
+            if (data) {
+                data = '?' + data;
+            }
+            window.location = url + data;
+            return;
+        }
         form.trigger('drest-form:submitting');
         return $.ajax({
             url: url,
@@ -752,10 +831,10 @@ function DRESTForm(config) {
             processData: false,
             dataType: 'json',
             headers: {
-              'Accept': 'application/json'
+              'Accept': acceptType
             },
         }).done(function(data, textStatus, jqXHR) {
-            if (method === 'DELETE') {
+            if (isDelete) {
                 data = null;
             } else {
                 for (var x in data) {
@@ -766,6 +845,8 @@ function DRESTForm(config) {
                 }
             }
             form.trigger('drest-form:submit-succeeded', [{
+                'xhr': jqXHR,
+                'url': url,
                 'status': jqXHR.status,
                 'data': data,
             }]);
@@ -799,7 +880,10 @@ function DRESTForm(config) {
             });
         }
     };
-    this.onSubmitSucceeded = function(e, response) {
+    this.getMethod = function() {
+        return (this.$.attr('method') || 'GET').toUpperCase();
+    };
+    this.onSubmitOk = function(e, response) {
         var data = response.data;
         var fields = this.getFields();
         for (var i=fields.length-1; i>=0; i--) {
@@ -821,7 +905,7 @@ function DRESTForm(config) {
         this.fields = this.getFields();
         this.disabled = this.$.hasClass('drest-form--readonly');
         this.$.on('drest-form:submit-failed', this.onSubmitFailed.bind(this));
-        this.$.on('drest-form:submit-succeeded', this.onSubmitSucceeded.bind(this));
+        this.$.on('drest-form:submit-succeeded', this.onSubmitOk.bind(this));
         this.$.off('submit.drest-form').on('submit.drest-form', this.onSubmit.bind(this));
         this.$.off('drest-form:change').on('drest-form:change', this.onChange.bind(this));
         this.updateAllDependents();
@@ -897,7 +981,7 @@ function DRESTField(config) {
         }
         return false;
     };
-    this.equal = function(a, b) {
+    this.isEqual = function(a, b) {
         if ($.isArray(a) || $.isPlainObject(a)) {
             return JSON.stringify(a) === JSON.stringify(b);
         } else {
@@ -905,7 +989,7 @@ function DRESTField(config) {
         }
     };
     this.hasChanged = function() {
-        return !this.equal(this.initial, this.value);
+        return !this.isEqual(this.initial, this.value);
     };
     this.enable = function() {
         this.$field.removeClass('drest-field--disabled');
@@ -997,7 +1081,7 @@ function DRESTField(config) {
         if (value === '' && this.type !== 'text') {
             value = null;
         }
-        if (!this.equal(this.value, value)) {
+        if (!this.isEqual(this.value, value)) {
             if (this.isEmpty(value)) {
                 this.$field.removeClass('drest-field--selected');
                 this.$label.removeClass('mdc-floating-label--float-above');
@@ -1117,7 +1201,7 @@ function DRESTField(config) {
 
         if (this.error) {
             // set or temp-clear error
-            if (this.equal(this.value, this.valueOnError)) {
+            if (this.isEqual(this.value, this.valueOnError)) {
                 this.setError(this.error);
             } else {
                 this.clearError();
@@ -1202,6 +1286,31 @@ function DRESTField(config) {
                 dropdownParent: $field
             });
             select2 = $input.data('select2');
+        } else if (type === 'select') {
+            // fixed-style select2
+            if (this.many) {
+
+                var choices = this.choices;
+
+                for (var c in choices) {
+                    if (choices.hasOwnProperty(c)) {
+                        var maybeSelected = value.indexOf(c.toString()) !== -1 ? ' selected="selected"' : '';
+                        $input.append(
+                            '<option value="' + c + '"' + maybeSelected + '>' + choices[c] + '</option>'
+                        );
+                    }
+                }
+                $input.select2({
+                    placeholder: label,
+                    language: {
+                        inputTooShort: function() {
+                            return field.helpTextShort || "Start typing";
+                        }
+                    },
+                    dropdownParent: $field
+                });
+                select2 = $input.data('select2');
+            }
         } else if (type === 'datetime' || type === 'date' || type === 'time') {
             var inputType = type;
             var opts = { clearButton: true };
@@ -1233,7 +1342,8 @@ function DRESTField(config) {
             if (relation.image) {
                 // images
                 // many-type not yet supported
-                this.value = this.initial = value.id;
+                this.value = value.id;
+                this.initial = this.value;
             } else {
                 // ajax-style select2
                 var perPage = 25;
@@ -1347,7 +1457,8 @@ function DRESTField(config) {
             // reset value from object form to canonical ID form
             // e.g. if the object form is {"id": "x", "name": "y", ...},
             // the canonical ID form is just "x"
-            this.value = this.initial = selected;
+            this.value = selected;
+            this.initial = selected;
           }
 
         } else if (type === 'boolean') {
@@ -1436,6 +1547,7 @@ function DRESTField(config) {
     this.depends = config.depends;
     this.type = config.type;
     this.initial = this.value = this.getValue(config.value);
+    this.choices = config.choices;
     this.relation = config.relation;
     this.label = config.label;
     this.id = config.id;

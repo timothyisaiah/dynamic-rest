@@ -35,6 +35,15 @@ def get_directory(request, icons=False):
     return router.get_directory(request, icons=icons)
 
 
+def get_home(request):
+    """Get API directory as a dictionary of name -> URL"""
+    router = get_router(request)
+    fn = router.get_home
+    if fn:
+        return fn(request.user)
+    return None
+
+
 def modify_list_route(routes):
     # Identify the list route, add PATCH so we can
     # have bulk PATCH requests
@@ -89,6 +98,13 @@ class DynamicRouter(DefaultRouter):
 
     def get_directory(self, request, icons=False):
         result = OrderedDict()
+        home = self.get_home(request.user) if self.get_home else None
+        if home and not request.path == home:
+            if icons:
+                result['Home'] = (home, 'home')
+            else:
+                result['Home'] = home
+
         user = request.user
         for prefix, viewset, basename in self.registry:
             if hasattr(viewset, 'get_user_permissions'):

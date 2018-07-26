@@ -1,33 +1,45 @@
 {% load dynamic_rest %}
 
-    <div class="drest-field">
-        <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+    <div id="{{ filter.id }}" class="drest-field {% if filter.errors %}drest-field--invalid{% endif %}">
+        <div
+            class="{% if filter.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if filter.value %}mdc-text-field--upgraded{% endif %}"
+            data-mdc-auto-init="MDCTextField">
             <input
                 class="mdc-text-field__input"
-                name="{{ key }}"
+                name="{{ filter.key }}"
                 type="text"
-                id="{{ id }}-input"
-                {% if help_text %}
-                    aria-controls="{{ id }}-helper"
-                    aria-describedby="{{ id }}-helper"
+                id="{{ filter.id }}-input"
+                value={{ filter | filter_to_json }}
+                {% if filter.errors or filter.help_text %}
+                    aria-controls="{{ filter.id }}-helper"
+                    aria-describedby="{{ filter.id }}-helper"
                 {% endif %}
-                {% if value %}
-                    value="{{ value }}"
+                {% if filter.errors %}
+                    invalid
                 {% endif %}
             />
             <label
-                class="mdc-floating-label mdc-floating-label"
+                class="mdc-floating-label{% if filter.value %} mdc-floating-label--float-above{% endif %}"
                 data-mdc-auto-init="MDCFloatingLabel"
-                for="{{ id }}-input"
+                for="{{ filter.id }}-input"
             >
-                {{ label }}
+                {{ filter.label }}
             </label>
             <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
         </div>
-        <p id="{{ id }}-helper" class="mdc-text-field-helper-text" aria-hidden="true">
-            {% if help_text %}
-                {{ help_text | help_text_short_format | safe }}
-            {% endif %}
+        <p
+            id="{{ filter.id }}-helper"
+            class="{% if filter.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text"
+            aria-hidden="{% if filter.errors %}false{% else %}true{% endif %}">
+                {% if filter.errors %}
+                    {% for error in filter.errors %}
+                        <span>{{error}}</span>
+                    {% endfor %}
+                {% else %}
+                    {% if filter.help_text %}
+                        {{ filter.help_text | help_text_short_format | safe }}
+                    {% endif %}
+                {% endif %}
         </p>
-
+        {% include "./filter-js.html" %}
     </div>

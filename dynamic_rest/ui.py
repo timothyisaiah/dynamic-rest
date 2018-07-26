@@ -1,6 +1,5 @@
 from random import randint
 import json
-import uuid
 
 from django.utils.functional import cached_property
 from django.utils import six
@@ -166,6 +165,9 @@ class UISection(object):
 class UIFilter(object):
     base_template_path = 'dynamic_rest/filters'
 
+    def __repr__(self):
+        return 'UIFilter( %s )' % self.name
+
     def __init__(self, name, options, serializer=None):
         """
         Arguments:
@@ -194,6 +196,7 @@ class UIFilter(object):
         self.help_text = None
         self.min = None
         self.max = None
+        self.errors = None
         # resolve options
         self.resolve()
 
@@ -219,6 +222,8 @@ class UIFilter(object):
             return 'filter{%s}' % name
 
     def resolve(self):
+        self.id = 'filter-' + self.name
+
         if isinstance(self.options, six.string_types):
             self.options = {'field': self.options}
         name = self.name
@@ -259,17 +264,7 @@ class UIFilter(object):
         template_name = '%s/%s.html' % (self.base_template_path, self.type)
         template = loader.get_template(template_name)
         context = {
-            'serializer': self.serializer,
-            'many': self.many,
-            'min': self.min,
-            'max': self.max,
-            'field': self.field,
-            'label': self.label,
-            'name': self.name,
-            'key': self.key,
-            'choices': self.choices,
-            'value': self.value,
-            'id': str(uuid.uuid4())
+            'filter': self,
         }
         return template.render(context)
 
@@ -289,18 +284,24 @@ class UIFilter(object):
             value = [request.query_params.get(key)]
 
         result = []
+
         for v in value:
             if type == "boolean":
                 if is_truthy(value):
                     v = "True"
                 elif value is not None:
                     v = "False"
+                else:
+                    v = None
             elif type == "integer":
                 v = str(int(v)) if v else None
             elif type == "decimal":
                 v = str(Decimal(v)) if v else None
+            elif type == 'text':
+                v = v if v else ''
             else:
                 v = str(v) if v else None
             result.append(v)
 
-        return result if return_list else result[0]
+        result = result if return_list else result[0]
+        return result

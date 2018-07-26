@@ -1,0 +1,28 @@
+{% load dynamic_rest %}
+
+<script>
+    var filter = new drest.DRESTField({
+        id: "{{ filter.id }}",
+        label: {{ filter.label | to_json }},
+        readOnly: false,
+        writeOnly: false,
+        helpText: "{{ filter.help_text | help_text_format | escapejs }}",
+        helpTextShort: "{{ filter.help_text | help_text_short_format | escapejs }}",
+        type: {{ filter.type | to_json }},
+        many: {{ filter.many | to_json }},
+        name: {{ filter.key | to_json }},
+        choices: {{ filter.choices | to_json }},
+        value: {{ filter | filter_to_json }}{% if filter.type == 'relation' %},
+            relation: {
+                nameField: {{ filter.field.get_name_field | to_json }},
+                searchKey: {{ filter.field.get_search_key | to_json }},
+                pkField: {{ filter.field.get_pk_field | to_json }},
+                resourceName: {{ filter.field.serializer.get_name | to_json }},
+                pluralName: {{ filter.field.get_plural_name | to_json }},
+                url: {{ filter.field.get_url | to_json }},
+                image: false,
+                create: false
+            }
+        {% endif %}
+    });
+</script>

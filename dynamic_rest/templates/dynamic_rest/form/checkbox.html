@@ -1,38 +1,39 @@
 {% load dynamic_rest %}
 
-<div id="{{ field.id }}" title="{{ field.help_text | help_text_format }}" class="drest-field row justify-content-between">
-    <div class="col-10">
-        <label class="drest-field__block-label">{{ field.label }}{% if field.required %} *{% endif %}</label>
-    </div>
-    <div class="col-2 mdc-checkbox {% if field.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
-        <input
-            class="mdc-checkbox__native-control"
-            type="checkbox"
-            name="{{ field.name }}"
-            id="{{ field.id }}-input"
-            {% if field.value %}
-                checked
-            {% endif %}
-            {% if field.read_only %}
-                disabled
-            {% endif %}
-        >
+<div id="{{ field.id }}" title="{{ field.help_text | help_text_format }}" class="drest-field">
+    <div class="mdc-form-field mdc-form-field--align-end">
 
-         <div class="mdc-checkbox__background">
-           <svg class="mdc-checkbox__checkmark"
-              viewBox="0 0 24 24">
-             <path class="mdc-checkbox__checkmark-path"
-                fill="none"
-                d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
-           </svg>
-            <div class="mdc-checkbox__mixedmark"></div>
-         </div>
-        {% if field.errors %}
-            {% for error in field.errors %}
-                <span class="text-danger">{{ error }}</span>
-            {% endfor %}
-        {% endif %}
+        <div class="mdc-checkbox {% if field.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
+            <input
+                class="mdc-checkbox__native-control"
+                type="checkbox"
+                name="{{ field.name }}"
+                id="{{ field.id }}-input"
+                {% if field.value %}
+                    checked
+                {% endif %}
+                {% if field.read_only %}
+                    disabled
+                {% endif %}
+            >
+
+             <div class="mdc-checkbox__background">
+               <svg class="mdc-checkbox__checkmark"
+                  viewBox="0 0 24 24">
+                 <path class="mdc-checkbox__checkmark-path"
+                    fill="none"
+                    d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+               </svg>
+                <div class="mdc-checkbox__mixedmark"></div>
+             </div>
+            {% if field.errors %}
+                {% for error in field.errors %}
+                    <span class="text-danger">{{ error }}</span>
+                {% endfor %}
+            {% endif %}
+        </div>
+        <label for="{{ field.id }}-input" class="drest-field__block-label">{{ field.label }}{% if field.required %} *{% endif %}</label>
     </div>
-{% include "./field-js.html" %}
+    {% include "./field-js.html" %}
 </div>
 

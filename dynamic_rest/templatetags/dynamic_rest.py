@@ -86,8 +86,7 @@ def help_text_short_format(txt):
     return txt
 
 
-@register.filter
-def relation_to_json(field, value=None, many=None):
+def _relation_to_json(field, value=None, many=None):
     serializer = field.serializer
     if many is None:
         many = field.many
@@ -145,11 +144,6 @@ def format_key(key):
 
 
 @register.simple_tag
-def relation_filter_value(field, value, many):
-    return relation_to_json(field, value=value, many=many)
-
-
-@register.simple_tag
 def drest_settings(key):
     return getattr(settings, key)
 
@@ -160,6 +154,18 @@ def to_json(value):
 
 
 @register.filter
+def filter_to_json(filter):
+    value = filter.value
+    field = filter.field
+    related_serializer = getattr(
+        field,
+        'serializer',
+        None
+    ) if field else None
+    return _to_json(field, value, related_serializer, many=True)
+
+
+@register.filter
 def field_to_json(field):
     value = field.value
     related_serializer = getattr(
@@ -167,6 +173,10 @@ def field_to_json(field):
         'serializer',
         None
     )
+    return _to_json(field, value, related_serializer)
+
+
+def _to_json(field, value, related_serializer, many=None):
     if isinstance(value, FieldFile):
         try:
             value = value.url
@@ -184,7 +194,7 @@ def field_to_json(field):
     if not related_serializer:
         return to_json(value)
     else:
-        return relation_to_json(field)
+        return _relation_to_json(field, many=many)
 
 
 @register.filter

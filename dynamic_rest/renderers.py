@@ -246,16 +246,22 @@ class DynamicAdminRenderer(AdminRenderer):
             if not permissions.list:
                 allowed.discard('list')
 
-        from dynamic_rest.routers import get_directory
+        from dynamic_rest.routers import get_directory, get_home
 
         if hasattr(view, 'get_actions'):
             actions = view.get_actions()
         else:
             actions = []
 
+        home = get_home(request)
+
+        if home and request.path == home:
+            nav_icon = '<span class="material-icons">home</span>'
+            title = header = 'Home'
         context['actions'] = actions
         context['render_style'] = render_style
         context['directory'] = get_directory(request, icons=True)
+        context['home'] = home
         context['filters'] = filters
         context['num_filters'] = sum([
             1 if (

@@ -1,55 +1,35 @@
 {% load dynamic_rest %}
-<div class="form-group row">
-    <label class="col-2 form-control-label">
-        {% if help_text %}
-            <span class="drest-tooltip" data-tippy-trigger="click" title="{{ help_text | help_text_format | safe }}">{{ label }}</span>
-        {% else %}
-            {{ label }}
-        {% endif %}
-    </label>
 
-    <div class="float-sm-right col-sm-10">
-        <select class="form-control filter" name="{{ key }}" {% if many %}multiple="multiple"{% endif %}></select>
+<div id="{{ filter.id }}" title="{{ filter.help_text | help_text_format }}" class="drest-field row justify-content-between">
+    <div class="col-10">
+        <label class="drest-field__block-label">{{ filter.label }}</label>
     </div>
+    <div class="col-2 mdc-checkbox {% if filter.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
+        <input
+            class="mdc-checkbox__native-control"
+            type="checkbox"
+            name="{{ filter.name }}"
+            id="{{ filter.id }}-input"
+            {% if filter.value %}
+                checked
+            {% endif %}
+        >
+
+         <div class="mdc-checkbox__background">
+           <svg class="mdc-checkbox__checkmark"
+              viewBox="0 0 24 24">
+             <path class="mdc-checkbox__checkmark-path"
+                fill="none"
+                d="M1.73,12.91 8.1,19.28 22.79,4.59"/>
+           </svg>
+            <div class="mdc-checkbox__mixedmark"></div>
+         </div>
+        {% if filter.errors %}
+            {% for error in field.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        {% endif %}
+    </div>
+    {% include "./filter-js.html" %}
 </div>
 
-<script>
-    $(document).ready(function(){
-        var fieldName = '{{ key }}';
-        var many = {% if many %}true{% else %}false{% endif %};
-        var value = {{ value | to_json }};
-        var selected = [];
-        var data = [];
-        var values = {
-            "1": "True",
-            "0": "False",
-        };
-        for (var v in values) {
-            var value = values[v];
-            var isSelected = value.indexOf(value) > -1;
-            initials.push({
-                id: v,
-                text: value,
-                name: value,
-                selected: isSelected
-            });
-            if (isSelected) {
-                selected.push(s);
-            }
-        }
-        if (!many) {
-            selected = selected[0];
-        }
-        var $select2 = $("select.filter[name='" + fieldName + "']");
-        var select2 = $select2[0];
-        $select2.select2({
-            data: data,
-            placeholder: {
-                id: "",
-                placeholder: many ? "Choose one or more" : "Choose one"
-            },
-            allowClear: true,
-        });
-        $(select2).val(selected).trigger('change');
-    });
-</script>
