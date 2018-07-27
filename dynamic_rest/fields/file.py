@@ -47,7 +47,7 @@ class DynamicFileFieldBase(
         value = getattr(instance, source, None)
         return value
 
-    def get_extension(name):
+    def get_extension(self, name):
         if not name or '.' not in name:
             return ''
         return name.split('.')[-1].lower()
