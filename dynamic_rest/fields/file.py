@@ -42,11 +42,6 @@ class DynamicFileFieldBase(
 
         return '<a target="_blank" href="%s">%s</a>' % (url, display)
 
-    def prepare_value(self, instance):
-        source = self.source or self.field_name
-        value = getattr(instance, source, None)
-        return value
-
     def get_extension(self, name):
         if not name or '.' not in name:
             return ''
