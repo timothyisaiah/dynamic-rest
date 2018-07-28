@@ -274,12 +274,15 @@ function DRESTApp(config) {
         this.showNotice('Saved successfully, redirecting...');
         window.location = url;
     };
-    this.save = function() {
+    this.onSubmit = function(e) {
         if (this.submitting || !this.currentForm) {
+            e.preventDefault();
             return;
         }
         // save primary record
         this.setSubmitting();
+    };
+    this.save = function() {
         this.currentForm.submit();
     };
     this.back = function(e) {
@@ -483,6 +486,7 @@ function DRESTApp(config) {
                 .on('drest-form:submit-succeeded', this.onAddOk.bind(this))
                 .on('drest-form:submit-failed', this.onAddFailed.bind(this));
         }
+        this.$.find('.drest-form').on('submit', this.onSubmit.bind(this));
 
         $('.drest-app__slide-to').each(function() {
             var $button = $(this);
