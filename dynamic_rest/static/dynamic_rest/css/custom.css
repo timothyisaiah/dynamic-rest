@@ -815,6 +815,7 @@ html {
 }
 .drest-field.drest-field--file .dropify-wrapper .dropify-preview {
     z-index: 0;
+    background-color: black;
 }
 .drest-field--select2.drest-field--focused .select2-selection__placeholder,
 .drest-field--select2.drest-field--selected .select2-selection__placeholder
