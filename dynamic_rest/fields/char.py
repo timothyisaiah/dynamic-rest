@@ -8,9 +8,7 @@ class DynamicCharField(
     CharField,
     DynamicField
 ):
-    def __init__(self, *args, **kwargs):
-        self.long = kwargs.pop('long', False)
-        super(DynamicCharField, self).__init__(*args, **kwargs)
+    pass
 
 
 class DynamicTextField(

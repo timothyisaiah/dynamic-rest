@@ -50,6 +50,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.setter = kwargs.pop('setter', None)
         self.depends = kwargs.pop('depends', None)
         self.hide = kwargs.pop('hide', None)
+        self.long = kwargs.pop('long', False)
         self.bound = False
         if self.getter:
             # dont bind to model
