@@ -131,8 +131,8 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_description(self):
         return self.child.get_description()
 
-    def resolve(self, query):
-        return self.child.resolve(query)
+    def resolve(self, query, **kwargs):
+        return self.child.resolve(query, **kwargs)
 
     def get_name_field(self):
         return self.child.get_name_field()
@@ -528,7 +528,7 @@ class WithDynamicSerializerMixin(
     def get_meta(cls):
         return cls.Meta
 
-    def resolve(self, query):
+    def resolve(self, query, sort=None):
         """Resolves a query into model and serializer fields.
 
         Arguments:
@@ -630,6 +630,10 @@ class WithDynamicSerializerMixin(
                     return (model_fields, api_fields)
 
                 source = api_field.source or api_name
+                if sort and api_field.sort_by:
+                    # use sort_by source
+                    source = api_field.sort_by
+
                 if '.' in source:
                     fields = source.split('.')
                     for field in fields[:-1]:

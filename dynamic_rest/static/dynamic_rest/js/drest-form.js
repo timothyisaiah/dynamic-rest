@@ -1,3 +1,36 @@
+function throttle(func, wait, options) {
+  var context, args, result;
+  var timeout = null;
+  var previous = 0;
+  if (!options) options = {};
+  var later = function() {
+    previous = options.leading === false ? 0 : Date.now();
+    timeout = null;
+    result = func.apply(context, args);
+    if (!timeout) context = args = null;
+  };
+  return function() {
+    var now = Date.now();
+    if (!previous && options.leading === false) previous = now;
+    var remaining = wait - (now - previous);
+    context = this;
+    args = arguments;
+    if (remaining <= 0 || remaining > wait) {
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = null;
+      }
+      previous = now;
+      result = func.apply(context, args);
+      if (!timeout) context = args = null;
+    } else if (!timeout && options.trailing !== false) {
+      timeout = setTimeout(later, remaining);
+    }
+    return result;
+  };
+};
+
+
 /** dropify patches **/
 $(function(){
     Dropify.prototype.isTouchDevice = function() { return false; }
@@ -19,43 +52,75 @@ $(function(){
 // https://github.com/peledies/select2-tab-fix
 // jQuery(document).ready(function(a){var b=a(document.body),c=!1,d=!1;b.on("keydown",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!0)}),b.on("keyup",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!1)}),b.on("mousedown",function(b){d=!1,1!=a(b.target).is('[class*="select2"]')&&(d=!0)}),b.on("select2:opening",function(b){d=!1,a(b.target).attr("data-s2open",1)}),b.on("select2:closing",function(b){a(b.target).removeAttr("data-s2open")}),b.on("select2:close",function(b){var e=a(b.target);e.removeAttr("data-s2open");var f=e.closest("form"),g=f.has("[data-s2open]").length;if(0==g&&0==d){var h=f.find(":input:enabled:not([readonly], input:hidden, button:hidden, textarea:hidden)").not(function(){return a(this).parent().is(":hidden")}),i=null;if(a.each(h,function(b){var d=a(this);if(d.attr("id")==e.attr("id"))return i=c?h.eq(b-1):h.eq(b+1),!1}),null!==i){var j=i.siblings(".select2").length>0;j?i.select2("open"):i.focus()}}}),b.on("focus",".select2",function(b){var c=a(this).siblings("select");0==c.is("[disabled]")&&0==c.is("[data-s2open]")&&a(this).has(".select2-selection--single").length>0&&(c.attr("data-s2open",1),c.select2("open"))})});
 
+function DRESTNavigation(config) {
+    this.onLoad = function() {
+        this.$ = $(this.config.container);
+        this.$scenes = this.$.find('.drest-scene');
+        this.active = null;
+
+        var initial = this.config.initial;
+        if (typeof initial !== 'undefined') {
+            this.switchTo(initial);
+        };
+    }
+    this.config = config;
+    this.onLoad();
+};
+
+DRESTNavigation.prototype.switchTo = function(index) {
+    var scene = this.$scenes[index];
+    var active = this.active;
+    var outScene, inScene;
+    $.each(this.$scenes, function(i, v) {
+        var $scene = $(v);
+        if (i === index) {
+            inScene = $scene;
+        } else {
+            if (i === active) {
+                outScene = $scene;
+            }
+        }
+    }.bind(this));
+
+
+    if (outScene) {
+        outScene.fadeTo(200, 0, function() {
+            outScene.hide();
+        });
+        setTimeout(function() {
+            inScene.show();
+            inScene.fadeTo(150, 1);
+        }, 50);
+    } else {
+        // fade in
+        inScene.show();
+        inScene.fadeTo(300, 1);
+    }
+
+    this.$active = inScene;
+    this.active = index;
+}
+
 function DRESTApp(config) {
-    this.slideTo = function($slide) {
+    this.switchTo = function(scene) {
         if (this.submitting) {
             // ignore during submit
             return;
         }
-        if (!$slide.hasClass('swiper-slide')) {
-            $slide = $slide.closest('.swiper-slide');
-        }
-        if (!$slide.length) {
-            throw 'invalid slideTo argument';
-        }
-        var currentIndex = this.currentIndex;
-        if (currentIndex === 0) {
-            // for main form, save the scroll position on scroll back
-            var scrollTop = $('html, body').scrollTop();
-            $(this.currentSlide).attr('data-scroll-top', scrollTop);
-        }
-        var newIndex = $slide.index();
-        var toEditMode = newIndex > 0;
-        var $slides = this.$slides;
-        for (var i=0; i<$slides.length; i++) {
-            var $slide = $($slides[i]);
-            if (i !== newIndex && i !== currentIndex) {
-                $slide.hide();
-            } else {
-                $slide.show();
+        if (isNaN(scene)) {
+            if (!scene.hasClass('drest-scene')) {
+                scene = scene.closest('.drest-scene');
             }
+            if (!scene.length) {
+                throw 'invalid switchTo argument';
+            }
+            scene = scene.index();
         }
-        this.currentIndex = newIndex;
-        this.currentSlide = this.$slides[this.currentIndex];
 
-        this.swiper.update();
-        this.swiper.slideTo(newIndex);
-
-        var $form = $(this.currentSlide).find('.drest-form');
-        this.currentForm = $form.length ? $form[0].DRESTForm : null;
+        var toEditMode = scene > 0;
+        this.navigation.switchTo(scene);
+        var $form = this.navigation.$active.find('.drest-form');
+        this.activeForm = $form.length ? $form[0].DRESTForm : null;
 
         this.clearError();
         this.clearChanged();
@@ -83,8 +148,30 @@ function DRESTApp(config) {
     this.getTime = function() {
         return Math.round((new Date()).getTime());
     };
+    this.onResize = function() {
+        if (this.table) {
+            this.table.responsive.recalc();
+            if (this.scroll) {
+                this.tableFixedHeader._modeChange('in', 'header', true);
+            }
+        }
+    };
     this.onScroll = function() {
         this.setScrolling();
+        var scrollTop = this.scroll = this.navigation.$active.scrollTop();
+        if (!(this.style === 'list' && this.navigation.active === 0)) {
+            if (scrollTop) {
+                this.$header.addClass('mdc-top-app-bar--fixed-scrolled');
+            } else {
+                this.$header.removeClass('mdc-top-app-bar--fixed-scrolled');
+            }
+        } else if (this.table) {
+            if (scrollTop) {
+                this.tableFixedHeader._modeChange('in', 'header', false);
+            } else {
+                this.tableFixedHeader._modeChange('in-place', 'header', false);
+            }
+        }
 
         var scrollHideTime = 1000 * this.scrollHideSeconds;
         this.scrollEndTime = this.getTime() + scrollHideTime;
@@ -116,13 +203,24 @@ function DRESTApp(config) {
     };
     this.onDeleteOk = function() {
         this.showNotice('Deleted successfully, redirecting...');
-        window.location = this.listEndpoint;
+        window.location = this.listURL;
     };
     this.confirmDelete = function() {
         this.showDialog({
             title: 'You are about to delete a record!',
             body: 'Are you sure? This operation cannot be undone!',
             onAccept: this.doDelete.bind(this)
+        });
+    };
+    this.doLogout = function() {
+        this.showNotice('Goodbye ' + this.userName);
+        window.location = this.logoutURL;
+    };
+    this.confirmLogout = function() {
+        this.showDialog({
+            title: 'You are about to log out',
+            body: 'Are you sure?',
+            onAccept: this.doLogout.bind(this)
         });
     };
     this.showNotice = function(opts) {
@@ -176,13 +274,13 @@ function DRESTApp(config) {
         dialog.show();
     };
     this.enableEdit = function() {
-        var form = this.currentForm;
+        var form = this.activeForm;
         this.$title.html(form.getTitle());
         form.enable();
         this.setEditing();
     };
     this.disableEdit = function() {
-        var form = this.currentForm;
+        var form = this.activeForm;
         this.$title.html(this.originalTitle);
         if (form && form.type === 'edit') {
             form.disable();
@@ -242,7 +340,7 @@ function DRESTApp(config) {
         this.showNotice('An error occurred');
     };
     this.focusError = function() {
-        var $error = this.currentForm.$.find('.drest-field--invalid').first();
+        var $error = this.activeForm.$.find('.drest-field--invalid').first();
         if ($error.length) {
             $('body, html').animate({
                 scrollTop: $error.offset().top - $(window).height() / 2
@@ -275,7 +373,7 @@ function DRESTApp(config) {
         window.location = url;
     };
     this.onSubmit = function(e) {
-        if (this.submitting || !this.currentForm) {
+        if (this.submitting || !this.activeForm) {
             e.preventDefault();
             return;
         }
@@ -283,10 +381,10 @@ function DRESTApp(config) {
         this.setSubmitting();
     };
     this.save = function() {
-        this.currentForm.submit();
+        this.activeForm.submit();
     };
     this.back = function(e) {
-        var form = this.currentForm;
+        var form = this.activeForm;
         var app = this;
         if (this.submitting || !form) {
             return;
@@ -304,7 +402,7 @@ function DRESTApp(config) {
             if (form === app.editForm) {
                 app.disableEdit();
             } else {
-                app.slideTo(app.$mainSlide);
+                app.switchTo(0);
             }
         };
 
@@ -319,22 +417,17 @@ function DRESTApp(config) {
         }
     };
     this.onBeforeUnload = function(e) {
-        if (this.currentForm && this.currentForm.type !== 'filter' && this.currentForm.hasChanged()) {
+        if (this.activeForm && this.activeForm.type !== 'filter' && this.activeForm.hasChanged()) {
             e.returnValue = 'You have unsaved changes! Are you sure you want to go back and discard them?';
         }
-    };
-    this.resetHeight = function() {
-        if (!this.$) {
-            return;
-        }
-        this.$.find('.swiper-wrapper')
-            .css('height', $(this.currentSlide).outerHeight());
     };
     this.getForms = function() {
         var $forms = this.$.find('.drest-form');
         var forms = [];
         for (var i=0; i<$forms.length; i++) {
-            forms.push($forms[i].DRESTForm);
+            if ($forms[i].DRESTForm){
+                forms.push($forms[i].DRESTForm);
+            }
         }
         return forms;
     };
@@ -354,7 +447,7 @@ function DRESTApp(config) {
     };
     this.onFormChange = function(e, data) {
         var form = data.form;
-        if (form === this.currentForm) {
+        if (form === this.activeForm) {
             if (form.hasChanged()) {
                 this.setChanged();
             } else {
@@ -378,20 +471,18 @@ function DRESTApp(config) {
         this.$fab = $(config.fab);
         this.$drawer = $(config.drawer);
         this.$drawerHeader = this.$drawer.find('.drest-drawer__header');
-        this.style = config.style; // either list, directory, detail, or error
-        this.detailEndpoint = config.detailEndpoint;
-        this.listEndpoint = config.listEndpoint;
         this.$cancelButton = $header.find('.drest-app__cancel-button');
         this.$moreButton = $header.find('.drest-app__more-button');
         this.$filterButton = $header.find('.drest-app__filter-button');
         this.$saveButton = $header.find('.drest-app__save-button');
         this.$deleteButton = $header.find('.drest-app__delete-button');
+        this.$logoutButton = $header.find('.drest-logout');
         this.$spinner = $header.find('drest-app__spinner');
         this.$navSection = $header.find('.drest-app__navigation');
         this.$backButton = $header.find('.drest-app__back-button');
         this.$title = $header.find('.drest-app__title');
         this.$moreMenu = $header.find('.drest-app__more-menu');
-        this.$swiper = $(config.content + ' .swiper-container');
+        this.$navigation = $(config.content + ' .drest-navigation');
         this.originalTitle = this.$title.html();
         this.dialog = new mdc.dialog.MDCDialog(document.querySelector(config.dialog));
         this.$dialog = $(config.dialog);
@@ -402,6 +493,9 @@ function DRESTApp(config) {
         if (this.$deleteButton.length) {
             this.$deleteButton.off('click.drest').on('click.drest', this.confirmDelete.bind(this));
         }
+        if (this.$logoutButton.length) {
+            this.$logoutButton.off('click.drest').on('click.drest', this.confirmLogout.bind(this));
+        }
         this.$.find('.drest-grid').each(function() {
             var items = $(this).find('> .drest-grid__item').length;
             if (items === 1) {
@@ -411,7 +505,7 @@ function DRESTApp(config) {
             }
         });
         if (this.$table.length) {
-            this.$table.DataTable({
+            this.table = this.$table.DataTable({
                 "paging": false,
                 "ordering": false,
                 "info": false,
@@ -421,6 +515,8 @@ function DRESTApp(config) {
                     "details": false
                 },
             });
+            this.table.fixedHeader.disable(); // control this manually
+            this.tableFixedHeader = this.table.context[0]._fixedHeader;
         }
         if (this.$drawer.length) {
             this.drawer = new mdc.drawer.MDCTemporaryDrawer(this.$drawer[0]);
@@ -443,28 +539,17 @@ function DRESTApp(config) {
                 this.drawer.open = true;
             }
         }.bind(this));
-        if (this.$swiper.length) {
-            this.swiper = new Swiper(config.content + ' .swiper-container', {
-                noSwipingSelector: '*',
-                speed: 10,
-                autoHeight: true,
-                on: {
-                    transitionEnd: function() {
-                        var $slide = $(app.currentSlide);
-                        var scrollTop = $slide.attr('data-scroll-top') || 0;
-                        $('body, html').scrollTop(scrollTop);
-                        app.resetHeight();
-                    }
-                }
+        if (this.$navigation.length) {
+            this.navigation = new DRESTNavigation({
+                container: this.$navigation,
+                initial: 0
             });
-            this.$slides = this.$swiper.find('.swiper-slide');
-            this.currentIndex = 0;
-            this.currentSlide = this.$slides[0];
-            this.$mainSlide = $(this.currentSlide);
-            var $form = this.$mainSlide.find('.drest-form');
-            this.currentForm = $form.length ? $form[0].DRESTForm : null;
-            this.$addSlide = this.$swiper.find('.drest-form--add').closest('.swiper-slide');
-            this.$filterSlide = this.$swiper.find('.drest-form--filter').closest('.swiper-slide');
+            this.navigation.$scenes.on(
+                'scroll',
+                throttle(this.onScroll.bind(this), 200)
+            );
+            var $form = this.navigation.$active.find('.drest-form');
+            this.activeForm = $form.length ? $form[0].DRESTForm : null;
         }
         this.forms = this.getForms();
         for (var i=0; i<this.forms.length; i++) {
@@ -488,11 +573,11 @@ function DRESTApp(config) {
         }
         this.$.find('.drest-form').on('submit', this.onSubmit.bind(this));
 
-        $('.drest-app__slide-to').each(function() {
+        $('.drest-app__switch-to').each(function() {
             var $button = $(this);
             var target = $button.attr('data-target');
             $button.on('click.drest', function() {
-                app.slideTo($(target))
+                app.switchTo($(target))
             });
         });
         if (this.$saveButton.length) {
@@ -501,15 +586,23 @@ function DRESTApp(config) {
         if (this.$backButton.length) {
             this.$backButton.on('click.drest', this.back.bind(this));
         }
-        $(window).scroll(this.onScroll.bind(this));
         window.addEventListener('beforeunload', this.onBeforeUnload.bind(this));
-        this.resetHeight();
-        setTimeout(function(){ this.resetHeight(); }.bind(this), 1000);
+        $(window).on(
+            'resize',
+            throttle(this.onResize.bind(this), 300, {leading: false})
+        );
     };
 
+    this.scroll = 0;
     this.editing = false;
     this.submitting = false;
     this.config = config;
+    this.style = config.style; // either list, directory, detail, or error
+    this.detailURL = config.detailURL;
+    this.listURL = config.listURL;
+    this.logoutURL = config.logoutURL;
+    this.userName = config.userName;
+
     $(this.onLoad.bind(this));
 }
 
@@ -662,7 +755,6 @@ function DRESTForm(config) {
         var changedField = data.field;
         var changedTo = data.after;
         this.updateDependents(changedField, changedTo);
-        window.app.resetHeight();
     };
     this.updateAllDependents = function() {
         var fields = this.getFields();
@@ -913,7 +1005,6 @@ function DRESTForm(config) {
         this.$.off('submit.drest-form').on('submit.drest-form', this.onSubmit.bind(this));
         this.$.off('drest-form:change').on('drest-form:change', this.onChange.bind(this));
         this.updateAllDependents();
-        window.app.resetHeight();
     }
 
     this.config = config;

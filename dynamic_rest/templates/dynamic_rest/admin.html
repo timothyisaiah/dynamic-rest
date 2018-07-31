@@ -139,7 +139,7 @@
                         </section>
                         <section class="drest-app__toolbar mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
                             {% if allow_filter %}
-                                <span data-target="#drest-filter-form" class="drest-app__slide-to drest-app__search-button material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</span>
+                                <span data-target="#drest-filter-form" class="drest-app__switch-to drest-app__search-button material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</span>
                             {% endif %}
                             {% if show_menu %}
                                 <span class="drest-app__more-button mdc-top-app-bar__action-item">
@@ -162,7 +162,7 @@
                                                     </li>
                                                 {% endfor %}
                                                 {% if request.user.is_authenticated %}
-                                                    <li data-goto="{{ logout_url }}" tabindex="0" role="menuitem" class="drest-goto mdc-list-item">
+                                                    <li tabindex="0" role="menuitem" class="drest-logout mdc-list-item">
                                                         <span class="material-icons mr-2">lock_open</span>
                                                         Logout
                                                     </li>
@@ -206,30 +206,29 @@
             {% block content %}
                 <div id="drest-content-container" style="display: none">
                     <div class="drest-content">
-                        <div class="swiper-container">
-                            <div class="swiper-wrapper">
+                        <div class="drest-navigation">
                                 {% if style == 'list' %}
-                                    <div class="swiper-slide swiper-no-swiping">
+                                    <div class="drest-scene">
                                         {% include "dynamic_rest/admin/list.html" %}
                                     </div>
                                 {% endif %}
                                 {% if style == 'directory' %}
-                                    <div class="swiper-slide swiper-no-swiping">
+                                    <div class="drest-scene">
                                         {% include "dynamic_rest/admin/directory.html" %}
                                     </div>
                                 {% endif %}
                                 {% if style == 'detail' %}
-                                    <div class="swiper-slide swiper-no-swiping">
+                                    <div class="drest-scene">
                                         {% include "dynamic_rest/admin/detail.html" %}
                                     </div>
                                 {% endif %}
                                 {% if style == 'error' %}
-                                    <div class="swiper-slide swiper-no-swiping">
+                                    <div class="drest-scene">
                                         {% include "dynamic_rest/admin/error.html" %}
                                     </div>
                                 {% endif %}
                                 {% if allow_add %}
-                                    <div class="swiper-slide swiper-no-swiping">
+                                    <div class="drest-scene">
                                         <form
                                             id="drest-add-form"
                                             action="{{ request.get_full_path }}"
@@ -248,12 +247,12 @@
                                     </div>
                                 {% endif %}
                                 {% if allow_filter %}
-                                    <div class="swiper-slide swiper-no-swiping">
+                                    <div class="drest-scene">
                                         <form
                                             id="drest-filter-form"
                                             class="drest-form drest-form--filter"
                                             method="GET"
-                                            action="{{ filter_endpoint }}">
+                                            action="{{ list_url }}">
                                             <div class="drest-grid drest-grid--1x">
                                                 <div class="drest-grid__item">
                                                     <div class="mdc-card drest-section">
@@ -280,7 +279,7 @@
                                     </div>
                                 {% endif %}
                                 {% for related_name, serializer_and_form in create_related_forms.items %}
-                                    <div class="swiper-slide swiper-no-swiping">
+                                    <div class="drest-scene">
                                         <div class="drest-form__header">
                                             <label>{{ singular_name }}:</label>
                                             <span>{{ name }}</span>
@@ -301,7 +300,6 @@
                                         </script>
                                     </div>
                                 {% endfor %}
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -317,7 +315,7 @@
                 {% endif %}
                 {% if style == 'list' %}
                     {% if allow_add %}
-                        <div data-target="#drest-add-form" id="drest-fab" class="drest-app__slide-to drest-fab--add mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
+                        <div data-target="#drest-add-form" id="drest-fab" class="drest-app__switch-to drest-fab--add mdc-theme--primary-bg mdc-fab mdc-fab--fixed-br">
                             <span class="mdc-fab__icon material-icons">add</span>
                         </div>
                     {% endif %}
@@ -373,20 +371,25 @@
             };
 
             mdc.autoInit();
-            window.app = new drest.DRESTApp({
-                resourceName: '{{ singular_name }}',
-                resourceNamePlural: '{{ plural_name }}',
-                drawer: '#drest-drawer',
-                header: '#drest-header',
-                table: '#drest-table',
-                fab: '#drest-fab',
-                style: '{{ style }}',
-                content: '#drest-content-container',
-                dialog: '#drest-dialog',
-                notice: '#drest-notice',
-                listEndpoint: '{{ filter_endpoint }}',
-                detailEndpoint: '{{ request.get_full_path }}'
-            });
+            if ('{{ style }}') {
+                window.app = new drest.DRESTApp({
+                    resourceName: '{{ singular_name }}',
+                    resourceNamePlural: '{{ plural_name }}',
+                    drawer: '#drest-drawer',
+                    header: '#drest-header',
+                    table: '#drest-table',
+                    fab: '#drest-fab',
+                    style: '{{ style }}',
+                    content: '#drest-content-container',
+                    dialog: '#drest-dialog',
+                    notice: '#drest-notice',
+                    listURL: '{{ list_url }}',
+                    detailURL: {{ detail_url | to_json }},
+                    logoutURL: {{ logout_url | to_json }},
+                    url: '{{ url }}',
+                    userName: {{ user_name | to_json }}
+                });
+            }
 
             $(function() {
                 // drest-json

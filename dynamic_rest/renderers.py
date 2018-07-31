@@ -44,6 +44,19 @@ mapping[fields.DynamicMoneyField] = {
 }
 
 
+def get_user_name(request):
+    user = request.user
+    if user:
+        username = getattr(
+            user, getattr(user, 'USERNAME_FIELD', 'username'), None
+        )
+        name = getattr(
+            user, getattr(user, 'NAME_FIELD', 'name'), None
+        )
+        return name if name else username
+    return None
+
+
 class DynamicHTMLFormRenderer(HTMLFormRenderer):
     template_pack = 'dynamic_rest/form'
     default_style = ClassLookupDict(mapping)
@@ -258,6 +271,8 @@ class DynamicAdminRenderer(AdminRenderer):
         if home and request.path == home:
             nav_icon = '<span class="material-icons">home</span>'
             title = header = 'Home'
+
+        context['user_name'] = get_user_name(request)
         context['actions'] = actions
         context['render_style'] = render_style
         context['directory'] = get_directory(request, icons=True)
@@ -276,8 +291,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['serializer'] = serializer
         context['sortable_fields'] = set([
             c for c in columns if (
-                getattr(fields.get(c), 'model_field', None)
-                and not isinstance(fields.get(c), DynamicRelationField)
+                getattr(fields.get(c), 'sort_field', None)
             )
         ])
         sorted_ascending = None
@@ -310,9 +324,13 @@ class DynamicAdminRenderer(AdminRenderer):
         context['allow_filter'] = (
             'list' in allowed
         ) and bool(filters)
-        context['filter_endpoint'] = (
+        context['list_url'] = (
             '/' if serializer is None
             else serializer.get_url()
+        )
+        context['detail_url'] = (
+            None if serializer is None or instance is None
+            else serializer.get_url(instance.pk)
         )
         context['allow_delete'] = (
             'delete' in allowed and is_detail

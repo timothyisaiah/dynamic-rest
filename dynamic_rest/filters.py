@@ -624,7 +624,7 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
         if not self._is_allowed_query(query, view):
             raise ValidationError('Invalid sort option: %s' % query)
 
-        model_fields, _ = serializer.resolve(query)
+        model_fields, _ = serializer.resolve(query, sort=True)
         return '__'.join([
             Meta.get_query_name(f) for f in model_fields
         ])

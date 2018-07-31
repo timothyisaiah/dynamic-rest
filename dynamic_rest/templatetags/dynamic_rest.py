@@ -234,10 +234,11 @@ def humanize(value):
 
 @register.simple_tag
 def get_sort_query_value(field, sorted_field, sorted_ascending):
-    if field != sorted_field:
-        return field
+    name = field.field_name
+    if name != sorted_field:
+        return name
     else:
-        return '-%s' % field if sorted_ascending else field
+        return '-%s' % name if sorted_ascending else name
 
 
 @register.simple_tag

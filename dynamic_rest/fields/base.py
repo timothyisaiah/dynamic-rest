@@ -51,6 +51,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.depends = kwargs.pop('depends', None)
         self.hide = kwargs.pop('hide', None)
         self.long = kwargs.pop('long', False)
+        self.sort_by = kwargs.pop('sort_by', None)
         self.bound = False
         if self.getter:
             # dont bind to model
@@ -290,6 +291,22 @@ class DynamicField(fields.Field, DynamicBase):
             else:
                 return None
         return self._parent_model
+
+    @property
+    def sort_field(self):
+        if self.sort_by:
+            if not hasattr(self, '_sort_field'):
+                try:
+                    source = self.sort_by
+                    self._sort_field = get_model_field(
+                        self.parent_model,
+                        source
+                    )
+                except AttributeError:
+                    self._sort_field = None
+            return self._sort_field
+        else:
+            return self.model_field
 
     @property
     def model_field(self):
