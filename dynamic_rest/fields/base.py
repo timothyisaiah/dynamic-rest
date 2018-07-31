@@ -296,8 +296,8 @@ class DynamicField(fields.Field, DynamicBase):
     def sort_field(self):
         if self.sort_by:
             if not hasattr(self, '_sort_field'):
+                source = self.sort_by
                 try:
-                    source = self.sort_by
                     self._sort_field = get_model_field(
                         self.parent_model,
                         source
@@ -311,8 +311,8 @@ class DynamicField(fields.Field, DynamicBase):
     @property
     def model_field(self):
         if not hasattr(self, '_model_field'):
+            source = self.source or self.field_name
             try:
-                source = self.source or self.field_name
                 self._model_field = get_model_field(
                     self.parent_model,
                     source
