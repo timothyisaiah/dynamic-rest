@@ -630,7 +630,7 @@ class WithDynamicSerializerMixin(
                     return (model_fields, api_fields)
 
                 source = api_field.source or api_name
-                if sort and api_field.sort_by:
+                if sort and getattr(api_field, 'sort_by', None):
                     # use sort_by source
                     source = api_field.sort_by
 
