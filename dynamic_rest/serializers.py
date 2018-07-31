@@ -107,8 +107,8 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def __iter__(self):
         return self.child.__iter__()
 
-    def get_field(self, name):
-        return self.child.get_field(name)
+    def get_field(self, name, **kwargs):
+        return self.child.get_field(name, **kwargs)
 
     @property
     def fields(self):
@@ -575,6 +575,8 @@ class WithDynamicSerializerMixin(
 
         try:
             api_field = serializer.get_field(api_name)
+            if isinstance(api_field, _fields.DynamicRelationField):
+                api_field.bind(parent=self, field_name=api_name)
         except AttributeError:
             api_field = None
 
@@ -591,7 +593,7 @@ class WithDynamicSerializerMixin(
             source = api_field.source or api_name
             related = api_field.serializer_class()
             other = '.'.join(other)
-            model_fields, api_fields = related.resolve(other)
+            model_fields, api_fields = related.resolve(other, sort=sort)
 
             try:
                 model_field = meta.get_field(source)
@@ -625,14 +627,15 @@ class WithDynamicSerializerMixin(
 
                 api_fields.append(api_field)
 
-                if api_field.source == '*':
-                    # a method field was requested, model field is unknown
-                    return (model_fields, api_fields)
-
                 source = api_field.source or api_name
                 if sort and getattr(api_field, 'sort_by', None):
                     # use sort_by source
                     source = api_field.sort_by
+
+                if source == '*':
+                    # a method field was requested and has no sort_by
+                    # -> model field is unknown
+                    return (model_fields, api_fields)
 
                 if '.' in source:
                     fields = source.split('.')
@@ -849,9 +852,9 @@ class WithDynamicSerializerMixin(
                                      self).get_fields()
             for k, field in six.iteritems(self._all_fields):
                 field.field_name = k
+                field.parent = self
                 label = inflection.humanize(k)
                 field.label = getattr(field, 'label', label) or label
-                field.parent = self
         return self._all_fields
 
     def _get_flagged_field_names(self, fields, attr, meta_attr=None):

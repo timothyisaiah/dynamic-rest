@@ -84,6 +84,21 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 
+    def bind(self, *args, **kwargs):
+        result = super(DynamicRelationField, self).bind(*args, **kwargs)
+        if self.sort_by is None and self.source != '*':
+            name_field_name = self.get_name_field()
+            if name_field_name != 'pk':
+                try:
+                    name_field = self.serializer.get_field(name_field_name)
+                    self.sort_by = '%s.%s' % (
+                        self.source or self.field_name,
+                        name_field.source or name_field_name
+                    )
+                except AttributeError:
+                    pass
+        return result
+
     def get_pk_field(self):
         return self.serializer.get_pk_field()
 

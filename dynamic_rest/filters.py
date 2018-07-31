@@ -625,9 +625,10 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
             raise ValidationError('Invalid sort option: %s' % query)
 
         model_fields, _ = serializer.resolve(query, sort=True)
-        return '__'.join([
+        resolved = '__'.join([
             Meta.get_query_name(f) for f in model_fields
         ])
+        return resolved
 
     def _is_allowed_query(self, query, view=None):
         if not view:
@@ -664,7 +665,7 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
                 for field_name, field in serializer_class().fields.items()
                 if not getattr(
                     field, 'write_only', False
-                ) and not field.source == '*'
+                ) and (field.source != '*' or getattr(field, 'sort_by', None))
             ]
         else:
             valid_fields = [
@@ -676,8 +677,9 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
                     )
                 )
                 for field_name, field in serializer_class().fields.items()
-                if not getattr(field, 'write_only', False) and
-                not field.source == '*' and field_name in valid_fields
+                if not getattr(field, 'write_only', False)
+                and (field.source != '*' or getattr(field, 'sort_by', None))
+                and field_name in valid_fields
             ]
 
         return valid_fields
