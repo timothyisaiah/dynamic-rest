@@ -667,16 +667,16 @@ function DRESTForm(config) {
         var verb;
         var icon;
         if (this.type === 'add') {
-            verb = 'Adding';
+            verb = 'Add';
             icon = 'plus';
         } else if (this.type === 'add-related') {
-            verb = 'Adding';
+            verb = 'Add';
             icon = 'plus';
         } else if (this.type === 'filter') {
-            verb = 'Finding';
+            verb = 'Find';
             icon = 'search';
         } else if (this.type === 'edit') {
-            verb = 'Editing';
+            verb = 'Edit';
             icon = 'pencil';
         }
         return '<span class="mdi mdi-' + icon + '"/>  ' + verb + ' ' + this.resourceName;
