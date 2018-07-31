@@ -334,10 +334,10 @@ function DRESTApp(config) {
         this.$header.removeClass('drest-app--changed');
     };
     this.onEditFailed = function() {
+        this.showNotice('An error occurred');
         this.clearSubmitting();
         this.setError();
         this.focusError();
-        this.showNotice('An error occurred');
     };
     this.focusError = function() {
         var $error = this.activeForm.$.find('.drest-field--invalid').first();
@@ -359,10 +359,10 @@ function DRESTApp(config) {
         this.showNotice('Saved successfully');
     };
     this.onAddFailed = function() {
+        this.showNotice('An error occurred');
         this.clearSubmitting();
         this.setError();
         this.focusError();
-        this.showNotice('An error occurred');
     };
     this.onAddOk = function(e, response) {
         var url = response.data.links.self;
@@ -804,7 +804,7 @@ function DRESTForm(config) {
         return result.join('&');
     };
     this.onSubmit = function(e) {
-        this.disable();
+        var form = this;
         var $form = this.$;
         var method = this.getMethod();
 
@@ -822,6 +822,7 @@ function DRESTForm(config) {
         var contentType = $form.attr('content-type') || 'application/json';
         var acceptType = 'application/json';
 
+        this.disable();
         $form.trigger('drest-form:submit-start');
 
         if (isGet) {
@@ -897,6 +898,7 @@ function DRESTForm(config) {
             }
             if (!anyChanges) {
                 // no changes to save -> noop
+                form.enable();
                 $form.trigger('drest-form:submit-noop');
                 return;
             }
@@ -935,6 +937,7 @@ function DRESTForm(config) {
                     }
                 }
             }
+            form.enable();
             $form.trigger('drest-form:submit-ok', [{
                 'xhr': jqXHR,
                 'url': url,
@@ -942,6 +945,7 @@ function DRESTForm(config) {
                 'data': data,
             }]);
         }).fail(function(jqXHR) {
+            form.enable();
             $form.trigger('drest-form:submit-failed', [{
                 'error': jqXHR.responseJSON,
                 'status': jqXHR.status,
