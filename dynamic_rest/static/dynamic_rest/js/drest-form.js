@@ -372,14 +372,6 @@ function DRESTApp(config) {
         this.showNotice('Saved successfully, redirecting...');
         window.location = url;
     };
-    this.onSubmit = function(e) {
-        if (this.submitting || !this.activeForm) {
-            e.preventDefault();
-            return;
-        }
-        // save primary record
-        this.setSubmitting();
-    };
     this.save = function() {
         this.activeForm.submit();
     };
@@ -558,20 +550,20 @@ function DRESTApp(config) {
         }
         if (this.style === 'detail') {
             this.editForm = this.getEditForm();
-            this.editForm.$.on('drest-form:submit-succeeded', this.onEditOk.bind(this));
+            this.editForm.$.on('drest-form:submit-ok', this.onEditOk.bind(this));
             this.editForm.$.on('drest-form:submit-failed', this.onEditFailed.bind(this));
             this.editForm.$.on('drest-form:submit-noop', this.onEditNoop.bind(this));
             this.$fab.on('click.drest', this.enableEdit.bind(this));
             this.$.find('.drest-form--add-related')
-                .on('drest-form:submit-succeeded', this.onAddOk.bind(this))
+                .on('drest-form:submit-ok', this.onAddOk.bind(this))
                 .on('drest-form:submit-failed', this.onAddFailed.bind(this));
         } else if (this.style === 'list') {
             this.addForm = this.getAddForm();
             this.$.find('.drest-form--add')
-                .on('drest-form:submit-succeeded', this.onAddOk.bind(this))
+                .on('drest-form:submit-ok', this.onAddOk.bind(this))
                 .on('drest-form:submit-failed', this.onAddFailed.bind(this));
         }
-        this.$.find('.drest-form').on('submit', this.onSubmit.bind(this));
+        this.$.find('.drest-form').on('drest-form:submit-start', this.setSubmitting.bind(this));
 
         $('.drest-app__switch-to').each(function() {
             var $button = $(this);
@@ -812,12 +804,13 @@ function DRESTForm(config) {
         return result.join('&');
     };
     this.onSubmit = function(e) {
-        var form = this.$;
+        this.disable();
+        var $form = this.$;
         var method = this.getMethod();
 
         e.preventDefault();
 
-        var url = form.attr('action');
+        var url = $form.attr('action');
         if (!url.match(/\/$/)) {
             url = url + '/';
         }
@@ -826,8 +819,11 @@ function DRESTForm(config) {
         var isDelete = method === 'DELETE';
         var isPatch = method === 'PATCH';
         var delta = isPatch;
-        var contentType = form.attr('content-type') || 'application/json';
+        var contentType = $form.attr('content-type') || 'application/json';
         var acceptType = 'application/json';
+
+        $form.trigger('drest-form:submit-start');
+
         if (isGet) {
             notEmpty = true;
         }
@@ -901,7 +897,7 @@ function DRESTForm(config) {
             }
             if (!anyChanges) {
                 // no changes to save -> noop
-                form.trigger('drest-form:submit-noop');
+                $form.trigger('drest-form:submit-noop');
                 return;
             }
             if (!multipart && !isGet) {
@@ -918,7 +914,6 @@ function DRESTForm(config) {
             window.location = url + data;
             return;
         }
-        form.trigger('drest-form:submitting');
         return $.ajax({
             url: url,
             method: method,
@@ -940,14 +935,14 @@ function DRESTForm(config) {
                     }
                 }
             }
-            form.trigger('drest-form:submit-succeeded', [{
+            $form.trigger('drest-form:submit-ok', [{
                 'xhr': jqXHR,
                 'url': url,
                 'status': jqXHR.status,
                 'data': data,
             }]);
         }).fail(function(jqXHR) {
-            form.trigger('drest-form:submit-failed', [{
+            $form.trigger('drest-form:submit-failed', [{
                 'error': jqXHR.responseJSON,
                 'status': jqXHR.status,
             }]);
@@ -1001,7 +996,7 @@ function DRESTForm(config) {
         this.fields = this.getFields();
         this.disabled = this.$.hasClass('drest-form--readonly');
         this.$.on('drest-form:submit-failed', this.onSubmitFailed.bind(this));
-        this.$.on('drest-form:submit-succeeded', this.onSubmitOk.bind(this));
+        this.$.on('drest-form:submit-ok', this.onSubmitOk.bind(this));
         this.$.off('submit.drest-form').on('submit.drest-form', this.onSubmit.bind(this));
         this.$.off('drest-form:change').on('drest-form:change', this.onChange.bind(this));
         this.updateAllDependents();
