@@ -1234,6 +1234,10 @@ html {
 .drest-app__nav-button {
     font-size: 1.25rem;
 }
+.drest-app.drest-app--submitting .drest-app__more-button,
+.drest-app.drest-app--submitting .drest-app__search-button {
+    display: none;
+}
 .drest-app.drest-app--editing .drest-app__more-button,
 .drest-app.drest-app--editing .drest-app__search-button,
 .drest-app.drest-app--editing .drest-app__nav-button {
