@@ -124,6 +124,7 @@ class DynamicAdminRenderer(AdminRenderer):
         filters = {}
         fields = {}
         create_related_forms = {}
+        name_field = None
 
         if isinstance(instance, list):
             instance = None
@@ -143,6 +144,8 @@ class DynamicAdminRenderer(AdminRenderer):
             description = settings.API_DESCRIPTION
 
         elif serializer:
+            name_field = serializer.get_name_field()
+
             related_serializers = serializer.create_related_serializers or []
             if related_serializers:
                 related_serializers = related_serializers.items()
@@ -169,6 +172,7 @@ class DynamicAdminRenderer(AdminRenderer):
 
             if is_list:
                 if paginator:
+
                     paging = paginator.get_page_metadata()
                     count = paging['total_results']
                 else:
@@ -272,6 +276,11 @@ class DynamicAdminRenderer(AdminRenderer):
             nav_icon = '<span class="material-icons">home</span>'
             title = header = 'Home'
 
+        context['name_field'] = name_field
+        context['search_key'] = (
+            serializer.get_search_key() if serializer
+            else None
+        )
         context['user_name'] = get_user_name(request)
         context['actions'] = actions
         context['render_style'] = render_style
@@ -324,6 +333,9 @@ class DynamicAdminRenderer(AdminRenderer):
         context['allow_filter'] = (
             'list' in allowed
         ) and bool(filters)
+        context['allow_search'] = (
+            'list' in allowed
+        )
         context['list_url'] = (
             '/' if serializer is None
             else serializer.get_url()

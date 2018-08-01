@@ -195,13 +195,8 @@ class DynamicField(fields.Field, DynamicBase):
                 return icon(instance, value)
             else:
                 return icon
-
-        serializer = self.parent
-        name_field = serializer.get_name_field()
-        if name_field == self.field_name:
-            return serializer.get_icon()
-
-        return None
+        else:
+            return None
 
     def admin_render_value(self, value):
         return value

@@ -48,9 +48,6 @@
                 {% block css__datetimepicker %}
                     <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/bootstrap-material-datetimepicker.css" %}"></link>
                 {% endblock %}
-                {% block css__swiper %}
-                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/css/swiper.min.css" />
-                {% endblock %}
             {% endblock %}
             {% block script %}
                 {% block script__jquery %}
@@ -100,9 +97,6 @@
                 {% block script__datetimepicker %}
                     <script src="{% static "dynamic_rest/js/bootstrap-material-datetimepicker.min.js" %}"></script>
                 {% endblock %}
-                {% block script__swiper %}
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/Swiper/4.3.3/js/swiper.min.js"></script>
-                {% endblock %}
                 {% block script__autosize %}
                     <script src="https://cdn.jsdelivr.net/npm/autosize@4.0.2/dist/autosize.min.js"></script>
                 {% endblock %}
@@ -118,33 +112,37 @@
                     data-mdc-auto-init="MDCTopAppBar"
                 >
                     <div class="mdc-top-app-bar__row">
-                        <section class="drest-app__navigation mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
+                        <section class="mdc-top-app-bar__section mdc-top-app-bar__section-align-start">
                              {% block header_nav %}
                                 {% if show_nav %}
                                     <span class="drest-app__back-button material-icons mdc-top-app-bar__navigation-icon">arrow_back</span>
-                                    <span class="drest-app__nav-button mdc-top-app-bar__navigation-icon" id="drest-header-nav">{{ nav_icon }}</span>
+                                    <span class="drest-app__navigation drest-app__nav-button mdc-top-app-bar__navigation-icon" id="drest-header-nav">{{ nav_icon }}</span>
                                 {% endif %}
                                 {% if style == 'directory' %}
-                                        <span class="material-icons mdc-top-app-bar__action-item">mood</span>
+                                        <span class="drest-app__navigation material-icons mdc-top-app-bar__action-item">mood</span>
                                 {% endif %}
                                 {% if style == 'error' %}
-                                        <span class="material-icons mdc-top-app-bar__action-item">error</span>
+                                        <span class="drest-app__navigation material-icons mdc-top-app-bar__action-item">error</span>
                                 {% endif %}
                             {% endblock %}
                             <span class="mdc-top-app-bar__title drest-app__title">
                                 {% block header_content %}
-                                    {{ header }}
+                                    {% if allow_search %}
+                                        <input class="drest-app__search-input" type="text" placeholder="Search {{ plural_name }}"/>
+                                    {% endif %}
+                                    <span class="drest-app__title-content">{{ header }}</span>
                                 {% endblock %}
                             </span>
                         </section>
                         <section class="drest-app__toolbar mdc-top-app-bar__section mdc-top-app-bar__section--align-end" role="toolbar">
-                            {% if allow_filter %}
-                                <span data-target="#drest-filter-form" class="drest-app__switch-to drest-app__search-button material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</span>
+                            {% if allow_search %}
+                                <span class="drest-app__search-button material-icons mdc-top-app-bar__action-item" aria-label="Search" alt="Search">search</span>
                             {% endif %}
+                            <span class="drest-app__clear-button material-icons mdc-top-app-bar__navigation-icon">close</span>
                             {% if show_menu %}
                                 <span class="drest-app__more-button mdc-top-app-bar__action-item">
                                     <span class="material-icons" aria-label="More" alt="More options">more_vert</span>
-                                    <span class="mdc-menu-anchor" style="position: absolute; bottom: -4px; right: -2px;">
+                                    <span class="mdc-menu-anchor" style="">
                                         <div class="mdc-menu drest-app__more-menu">
                                             <ul class="mdc-menu__items mdc-list">
                                                 {% if allow_delete %}
@@ -161,6 +159,12 @@
                                                         {{ action.label }}
                                                     </li>
                                                 {% endfor %}
+                                                {% if allow_filter %}
+                                                    <li data-target="#drest-filter-form" tabindex="0" role="menuitem" class="drest-app__filter-button drest-app__switch-to mdc-list-item">
+                                                        <span class="mdi mdi-filter material-icons mr-2"></span>
+                                                        Find
+                                                    </li>
+                                                {% endif %}
                                                 {% if request.user.is_authenticated %}
                                                     <li tabindex="0" role="menuitem" class="drest-logout mdc-list-item">
                                                         <span class="material-icons mr-2">lock_open</span>
@@ -386,6 +390,8 @@
                     listURL: '{{ list_url }}',
                     detailURL: {{ detail_url | to_json }},
                     logoutURL: {{ logout_url | to_json }},
+                    nameField: {{ name_field | to_json }},
+                    searchKey: '{{ search_key }}',
                     url: '{{ url }}',
                     userName: {{ user_name | to_json }}
                 });
@@ -400,13 +406,6 @@
                     }
                 });
                 // drest-goto
-                $('.drest-goto').on('click', function() {
-                    var goto = $(this).data('goto');
-                    var target = $(this).data('goto-target') || '_self';
-                    if (goto) {
-                        window.open(goto, target);
-                    }
-                });
             });
         </script>
     {% endblock %} <!-- /script -->

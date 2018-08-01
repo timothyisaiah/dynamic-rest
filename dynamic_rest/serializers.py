@@ -776,8 +776,12 @@ class WithDynamicSerializerMixin(
             # otherwise, return canonical URL for this model
             from dynamic_rest.routers import DynamicRouter
             url = DynamicRouter.get_canonical_path(self.get_resource_key())
+
         if pk:
             return '%s/%s/' % (url, pk)
+
+        if not url.endswith('/'):
+            url = url + '/'
         return url
 
     @classmethod

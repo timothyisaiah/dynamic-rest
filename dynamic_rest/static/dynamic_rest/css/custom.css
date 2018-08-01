@@ -27,6 +27,9 @@ html {
 #drest-notice {
     z-index: 10;
 }
+.drest-value {
+    white-space: nowrap;
+}
 .drest-goto {
     cursor: pointer;
 }
@@ -467,6 +470,14 @@ html {
 .drest-field .mdc-floating-label {
     top: 20px;
     bottom: auto;
+}
+.drest-search__results {
+    position: absolute;
+    top: 49px;
+    width: 100%;
+    left: 0;
+    background-color: white;
+    box-shadow: 0 5px 5px -3px rgba(0,0,0,.2),0 8px 10px 1px rgba(0,0,0,.14),0 3px 14px 2px rgba(0,0,0,.12);
 }
 /** drest-form **/
 .drest-section {
@@ -1192,6 +1203,9 @@ html {
 }
 .drest-app .drest-app__title {
     padding-left: 0;
+    width: 100%;
+    overflow: visible;
+    position: relative;
 }
 .drest-app .drest-app__save-button {
     display: none;
@@ -1211,6 +1225,12 @@ html {
 .drest-app.drest-app--editing .drest-app__back-button {
     display: block;
 }
+.drest-app.drest-app--searching .drest-app__back-button {
+    display: block;
+}
+.drest-app.drest-app--searching.drest-app--searching--filled:not(.drest-app--submitting) .drest-app__clear-button {
+    display: block;
+}
 .drest-app__nav-button {
     font-size: 1.25rem;
 }
@@ -1218,6 +1238,28 @@ html {
 .drest-app.drest-app--editing .drest-app__search-button,
 .drest-app.drest-app--editing .drest-app__nav-button {
     display: none;
+}
+.drest-app.drest-app--searching .drest-app__more-button,
+.drest-app.drest-app--searching .drest-app__search-button,
+.drest-app.drest-app--searching .drest-app__title-content,
+.drest-app.drest-app--searching .drest-app__nav-button {
+    display: none;
+}
+.drest-app__clear-button {
+    display: none;
+}
+.drest-app__search-input {
+    display: none;
+    border: 0;
+    background-color: var(--mdc-theme-primary);
+    color: white;
+}
+.drest-app__search-input::placeholder {
+    color: white;
+}
+.drest-app--searching .drest-app__search-input {
+    display: block;
+    border-bottom: 1px solid rgba(255,255,255,0.75);
 }
 .drest-app.drest-app--submitting .drest-app__spinner {
     display: block;
