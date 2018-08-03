@@ -291,12 +291,18 @@ DRESTNavigation.prototype.switchTo = function(index) {
         });
         setTimeout(function() {
             inScene.show();
-            inScene.fadeTo(150, 1);
+            inScene.fadeTo(150, 1, function(){
+                inScene.focus();
+                app.onResize();
+            });
         }, 50);
     } else {
         // fade in
         inScene.show();
-        inScene.fadeTo(300, 1);
+        inScene.fadeTo(300, 1, function(){
+            app.onResize()
+            inScene.focus();
+        });
     }
 
     this.$active = inScene;
@@ -356,6 +362,9 @@ function DRESTApp(config) {
             if (this.scroll) {
                 this.tableFixedHeader._modeChange('in', 'header', true);
             }
+        }
+        if (autosize) {
+            autosize.update(document.querySelectorAll('textarea'));
         }
     };
     this.onScroll = function() {
@@ -546,7 +555,6 @@ function DRESTApp(config) {
         this.$header.removeClass('drest-app--changed');
     };
     this.onEditFailed = function() {
-        this.showNotice('An error occurred');
         this.fromSubmitMode();
         this.toErrorMode();
         this.focusError();
@@ -571,7 +579,6 @@ function DRESTApp(config) {
         this.showNotice('Saved successfully');
     };
     this.onAddFailed = function() {
-        this.showNotice('An error occurred');
         this.fromSubmitMode();
         this.toErrorMode();
         this.focusError();
@@ -848,7 +855,7 @@ function DRESTApp(config) {
         window.addEventListener('beforeunload', this.onBeforeUnload.bind(this));
         $(window).on(
             'resize',
-            throttle(this.onResize.bind(this), 300, {leading: false})
+            throttle(this.onResize.bind(this), 300)
         );
     };
 
@@ -1179,7 +1186,6 @@ function DRESTForm(config) {
         }
 
         if (isGet) {
-            window.app.showNotice('Submitting...')
             data = this.serialize(data);
             if (data) {
                 data = '?' + data;
@@ -1223,6 +1229,22 @@ function DRESTForm(config) {
             }]);
         });
     };
+    this.makeErrorDialogBody = function(errors, other) {
+        var body = '';
+        for (var name in errors) {
+            if (errors.hasOwnProperty(name)) {
+                var error = errors[name];
+                if ($.isArray(error)) {
+                    error = error.join(', ');
+                }
+                body += '<b>' + name + '</b>: ' + error + '<br/>';
+            }
+        }
+        if (other) {
+            body += '...and other errors inline';
+        }
+        return body
+    };
     this.onSubmitFailed = function(e, response) {
         var errors = response.error || {};
         var fields = this.getFieldsByName();
@@ -1231,18 +1253,23 @@ function DRESTForm(config) {
           if (fields.hasOwnProperty(key)) {
             var error = errors[key];
             var f = fields[key];
+            if (f.hidden) {
+                continue;
+            }
             if (error) {
-                hasFieldErrors = true;
                 f.toErrorMode(error[0]);
             } else {
                 f.fromErrorMode(true);
             }
+            hasFieldErrors = true;
+            delete errors[key];
           }
         }
-        if (!hasFieldErrors) {
+
+        if (!$.isEmptyObject(errors)) {
             window.app.showDialog({
                 title: 'Failed to save!',
-                body: errors.error || errors,
+                body: this.makeErrorDialogBody(errors, hasFieldErrors)
             });
         }
     };
@@ -1293,6 +1320,12 @@ function DRESTField(config) {
             return (files && files.length) ? files[0] : null;
         } else if (this.type !== 'text' && this.value === '') {
             return null;
+        } else if (this.type === 'integer') {
+            var val = parseInt(this.value);
+            return isNaN(val) ? null : val;
+        } else if (this.type === 'decimal') {
+            var val = parseFloat(this.value);
+            return isNaN(val) ? null : val;
         }
         return this.value;
     };
@@ -1541,12 +1574,14 @@ function DRESTField(config) {
             .html(this.helpTextShort);
     };
     this.hide = function() {
+        this.hidden = true;
         if (!this.$) {
             this.onLoad();
         }
         this.$.addClass('drest-hidden');
     };
     this.show = function() {
+        this.hidden = false;
         if (!this.$) {
             this.onLoad();
         }
@@ -1909,6 +1944,7 @@ function DRESTField(config) {
     };
 
     this.config = config;
+    this.hidden = false;
     this.name = config.name;
     this.depends = config.depends;
     this.type = config.type;

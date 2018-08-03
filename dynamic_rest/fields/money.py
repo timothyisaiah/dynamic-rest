@@ -1,20 +1,17 @@
 from __future__ import absolute_import
 
-from rest_framework.serializers import DecimalField, IntegerField
 from dynamic_rest.utils import money_format
-from .base import DynamicField
+from .model import DynamicDecimalField, DynamicIntegerField
 
 
-class DynamicMoneyFieldBase(
-    DynamicField
-):
+class WithMoney(object):
     def admin_render_value(self, value):
         return money_format(value)
 
 
 class DynamicMoneyField(
-    DecimalField,
-    DynamicMoneyFieldBase
+    DynamicDecimalField,
+    WithMoney
 ):
     def __init__(self, *args, **kwargs):
         if len(args) != 2:
@@ -29,7 +26,7 @@ class DynamicMoneyField(
 
 
 class DynamicMoneyIntegerField(
-    IntegerField,
-    DynamicMoneyFieldBase
+    DynamicIntegerField,
+    WithMoney
 ):
     pass
