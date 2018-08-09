@@ -118,7 +118,7 @@ DRESTSearch.prototype.clear = function() {
     this.$.val('');
     this.value = null;
     this.searchingValue = null;
-    this.onKeyup();
+    this.$.trigger('change');
     this.$.focus();
 };
 DRESTSearch.prototype.createResults = function() {
@@ -250,7 +250,7 @@ DRESTSearch.prototype.onKeyup = function(e) {
     }
 };
 DRESTSearch.prototype.onChange = function(e) {
-    this.value = e.target.value;
+    this.value = e ? e.target.value : this.$[0].value;
     this.updateSearch();
 };
 
@@ -485,6 +485,9 @@ function DRESTApp(config) {
         dialog.show();
     };
     this.enableEdit = function() {
+        if (this.searching) {
+            this.back();
+        }
         var form = this.activeForm;
         this.$title.html(form.getTitle());
         form.enable();

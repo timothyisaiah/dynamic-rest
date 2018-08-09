@@ -1205,6 +1205,9 @@ html, body {
 #drest-fab.drest-app--submitting {
     transform: translateY(100px);
 }
+.drest-app .drest-app__toolbar {
+    flex: 0 0 auto;
+}
 .drest-app .drest-app__title {
     padding-left: 0;
     width: 100%;
@@ -1250,25 +1253,32 @@ html, body {
 .drest-app.drest-app--searching .drest-app__more-button,
 .drest-app.drest-app--searching .drest-app__search-button,
 .drest-app.drest-app--searching .drest-app__title-content,
-.drest-app.drest-app--searching .drest-app__nav-button {
+.drest-app.drest-app--searching .drest-app__nav-button,
+.drest-app.drest-app--searching .drest-app__title {
     display: none;
 }
 .drest-app__clear-button {
     display: none;
 }
-.drest-app__search-input {
+.drest-app__search-container {
+    width: 100%;
     display: none;
+}
+.drest-app--searching .drest-app__search-container {
+    display: block;
+    position: relative;
+}
+.drest-app__search-input {
     border: 0;
+    font-family: Roboto, sans-serif;
+    border-bottom: 1px solid rgba(255,255,255,0.75);
+    width: 100%;
     background-color: var(--mdc-theme-primary);
     color: white;
 }
 .drest-app__search-input::placeholder {
     color: white;
-}
-.drest-app--searching .drest-app__search-input {
-    display: block;
-    width: 100%;
-    border-bottom: 1px solid rgba(255,255,255,0.75);
+    font-family: Roboto, sans-serif;
 }
 .drest-app.drest-app--submitting .drest-app__spinner {
     display: block;

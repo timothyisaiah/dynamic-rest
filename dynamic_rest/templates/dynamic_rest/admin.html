@@ -125,11 +125,13 @@
                                         <span class="drest-app__navigation material-icons mdc-top-app-bar__action-item">error</span>
                                 {% endif %}
                             {% endblock %}
+                            {% if allow_search %}
+                                <span class="drest-app__search-container">
+                                    <input class="drest-app__search-input" type="text" placeholder="Search {{ plural_name }}"/>
+                                </span>
+                            {% endif %}
                             <span class="mdc-top-app-bar__title drest-app__title">
                                 {% block header_content %}
-                                    {% if allow_search %}
-                                        <input class="drest-app__search-input" type="text" placeholder="Search {{ plural_name }}"/>
-                                    {% endif %}
                                     <span class="drest-app__title-content">{{ header }}</span>
                                 {% endblock %}
                             </span>
