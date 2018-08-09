@@ -1141,6 +1141,7 @@ html, body {
 }
 .drest-drawer__content {
     padding-top: 64px;
+    background-color: black;
 }
 .drest-directory .mdc-list-item, .drest-drawer__header .mdc-list-item {
     height: 64px;
