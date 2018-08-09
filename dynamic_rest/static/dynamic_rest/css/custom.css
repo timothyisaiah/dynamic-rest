@@ -1266,6 +1266,7 @@ html, body {
 }
 .drest-app--searching .drest-app__search-input {
     display: block;
+    width: 100%;
     border-bottom: 1px solid rgba(255,255,255,0.75);
 }
 .drest-app.drest-app--submitting .drest-app__spinner {
