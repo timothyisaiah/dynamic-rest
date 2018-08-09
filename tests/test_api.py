@@ -1713,3 +1713,30 @@ class TestFilters(APITestCase):
         url = '/users/?filter{pk}=123x'
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
+
+
+class TestNestedWrites(APITestCase):
+    def test_nested_writes(self):
+        data = {
+            'username': 'name',
+            'last_name': 'last_name',
+            'display_name': 'display_name'
+        }
+        response = self.client.post(
+            '/officers/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        self.assertEqual(201, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(content['officer']['last_name'], 'last_name')
+
+        data['last_name'] = 'new_last_name'
+        response = self.client.patch(
+            '/officers/%s/' % content['officer']['id'],
+            json.dumps(data),
+            content_type='application/json'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(content['officer']['last_name'], 'new_last_name')

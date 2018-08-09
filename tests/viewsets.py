@@ -10,6 +10,7 @@ from tests.models import (
     Group,
     Horse,
     Location,
+    Officer,
     Permission,
     Profile,
     User,
@@ -22,6 +23,7 @@ from tests.serializers import (
     GroupSerializer,
     HorseSerializer,
     LocationSerializer,
+    OfficerSerializer,
     PermissionSerializer,
     ProfileSerializer,
     UserLocationSerializer,
@@ -174,3 +176,8 @@ class PermissionViewSet(DynamicModelViewSet):
 class CarViewSet(DynamicModelViewSet):
     serializer_class = CarSerializer
     queryset = Car.objects.all()
+
+
+class OfficerViewSet(DynamicModelViewSet):
+    serializer_class = OfficerSerializer
+    queryset = Officer.objects.all()

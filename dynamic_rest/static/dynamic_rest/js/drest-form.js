@@ -1092,7 +1092,7 @@ function DRESTForm(config) {
         if (!url.match(/\/$/)) {
             url = url + '/';
         }
-        var data, json, multipart = false, notEmpty = false;
+        var data, notEmpty = false;
         var isGet = method === 'GET';
         var isDelete = method === 'DELETE';
         var isPatch = method === 'PATCH';
@@ -1103,23 +1103,16 @@ function DRESTForm(config) {
         this.disable();
         $form.trigger('drest-form:submit-start');
 
+        var promises = [];
+        var promiseKeys = [];
+
         if (isGet) {
             notEmpty = true;
-        }
-        // by default, try using JSON
-        if (this.hasFiles(delta)) {
-            // if we need to save files, require multipart/form-data
-            contentType = false;
-            multipart = true;
         }
         if (isDelete) {
             data = null;
         } else {
-            if (multipart) {
-                data = new FormData();
-            } else {
-                data = {};
-            }
+            data = {};
             var fields = this.getFields();
             var anyChanges = false;
             for (var i=0; i<fields.length; i++) {
@@ -1127,18 +1120,10 @@ function DRESTForm(config) {
                 if (!delta || f.hasChanged()) {
                     anyChanges = true;
                     var val = f.getSubmitValue();
-                    if (multipart) {
-                        // convert null to empty string
-                        if (val === null) {
-                            val = "";
-                        }
-                        if ($.isArray(val)) {
-                            for (var j=0; j<val.length; j++) {
-                                data.append(f.name, val[j]);
-                            }
-                        } else {
-                            data.append(f.name, val);
-                        }
+                    if (val && val.then) {
+                        // promise value
+                        promises.push(val);
+                        promiseKeys.push(f.name);
                     } else {
                         if (typeof data[f.name] === 'undefined') {
                             data[f.name] = val;
@@ -1152,10 +1137,18 @@ function DRESTForm(config) {
                     }
                 }
             }
+        }
+        return $.when.apply(this, promises).done(function() {
+            var values = arguments;
+            for (var i=0; i<values.length; i++) {
+                // assign promise values
+                data[promiseKeys[i]] = values[i];
+            }
+
             if (notEmpty) {
                 // do not include empty values
                 var result = {};
-                var fieldsByName = this.getFieldsByName();
+                var fieldsByName = form.getFieldsByName();
                 for (var name in data) {
                     if (data.hasOwnProperty(name)) {
                         var field = fieldsByName[name];
@@ -1180,54 +1173,58 @@ function DRESTForm(config) {
                 $form.trigger('drest-form:submit-noop');
                 return;
             }
-            if (!multipart && !isGet) {
+            if (isGet) {
+                data = form.serialize(data);
+                if (data) {
+                    data = '?' + data;
+                }
+                window.location = url + data;
+                return;
+            } else {
                 data = JSON.stringify(data);
             }
-        }
-
-        if (isGet) {
-            data = this.serialize(data);
-            if (data) {
-                data = '?' + data;
-            }
-            window.location = url + data;
-            return;
-        }
-        return $.ajax({
-            url: url,
-            method: method,
-            data: data,
-            contentType: contentType,
-            processData: false,
-            dataType: 'json',
-            headers: {
-              'Accept': acceptType
-            },
-        }).done(function(data, textStatus, jqXHR) {
-            if (isDelete) {
-                data = null;
-            } else {
-                for (var x in data) {
-                    if (data.hasOwnProperty(x)) {
-                        data = data[x];
-                        break;
+            return $.ajax({
+                url: url,
+                method: method,
+                data: data,
+                contentType: contentType,
+                processData: false,
+                dataType: 'json',
+                headers: {
+                  'Accept': acceptType
+                },
+            }).done(function(data, textStatus, jqXHR) {
+                if (isDelete) {
+                    data = null;
+                } else {
+                    for (var x in data) {
+                        if (data.hasOwnProperty(x)) {
+                            data = data[x];
+                            break;
+                        }
                     }
                 }
-            }
-            form.enable();
-            $form.trigger('drest-form:submit-ok', [{
-                'xhr': jqXHR,
-                'url': url,
-                'status': jqXHR.status,
-                'data': data,
-            }]);
-        }).fail(function(jqXHR) {
+                form.enable();
+                $form.trigger('drest-form:submit-ok', [{
+                    'xhr': jqXHR,
+                    'url': url,
+                    'status': jqXHR.status,
+                    'data': data,
+                }]);
+            }).fail(function(jqXHR) {
+                form.enable();
+                $form.trigger('drest-form:submit-failed', [{
+                    'error': jqXHR.responseJSON,
+                    'status': jqXHR.status,
+                }]);
+            });
+        }).fail(function(error) {
             form.enable();
             $form.trigger('drest-form:submit-failed', [{
-                'error': jqXHR.responseJSON,
-                'status': jqXHR.status,
+                'error': error
             }]);
         });
+
     };
     this.makeErrorDialogBody = function(errors, other) {
         var body = '';
@@ -1317,7 +1314,21 @@ function DRESTField(config) {
         if (this.type === 'file') {
             var input = this.$input[0];
             var files = input.files;
-            return (files && files.length) ? files[0] : null;
+            var file = (files && files.length) ? files[0] : null;
+            if (!file) {
+                return null;
+            } else {
+                var promise = $.Deferred();
+                const reader = new FileReader();
+                reader.onload = function() {
+                    promise.resolve(reader.result);
+                };
+                reader.onerror = function(error) {
+                    promise.reject(error);
+                };
+                reader.readAsDataURL(file);
+                return promise;
+            }
         } else if (this.type !== 'text' && this.value === '') {
             return null;
         } else if (this.type === 'integer') {

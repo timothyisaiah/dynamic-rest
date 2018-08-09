@@ -8,6 +8,7 @@ from dynamic_rest.fields import (
     DynamicMethodField,
     DynamicRelationField
 )
+from dynamic_rest import fields
 from dynamic_rest.serializers import (
     DynamicEphemeralSerializer,
     DynamicModelSerializer
@@ -20,6 +21,7 @@ from tests.models import (
     Country,
     Dog,
     Group,
+    Officer,
     Horse,
     Location,
     Part,
@@ -423,3 +425,17 @@ class CarSerializer(DynamicModelSerializer):
         deferred_fields = (
             'name', 'country', 'parts', 'country_name', 'country_short_name'
         )
+
+
+class OfficerSerializer(DynamicModelSerializer):
+    class Meta:
+        model = Officer
+        name_field = 'name'
+        fields = (
+            'id',
+            'username',
+            'last_name',
+            'display_name',
+        )
+    username = fields.DynamicCharField(source='user.username')
+    last_name = fields.DynamicCharField(source='user.last_name')

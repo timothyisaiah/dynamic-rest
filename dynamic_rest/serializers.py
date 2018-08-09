@@ -1133,6 +1133,44 @@ class WithDynamicSerializerMixin(
                 fn(instance)
             self._post_save = []
 
+    def create(self, validated_data):
+        model = self.Meta.model
+        meta = Meta(model)
+        instance = model()
+        to_save = [instance]
+        to_set = []
+        try:
+            with transaction.atomic():
+                for attr, value in validated_data.items():
+                    try:
+                        field = meta.get_field(attr)
+                        if field.related_model:
+                            if field.many_to_many:
+                                to_set.append((instance, attr, value))
+                            else:
+                                if isinstance(value, dict):
+                                    to_save.extend(
+                                        nested_update(instance, attr, value)
+                                    )
+                                else:
+                                    setattr(instance, attr, value)
+                        else:
+                            setattr(instance, attr, value)
+                    except AttributeError:
+                        setattr(instance, attr, value)
+
+                for s in to_save:
+                    s.save()
+
+                for i, a, v in to_set:
+                    f = getattr(i, a)
+                    f.set(v)
+
+        except Exception as e:
+            raise exceptions.ValidationError(e)
+
+        return instance
+
     def update(self, instance, validated_data):
         # support nested writes if possible
         meta = Meta(instance)

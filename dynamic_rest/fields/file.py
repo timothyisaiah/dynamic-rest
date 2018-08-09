@@ -1,7 +1,10 @@
+import base64
+import uuid
 from .base import DynamicField
 from rest_framework.serializers import FileField, ImageField
+from rest_framework import exceptions
+from django.core.files.base import ContentFile
 from django.utils import six
-from dynamic_rest.conf import settings
 
 IMAGE_TYPES = {
     'jpeg',
@@ -21,26 +24,8 @@ class DynamicFileFieldBase(
 ):
     def __init__(self, **kwargs):
         self.allow_remote = kwargs.pop('allow_remote', True)
+        self.allow_base64 = kwargs.pop('allow_base64', True)
         super(DynamicFileFieldBase, self).__init__(**kwargs)
-
-    def admin_render(self, instance=None, value=None):
-        ext = self.get_extension(value.name)
-        ext = ext[-1] if ext else ''
-        url = value.url
-        name = str(value)
-
-        icon = '<span class="{0} {0}-download"></span>'.format(
-            settings.ADMIN_ICON_PACK)
-        if ext == 'pdf':
-            display = '%s<embed src="%s" width=250 height=250 alt="%s">' % (
-                icon, url, name)
-        elif ext in IMAGE_TYPES:
-            display = '<img %s style="%s" src="%s" alt="%s">' % (
-                'width=250 height=250', 'object-fit:contain', url, name)
-        else:
-            display = '{0}{1}'.format(icon, name)
-
-        return '<a target="_blank" href="%s">%s</a>' % (url, display)
 
     def get_extension(self, name):
         if not name or '.' not in name:
@@ -75,9 +60,35 @@ class DynamicFileFieldBase(
 
         return name
 
+    def to_internal_value_base64(self, data):
+
+        header, data = data.split(';base64,')
+        try:
+            decoded = base64.b64decode(data)
+        except TypeError:
+            self.fail('invalid')
+        file_name = str(uuid.uuid4())[:12]
+        ext = header.split('/')[-1]
+        file_name += '.' + ext
+        data = ContentFile(decoded, name=file_name)
+
+        if isinstance(self, ImageField):
+            if ext not in IMAGE_TYPES:
+                return self.fail('invalid_image')
+
+        return super(
+            DynamicFileFieldBase,
+            self
+        ).to_internal_value(data)
+
     def to_internal_value(self, data):
-        if isinstance(data, six.string_types) and self.allow_remote:
-            return self.to_internal_value_remote(data)
+        if isinstance(data, six.string_types):
+            if self.allow_base64 and 'data:' in data and ';base64,' in data:
+                return self.to_internal_value_base64(data)
+            elif self.allow_remote:
+                return self.to_internal_value_remote(data)
+            else:
+                raise exceptions.ValidationError()
         else:
             return super(DynamicFileFieldBase, self).to_internal_value(data)
 
