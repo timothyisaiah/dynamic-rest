@@ -35,7 +35,7 @@
           {% endif %}
       {% endfor %}
     </select>
-      <label data-mdc-auto-init="MDCFloatingLabel" class="mdc-floating-label {% if not field.is_empty %}mdc-floating-label--float-above{% endif %}" for="{{ field.id }}-input">
+      <label class="drest-field__label" for="{{ field.id }}-input">
         {{ field.label }}
       </label>
       <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>

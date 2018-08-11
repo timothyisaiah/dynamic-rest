@@ -1355,14 +1355,10 @@ function DRESTField(config) {
             } else if (val === 'true') {
                 val = true;
             }
-        }
-        if (this.type === 'integer') {
+        } else if (this.type === 'integer') {
             val = val ? parseInt(val.replace(new RegExp(',', 'g'),'')) : null;
         } else if (this.type === 'decimal') {
             val = val ? parseFloat(val.replace(new RegExp(',', 'g'), '')) : null;
-        }
-        if (isNaN(val)) {
-            val = null;
         }
         return val;
     };
