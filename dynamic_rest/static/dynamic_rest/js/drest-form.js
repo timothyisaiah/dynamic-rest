@@ -1408,6 +1408,9 @@ function DRESTField(config) {
         } else {
             this.$input[0].disabled = false;
         }
+        if (this.tip) {
+            this.tip.disable();
+        }
         this.$textField.removeClass('mdc-text-field--disabled');
         this.$select.removeClass('mdc-select--disabled');
         this.disabled = false;
@@ -1419,6 +1422,9 @@ function DRESTField(config) {
             this.$input[0].readOnly = true;
         } else {
             this.$input[0].disabled = true;
+        }
+        if (this.tip) {
+            this.tip.enable();
         }
         this.$textField.addClass('mdc-text-field--disabled');
         this.$select.addClass('mdc-select--disabled');
@@ -1697,17 +1703,15 @@ function DRESTField(config) {
         }
 
         if (this.helpText) {
-            this.$.attr('title', this.helpText);
-            tippy(this.$[0], {
-                trigger: 'manual'
+            $field.attr('title', this.helpText);
+            tippy($field[0], {
+                interactive: true,
+                trigger: 'click',
+                placement: 'bottom-start',
+                hideOnClick: true,
+                multiple: false
             });
-            this.tip = this.$[0]._tippy;
-            this.$.on('click', function() {
-                if (this.disabled) {
-                    this.tip.show();
-                }
-            }.bind(this));
-
+            this.tip = $field[0]._tippy;
         }
         // setup dependents and listeners
         if (type === 'list') {
