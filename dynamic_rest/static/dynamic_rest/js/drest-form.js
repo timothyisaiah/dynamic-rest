@@ -1758,6 +1758,9 @@ function DRESTField(config) {
                     dropdownParent: $field
                 });
                 select2 = $input.data('select2');
+            } else {
+                $input.on('blur', this.onBlur.bind(this));
+                $input.on('focus', this.onFocus.bind(this));
             }
         } else if (type === 'datetime' || type === 'date' || type === 'time') {
             var opts = { clearButton: true };
