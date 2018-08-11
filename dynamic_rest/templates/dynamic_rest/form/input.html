@@ -1,116 +1,64 @@
 {% load dynamic_rest %}
 
-{% if style.input_type == "text" or style.input_type == "password" or style.input_type == "number" %}
-    <div id="{{ field.id }}" class="drest-field {% if field.errors %}drest-field--invalid{% endif %} {% if field.read_only %}drest-field--disabled{% endif %} {% if field.write_only %}drest-field--writeonly{% endif %}">
-        <div
-            class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if field.value %}mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}"
-            data-mdc-auto-init="MDCTextField">
-            {% if style.input_type == "text" and field.long %}
-                <textarea
-                    rows=1
-                    name="{{field.name}}"
-                    id="{{field.id}}-input" class="mdc-text-field__input"
-                    {% if field.read_only %}
-                        disabled
-                    {% endif %}
-                    {% if field.errors or field.help_text %}
-                        aria-controls="{{ field.id }}-helper"
-                        aria-describedby="{{ field.id }}-helper"
-                    {% endif %}
-                    {% if field.errors %}
-                        invalid
-                    {% endif %}
-                    {% if field.required %}
-                        required
-                    {% endif %}
-                >{{ field.value }}</textarea>
-            {% else %}
-                <input
-                    class="mdc-text-field__input"
-                    name="{{ field.name }}"
-                    type="{{ style.input_type }}"
-                    id="{{ field.id }}-input"
-                    {% if field.read_only %}
-                        disabled
-                    {% endif %}
-                    {% if field.errors or field.help_text %}
-                        aria-controls="{{ field.id }}-helper"
-                        aria-describedby="{{ field.id }}-helper"
-                    {% endif %}
-                    {% if field.errors %}
-                        invalid
-                    {% endif %}
-                    {% if field.required %}
-                        required
-                    {% endif %}
-                    value={{ field | field_to_json }}
-                    {% if style.step %}step={{ style.step }}{% endif %}
-                />
-            {% endif %}
-            <label
-                class="mdc-floating-label{% if field.value %} mdc-floating-label--float-above{% endif %}"
-                data-mdc-auto-init="MDCFloatingLabel"
-                for="{{ field.id }}-input"
-            >
-                {{ field.label }}
-            </label>
-            <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
-        </div>
-        <p
-            id="{{ field.id }}-helper"
-            class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text"
-            aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
-                {% if field.errors %}
-                    {% for error in field.errors %}
-                        <span>{{error}}</span>
-                    {% endfor %}
-                {% else %}
-                    {% if field.help_text %}
-                        {{ field.help_text | help_text_short_format | safe }}
-                    {% endif %}
-                {% endif %}
-        </p>
-        {% include "./field-js.html" %}
-    </div>
-{% else %}
-    <div id="{{ field.id }}" class="{% if not field.is_empty %}drest-field--selected {% endif %} drest-field--datetime drest-field {% if field.errors %}drest-field--invalid{% endif %}">
-        <div
-            class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth{% if field.value %} mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}">
-            <input
-                id="{{ field.id }}-input"
-                name="{{ field.name }}"
-                {% if field.read_only %}disabled{% endif %}
-                data-type="{{ style.input_type }}"
-                class="mdc-text-field__input"
-                type="{% if style.input_type == "time" or style.input_type == "date" or style.input_type == "datetime-local" %}text{% else %}{{ style.input_type }}{% endif %}"
-                {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
-                {% if field.value %}value="{{ field.value }}"{% endif %}
-                {% if field.errors %}
-                    invalid
-                {% endif %}
-                {% if field.required %}
-                    required
-                {% endif %}
-                {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}/>
-            <label
-                class="drest-field__label"
-                for="{{ field.id }}-input">
-                {{ field.label }}
-            </label>
-            <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
-            <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--persistent {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
-                {% if field.errors %}
-                    {% for error in field.errors %}
-                        <span>{{error}}</span>
-                    {% endfor %}
-                {% else %}
-                    {% if field.help_text %}
-                        {{ field.help_text | help_text_short_format | safe }}
-                    {% endif %}
-                {% endif %}
-            </p>
-        </div>
-        {% include "./field-js.html" %}
-    </div>
-{% endif %}
+<div
+    id="{{ field.id }}"
+    class="drest-field
+    {% if field.errors %}drest-field--invalid{% endif %}
+    {% if field.read_only %}drest-field--disabled{% endif %}
+    {% if field.write_only %}drest-field--writeonly{% endif %}">
 
+    <div
+        class="mdc-text-field mdc-text-field--fullwidth {% if field.read_only %}mdc-text-field--disabled{% endif %}">
+        {% if field.long %}
+            <textarea
+                rows=1
+                name="{{field.name}}"
+                id="{{field.id}}-input" class="mdc-text-field__input"
+                {% if field.read_only %}readonly{% endif %}
+                {% if field.errors or field.help_text %}
+                    aria-controls="{{ field.id }}-helper"
+                    aria-describedby="{{ field.id }}-helper"
+                {% endif %}
+                {% if field.errors %}invalid{% endif %}
+                {% if field.required %}required{% endif %}
+            >{{ field.value }}</textarea>
+        {% else %}
+            <input
+                class="mdc-text-field__input"
+                name="{{ field.name }}"
+                type="{% if style.input_type %}{{ style.input_type}}{% else %}text{% endif %}"
+                id="{{ field.id }}-input"
+                {% if field.read_only %}readonly{% endif %}
+                {% if field.errors or field.help_text %}
+                    aria-controls="{{ field.id }}-helper"
+                    aria-describedby="{{ field.id }}-helper"
+                {% endif %}
+                {% if field.errors %}invalid{% endif %}
+                {% if field.required %}required{% endif %}
+                value={{ field | field_to_json }}
+            />
+        {% endif %}
+        <label
+            class="drest-field__label"
+            for="{{ field.id }}-input"
+        >
+            {{ field.label }}
+        </label>
+        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+    </div>
+    <p
+        id="{{ field.id }}-helper"
+        class="{% if field.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text"
+        aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+            {% if field.errors %}
+                {% for error in field.errors %}
+                    <span>{{error}}</span>
+                {% endfor %}
+            {% else %}
+                {% if field.help_text %}
+                    {{ field.help_text | help_text_short_format | safe }}
+                {% endif %}
+            {% endif %}
+    </p>
+    {% include "./field-js.html" %}
+</div>

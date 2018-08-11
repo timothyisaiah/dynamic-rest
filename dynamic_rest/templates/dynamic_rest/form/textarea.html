@@ -1,30 +1,48 @@
 {% load dynamic_rest %}
 
-<div id="{{ field.id }}" class="drest-field {% if field.errors %}drest-field--invalid{% endif %} {% if field.read_only %}drest-field--disabled{% endif %} {% if field.write_only %}drest-field--writeonly{% endif %}">
+<div
+    id="{{ field.id }}"
+    class="drest-field
+    {% if field.errors %}drest-field--invalid{% endif %}
+    {% if field.read_only %}drest-field--disabled{% endif %}
+    {% if field.write_only %}drest-field--writeonly{% endif %}">
+
     <div
-        class="{% if field.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if field.value %}mdc-text-field--upgraded{% endif %}{% if field.read_only %} mdc-text-field--disabled{% endif %}"
-        data-mdc-auto-init="MDCTextField">
-        <textarea
-            rows=1
-            name="{{field.name}}"
-            id="{{field.id}}-input" class="mdc-text-field__input"
-            {% if field.read_only %}
-                disabled
-            {% endif %}
-            {% if field.errors or field.help_text %}
-                aria-controls="{{ field.id }}-helper"
-                aria-describedby="{{ field.id }}-helper"
-            {% endif %}
-            {% if field.errors %}
-                invalid
-            {% endif %}
-            {% if field.required %}
-                required
-            {% endif %}
-        >{{ field.value }}</textarea>
+        class="mdc-text-field mdc-text-field--fullwidth
+            {% if field.errors %}mdc-text-field--invalid {% endif %}
+            {% if field.value %}mdc-text-field--upgraded{% endif %}
+            {% if field.read_only %}mdc-text-field--disabled{% endif %}">
+        {% if field.long %}
+            <textarea
+                rows=1
+                name="{{field.name}}"
+                id="{{field.id}}-input" class="mdc-text-field__input"
+                {% if field.read_only %}disabled{% endif %}
+                {% if field.errors or field.help_text %}
+                    aria-controls="{{ field.id }}-helper"
+                    aria-describedby="{{ field.id }}-helper"
+                {% endif %}
+                {% if field.errors %}invalid{% endif %}
+                {% if field.required %}required{% endif %}
+            >{{ field.value }}</textarea>
+        {% else %}
+            <input
+                class="mdc-text-field__input"
+                name="{{ field.name }}"
+                type="{% if style.input_type %}{{ style.input_type}}{% else %}text{% endif %}"
+                id="{{ field.id }}-input"
+                {% if field.read_only %}disabled{% endif %}
+                {% if field.errors or field.help_text %}
+                    aria-controls="{{ field.id }}-helper"
+                    aria-describedby="{{ field.id }}-helper"
+                {% endif %}
+                {% if field.errors %}invalid{% endif %}
+                {% if field.required %}required{% endif %}
+                value={{ field | field_to_json }}
+            />
+        {% endif %}
         <label
-            class="mdc-floating-label{% if field.value %} mdc-floating-label--float-above{% endif %}"
-            data-mdc-auto-init="MDCFloatingLabel"
+            class="drest-field__label"
             for="{{ field.id }}-input"
         >
             {{ field.label }}

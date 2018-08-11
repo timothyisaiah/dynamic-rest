@@ -1,0 +1,41 @@
+{% load dynamic_rest %}
+
+<div id="{{ field.id }}" class="{% if field.read_only %} drest-field--disabled{% endif %}{% if not field.is_empty %} drest-field--selected{% endif %} drest-field--datetime drest-field{% if field.errors %} drest-field--invalid{% endif %}">
+    <div
+        class="mdc-text-field mdc-text-field--fullwidth{% if field.read_only %} mdc-text-field--disabled{% endif %}">
+        <input
+            id="{{ field.id }}-input"
+            name="{{ field.name }}"
+            {% if field.read_only %}disabled{% endif %}
+            data-type="{{ style.input_type }}"
+            class="mdc-text-field__input"
+            type="text"
+            {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
+            {% if field.value %}value="{{ field.value }}"{% endif %}
+            {% if field.errors %}
+                invalid
+            {% endif %}
+            {% if field.required %}
+                required
+            {% endif %}
+            {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}/>
+        <label
+            class="drest-field__label"
+            for="{{ field.id }}-input">
+            {{ field.label }}
+        </label>
+        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+        <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--persistent {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
+            {% if field.errors %}
+                {% for error in field.errors %}
+                    <span>{{error}}</span>
+                {% endfor %}
+            {% else %}
+                {% if field.help_text %}
+                    {{ field.help_text | help_text_short_format | safe }}
+                {% endif %}
+            {% endif %}
+        </p>
+    </div>
+    {% include "./field-js.html" %}
+</div>

@@ -1334,12 +1334,6 @@ function DRESTField(config) {
             }
         } else if (this.type !== 'text' && this.value === '') {
             return null;
-        } else if (this.type === 'integer') {
-            var val = parseInt(this.value);
-            return isNaN(val) ? null : val;
-        } else if (this.type === 'decimal') {
-            var val = parseFloat(this.value);
-            return isNaN(val) ? null : val;
         }
         return this.value;
     };
@@ -1361,6 +1355,14 @@ function DRESTField(config) {
             } else if (val === 'true') {
                 val = true;
             }
+        }
+        if (this.type === 'integer') {
+            val = val ? parseInt(val.replace(new RegExp(',', 'g'),'')) : null;
+        } else if (this.type === 'decimal') {
+            val = val ? parseFloat(val.replace(new RegExp(',', 'g'), '')) : null;
+        }
+        if (isNaN(val)) {
+            val = null;
         }
         return val;
     };
@@ -1405,10 +1407,31 @@ function DRESTField(config) {
     };
     this.enable = function() {
         this.$field.removeClass('drest-field--disabled');
-        this.$input[0].disabled = false;
+        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer') {
+            this.$input[0].readOnly = false;
+        } else {
+            this.$input[0].disabled = false;
+        }
         this.$textField.removeClass('mdc-text-field--disabled');
         this.$select.removeClass('mdc-select--disabled');
         this.disabled = false;
+    };
+    this.disable = function() {
+        var field = this;
+        this.$field.addClass('drest-field--disabled');
+        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer') {
+            this.$input[0].readOnly = true;
+        } else {
+            this.$input[0].disabled = true;
+        }
+        this.$textField.addClass('mdc-text-field--disabled');
+        this.$select.addClass('mdc-select--disabled');
+        this.disabled = true;
+
+        if (this.type === 'relation' || this.type === 'list') {
+            this.addSelect2ChoiceHandlers();
+        }
+        this.$field.blur();
     };
     this.addSelect2ChoiceHandlers = function() {
         var $choice;
@@ -1446,35 +1469,23 @@ function DRESTField(config) {
                         '<span class="select2-selection__choice__remove">&times;</span>' + t
                     );
                 }
-                $choice.addClass('drest--clickable');
                 if (url) {
+                    $choice.addClass('drest--clickable');
                     $choice.attr('data-url', pathJoin(url, v));
+                    $choice.off('click.drest-field').on('click.drest-field', onChoiceClick);
                 }
-                $choice.off('click.drest-field').on('click.drest-field', onChoiceClick);
             }
         } else {
             if (relation) {
                 $choice = this.$field.find('.select2-selection__rendered');
                 if (!this.isEmpty(this.value)) {
-                    $choice.addClass('drest--clickable');
                     if (url) {
                         $choice.attr('data-url', pathJoin(url, this.value));
+                        $choice.addClass('drest--clickable');
+                        $choice.off('click.drest-field').on('click.drest-field', onClick);
                     }
-                    $choice.off('click.drest-field').on('click.drest-field', onClick);
                 }
             }
-        }
-    };
-    this.disable = function() {
-        var field = this;
-        this.$field.addClass('drest-field--disabled');
-        this.$input[0].disabled = true;
-        this.$textField.addClass('mdc-text-field--disabled');
-        this.$select.addClass('mdc-select--disabled');
-        this.disabled = true;
-
-        if (this.type === 'relation' || this.type === 'list') {
-            this.addSelect2ChoiceHandlers();
         }
     };
     this.toggleDisabled = function() {
@@ -1642,6 +1653,18 @@ function DRESTField(config) {
         }
         return value;
     };
+    this.onBlur = function() {
+        this.$.removeClass('drest-field--focused');
+        this.$ripple.removeClass('mdc-line-ripple--active');
+    };
+    this.onFocus = function(e) {
+        if (this.disabled) {
+            e.stopPropagation();
+            return false;
+        }
+        this.$.addClass('drest-field--focused');
+        this.$ripple.addClass('mdc-line-ripple--active');
+    };
     this.onLoad = function() {
         if (this.loaded) {
             return;
@@ -1650,6 +1673,7 @@ function DRESTField(config) {
         var field = this;
         var $field = this.$ = this.$field = $('#' + field.id);
         var $input = this.$input = $('#' + field.id + '-input');
+        this.$ripple = this.$.find('.mdc-line-ripple');
         if ($input.is('textarea') && autosize) {
             autosize($input[0]);
         }
@@ -1676,6 +1700,19 @@ function DRESTField(config) {
             $field.addClass('drest-field--selected');
         }
 
+        if (this.helpText) {
+            this.$.attr('title', this.helpText);
+            tippy(this.$[0], {
+                trigger: 'manual'
+            });
+            this.tip = this.$[0]._tippy;
+            this.$.on('click', function() {
+                if (this.disabled) {
+                    this.tip.show();
+                }
+            }.bind(this));
+
+        }
         // setup dependents and listeners
         if (type === 'list') {
             // fixed-style select2
@@ -1727,31 +1764,33 @@ function DRESTField(config) {
                 select2 = $input.data('select2');
             }
         } else if (type === 'datetime' || type === 'date' || type === 'time') {
-            var inputType = type;
             var opts = { clearButton: true };
 
-            if (inputType == 'time') {
+            if (type === 'time') {
                 opts.date = false;
                 $input.bootstrapMaterialDatePicker(opts);
-            } else if (inputType == 'date') {
+            } else if (type === 'date') {
                 opts.time = false;
                 opts.format = 'YYYY-MM-DD';
                 $input.bootstrapMaterialDatePicker(opts);
-            } else if (inputType == 'datetime' || inputType == 'datetime-local') {
+            } else {
+                // datetime
                 opts.format = 'YYYY-MM-DD hh:mm';
                 $input.bootstrapMaterialDatePicker(opts);
             }
-            $input.on('open', function(e) {
-                if ($field.hasClass('drest-field--disabled')) {
-                    e.stopPropagation();
-                    return false;
-                }
-                $field.addClass('drest-field--focused');
-                $field.find('.mdc-line-ripple').addClass('mdc-line-ripple--active');
-            });
-            $input.on('close', function() {
-                $field.removeClass('drest-field--focused');
-                $field.find('.mdc-line-ripple').removeClass('mdc-line-ripple--active');
+            $input.on('open', this.onFocus.bind(this));
+            $input.on('close', this.onBlur.bind(this));
+        } else if (type === 'text') {
+            $input.on('blur', this.onBlur.bind(this));
+            $input.on('focus', this.onFocus.bind(this));
+        } else if (type === 'integer' || type === 'decimal') {
+            $input.on('blur', this.onBlur.bind(this));
+            $input.on('focus', this.onFocus.bind(this));
+            // format via cleave
+            this.cleave = new Cleave('#' + this.id + '-input', {
+                numeral: true,
+                numeralDecimalScale: this.type === 'integer' ? 0 : 2,
+                numeralThousandsGroupStyle: 'thousand'
             });
         } else if (type === 'relation') {
             if (relation.image) {

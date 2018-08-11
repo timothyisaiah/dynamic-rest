@@ -20,13 +20,7 @@
             {% endif %}
         />
         <label
-            {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}
-                class="drest-field__label"
-            {% else %}
-                class="mdc-floating-label mdc-floating-label"
-                data-mdc-auto-init="MDCFloatingLabel"
-            {% endif %}
-            data-mdc-auto-init="MDCFloatingLabel"
+            class="drest-field__label"
             for="{{ filter.id }}1-input"
         >
             {{ filter.label }} (min)
@@ -74,12 +68,7 @@
             {% endif %}
         />
         <label
-            {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}
-                class="drest-field__label"
-            {% else %}
-                class="mdc-floating-label mdc-floating-label"
-                data-mdc-auto-init="MDCFloatingLabel"
-            {% endif %}
+            class="drest-field__label"
             for="{{ filter.id }}2-input"
         >
             {{ filter.label }} (max)

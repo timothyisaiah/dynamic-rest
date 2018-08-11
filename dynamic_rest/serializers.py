@@ -1331,7 +1331,7 @@ for field in (
             model_field] = serializer_field
 
 DynamicModelSerializer.serializer_field_mapping[
-    models.TextField] = _fields.DynamicCharField
+    models.TextField] = _fields.DynamicTextField
 
 try:
     from django.contrib.postgres import fields as postgres_fields

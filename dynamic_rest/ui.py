@@ -29,6 +29,8 @@ def get_type_for(field):
         return 'date'
     elif isinstance(field, dfields.DynamicDateTimeField):
         return 'datetime'
+    elif isinstance(field, dfields.DynamicTimeField):
+        return 'time'
     elif isinstance(field, dfields.DynamicRelationField):
         return "relation"
     elif isinstance(field, dfields.DynamicListField):

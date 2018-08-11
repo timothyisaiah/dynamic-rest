@@ -15,32 +15,41 @@ DynamicRelationField = fields.DynamicRelationField
 
 mapping = copy.deepcopy(HTMLFormRenderer.default_style.mapping)
 mapping[DynamicRelationField] = {
-    'base_template': 'relation.html'
+    'base_template': 'relation.html',
 }
 mapping[fields.DynamicListField] = {
-    'base_template': 'list.html'
+    'base_template': 'list.html',
 }
 mapping[fields.DynamicFileField] = {
-    'base_template': 'file.html'
+    'base_template': 'file.html',
 }
 mapping[fields.DynamicImageField] = {
-    'base_template': 'file.html'
+    'base_template': 'file.html',
 }
 mapping[fields.DynamicNullBooleanField] = {
-    'base_template': 'checkbox.html'
+    'base_template': 'checkbox.html',
 }
-mapping[fields.DynamicDecimalField] = {
-    'base_template': 'input.html',
-    'input_type': 'number',
-    'step': '.01'
+mapping[fields.DynamicBooleanField] = {
+    'base_template': 'checkbox.html',
+}
+mapping[fields.DynamicDateField] = {
+    'base_template': 'datetime.html',
+}
+mapping[fields.DynamicDateTimeField] = {
+    'base_template': 'datetime.html',
+}
+mapping[fields.DynamicTimeField] = {
+    'base_template': 'datetime.html',
 }
 mapping[fields.DynamicPasswordField] = {
     'base_template': 'input.html',
-    'input_type': 'password'
+    'input_type': 'password',
 }
-mapping[fields.DynamicMoneyField] = {
+mapping[fields.DynamicChoiceField] = {
+    'base_template': 'select.html',
+}
+mapping[fields.DynamicField] = {
     'base_template': 'input.html',
-    'input_type': 'number'
 }
 
 
