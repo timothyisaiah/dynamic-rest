@@ -493,6 +493,12 @@ function DRESTApp(config) {
         form.enable();
         this.toEditMode();
     };
+    this.scrollTo = function(el) {
+        var $scene = this.activeForm.$.closest('.drest-scene');
+        $scene.animate({
+            scrollTop: el.offset().top + $(window).height() / 2
+        }, 100);
+    };
     this.disableEdit = function() {
         var form = this.activeForm;
         this.$title.html(this.originalTitle);
@@ -1669,6 +1675,7 @@ function DRESTField(config) {
             e.stopPropagation();
             return false;
         }
+        app.scrollTo(this.$);
         this.$.addClass('drest-field--focused');
         this.$ripple.addClass('mdc-line-ripple--active');
     };
