@@ -1408,9 +1408,11 @@ function DRESTField(config) {
         } else {
             this.$input[0].disabled = false;
         }
+        /*
         if (this.tip) {
             this.tip.disable();
         }
+        */
         this.$textField.removeClass('mdc-text-field--disabled');
         this.$select.removeClass('mdc-select--disabled');
         this.disabled = false;
@@ -1423,9 +1425,11 @@ function DRESTField(config) {
         } else {
             this.$input[0].disabled = true;
         }
+        /*
         if (this.tip) {
             this.tip.enable();
         }
+        */
         this.$textField.addClass('mdc-text-field--disabled');
         this.$select.addClass('mdc-select--disabled');
         this.disabled = true;
@@ -1706,10 +1710,10 @@ function DRESTField(config) {
             $field.attr('title', this.helpText);
             tippy($field[0], {
                 animateFill: false,
-                distance: (this.type === 'select' || this.type === 'list' || this.type === 'relation') ? 10 : 2,
+                distance: (this.type === 'select' || this.type === 'list' || this.type === 'relation') ? 10 : 1,
                 animation: 'shift-away',
                 onShow: function(i) {
-                    $(i.popper).width($(i.reference).width());
+                    $(i.popper).css('width', $(i.reference).width() + 'px');
                 },
                 interactive: this.helpText.match('[><]'),
                 trigger: 'click',
