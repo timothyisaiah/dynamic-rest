@@ -1662,6 +1662,7 @@ function DRESTField(config) {
     this.onBlur = function() {
         this.$.removeClass('drest-field--focused');
         this.$ripple.removeClass('mdc-line-ripple--active');
+        if (this.tip) { this.tip.hide(); }
     };
     this.onFocus = function(e) {
         if (this.disabled) {
