@@ -1705,9 +1705,15 @@ function DRESTField(config) {
         if (this.helpText) {
             $field.attr('title', this.helpText);
             tippy($field[0], {
-                interactive: true,
+                animateFill: false,
+                distance: (this.type === 'select' || this.type === 'list' || this.type === 'relation') ? 10 : 2,
+                animation: 'shift-away',
+                onShow: function(i) {
+                    $(i.popper).width($(i.reference).width());
+                },
+                interactive: this.helpText.match('[><]'),
                 trigger: 'click',
-                placement: 'bottom-start',
+                placement: (this.type === 'select' || this.type === 'list' || this.type === 'relation') ? 'top-start' : 'bottom-start',
                 hideOnClick: true,
                 multiple: false
             });
