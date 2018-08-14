@@ -328,7 +328,7 @@ function DRESTApp(config) {
         var toEditMode = scene > 0;
         this.navigation.switchTo(scene);
         var $form = this.navigation.$active.find('.drest-form');
-        this.activeForm = $form.length ? $form[0].DRESTForm : null;
+        this.form = $form.length ? $form[0].DRESTForm : null;
 
         this.fromErrorMode();
         this.fromChangedMode();
@@ -488,19 +488,25 @@ function DRESTApp(config) {
         if (this.searching) {
             this.back();
         }
-        var form = this.activeForm;
+        var form = this.form;
         this.$title.html(form.getTitle());
         form.enable();
         this.toEditMode();
     };
-    this.scrollTo = function(el) {
-        var $scene = this.activeForm.$.closest('.drest-scene');
-        $scene.animate({
-            scrollTop: el.offset().top + $(window).height() / 2
-        }, 100);
+    this.scrollTo = function(el, fn) {
+        var $scene = this.form.$.closest('.drest-scene');
+        var el = el.length ? el[0] : el;
+        var $el = $(el);
+        var scrollTop =  $scene.scrollTop() + el.getBoundingClientRect().top - (
+            $(window).height() / 2 - $el.height() / 2
+        );
+        fn = fn || function() {};
+        $scene.focus().animate({
+            scrollTop: scrollTop
+        }, 200, fn);
     };
     this.disableEdit = function() {
-        var form = this.activeForm;
+        var form = this.form;
         this.$title.html(this.originalTitle);
         if (form && form.type === 'edit') {
             form.disable();
@@ -569,12 +575,9 @@ function DRESTApp(config) {
         this.focusError();
     };
     this.focusError = function() {
-        var $error = this.activeForm.$.find('.drest-field--invalid').first();
+        var $error = this.form.$.find('.drest-field--invalid').first();
         if ($error.length) {
-            $('body, html').animate({
-                scrollTop: $error.offset().top - $(window).height() / 2
-            }, 200);
-            $error.find('input').focus();
+            this.scrollTo($error);
         }
     };
     this.onEditNoop = function() {
@@ -601,7 +604,7 @@ function DRESTApp(config) {
         window.location = url;
     };
     this.save = function() {
-        this.activeForm.submit();
+        this.form.submit();
     };
     this.clear = function() {
         if (!this.searching) {
@@ -618,7 +621,7 @@ function DRESTApp(config) {
             return;
         }
 
-        var form = this.activeForm;
+        var form = this.form;
         var app = this;
         if (this.submitting || !form) {
             return;
@@ -647,7 +650,7 @@ function DRESTApp(config) {
         }
     };
     this.onBeforeUnload = function(e) {
-        if (this.activeForm && this.activeForm.type !== 'filter' && this.activeForm.hasChanged()) {
+        if (this.form && this.form.type !== 'filter' && this.form.hasChanged()) {
             e.returnValue = 'You have unsaved changes! Are you sure you want to go back and discard them?';
         }
     };
@@ -677,7 +680,7 @@ function DRESTApp(config) {
     };
     this.onFormChange = function(e, data) {
         var form = data.form;
-        if (form === this.activeForm) {
+        if (form === this.form) {
             if (form.hasChanged()) {
                 this.toChangedMode();
             } else {
@@ -821,7 +824,7 @@ function DRESTApp(config) {
                 throttle(this.onScroll.bind(this), 200)
             );
             var $form = this.navigation.$active.find('.drest-form');
-            this.activeForm = $form.length ? $form[0].DRESTForm : null;
+            this.form = $form.length ? $form[0].DRESTForm : null;
         }
         this.forms = this.getForms();
         for (var i=0; i<this.forms.length; i++) {
@@ -899,7 +902,7 @@ function DRESTForm(config) {
         return this._fields;
     };
     this.hasFiles = function(changedOnly) {
-        var fields = this.fields;
+        var fields = this._fields;
         for (var i=0; i<fields.length; i++) {
             var field = fields[i];
             if (field.type !== 'file') {
@@ -945,7 +948,7 @@ function DRESTForm(config) {
             return;
         }
         this.$.addClass('drest-form--readonly');
-        this.fields.each(function() {
+        this._fields.each(function() {
             this.disable();
         });
         this.disabled = true;
@@ -1301,7 +1304,8 @@ function DRESTForm(config) {
         this.$ = $(this.config.container);
         this.$.addClass('drest-form--js');
         this.$fields = this.$.find('.drest-field').not('.drest-field--fake');
-        this.fields = this.getFields();
+        this._fields = this.getFields();
+        this.fields = this.getFieldsByName();
         this.disabled = this.$.hasClass('drest-form--readonly');
         this.$.on('drest-form:submit-failed', this.onSubmitFailed.bind(this));
         this.$.on('drest-form:submit-ok', this.onSubmitOk.bind(this));
@@ -1414,11 +1418,6 @@ function DRESTField(config) {
         } else {
             this.$input[0].disabled = false;
         }
-        /*
-        if (this.tip) {
-            this.tip.disable();
-        }
-        */
         this.$textField.removeClass('mdc-text-field--disabled');
         this.$select.removeClass('mdc-select--disabled');
         this.disabled = false;
@@ -1431,11 +1430,6 @@ function DRESTField(config) {
         } else {
             this.$input[0].disabled = true;
         }
-        /*
-        if (this.tip) {
-            this.tip.enable();
-        }
-        */
         this.$textField.addClass('mdc-text-field--disabled');
         this.$select.addClass('mdc-select--disabled');
         this.disabled = true;
@@ -1667,15 +1661,20 @@ function DRESTField(config) {
     };
     this.onBlur = function() {
         this.$.removeClass('drest-field--focused');
+        this.focused = false;
         this.$ripple.removeClass('mdc-line-ripple--active');
-        if (this.tip) { this.tip.hide(); }
+        this.$.find('.mdc-helper-text').hide();
     };
     this.onFocus = function(e) {
-        if (this.disabled) {
-            e.stopPropagation();
-            return false;
+        var after;
+        this.focused = true;
+        if (this.opening) {
+            after = function() {
+                this.$input.select2('open');
+            }.bind(this);
         }
-        app.scrollTo(this.$);
+        app.scrollTo(this.$, after);
+        this.$.find('.mdc-helper-text').show();
         this.$.addClass('drest-field--focused');
         this.$ripple.addClass('mdc-line-ripple--active');
     };
@@ -1714,23 +1713,6 @@ function DRESTField(config) {
             $field.addClass('drest-field--selected');
         }
 
-        if (this.helpText) {
-            $field.attr('title', this.helpText);
-            tippy($field[0], {
-                animateFill: false,
-                distance: (this.type === 'select' || this.type === 'list' || this.type === 'relation') ? 10 : 1,
-                animation: 'shift-away',
-                onShow: function(i) {
-                    $(i.popper).css('width', $(i.reference).width() + 'px');
-                },
-                interactive: this.helpText.match('[><]'),
-                trigger: 'click',
-                placement: (this.type === 'select' || this.type === 'list' || this.type === 'relation') ? 'top-start' : 'bottom-start',
-                hideOnClick: true,
-                multiple: false
-            });
-            this.tip = $field[0]._tippy;
-        }
         // setup dependents and listeners
         if (type === 'list') {
             // fixed-style select2
@@ -1785,22 +1767,38 @@ function DRESTField(config) {
                 $input.on('focus', this.onFocus.bind(this));
             }
         } else if (type === 'datetime' || type === 'date' || type === 'time') {
-            var opts = { clearButton: true };
+            if (type === 'datetime') {
+                // picker UI
+                var opts = { clearButton: true };
+                $input.on('blur', this.onBlur.bind(this));
 
-            if (type === 'time') {
-                opts.date = false;
+                if (type === 'time') {
+                    opts.date = false;
+                } else if (type === 'date') {
+                    opts.time = false;
+                    opts.format = 'YYYY-MM-DD';
+                } else {
+                    // datetime
+                    opts.format = 'YYYY-MM-DD hh:mm';
+                }
                 $input.bootstrapMaterialDatePicker(opts);
-            } else if (type === 'date') {
-                opts.time = false;
-                opts.format = 'YYYY-MM-DD';
-                $input.bootstrapMaterialDatePicker(opts);
+                this.dtp = $input.data('plugin_bootstrapMaterialDatePicker');
+                $input.on('open', this.onFocus.bind(this));
+                $input.on('close', this.onBlur.bind(this));
+                $input.on('blur', this.onBlur.bind(this));
             } else {
-                // datetime
-                opts.format = 'YYYY-MM-DD hh:mm';
-                $input.bootstrapMaterialDatePicker(opts);
+                // cleave validation
+                var opts = {};
+                if (type === 'date') {
+                    opts['delimiter'] = '-';
+                    opts['datePattern'] = ['Y', 'm', 'd'];
+                }
+
+                opts[type] = true;
+                this.cleave = new Cleave('#' + this.id + '-input', opts);
+                $input.on('blur', this.onBlur.bind(this));
+                $input.on('focus', this.onFocus.bind(this));
             }
-            $input.on('open', this.onFocus.bind(this));
-            $input.on('close', this.onBlur.bind(this));
         } else if (type === 'text') {
             $input.on('blur', this.onBlur.bind(this));
             $input.on('focus', this.onFocus.bind(this));
@@ -1947,12 +1945,17 @@ function DRESTField(config) {
             } else {
                 $input.attr('value', $input.is(':checked'));
             }
+            $input.on('focus', this.onFocus.bind(this));
+            $input.on('blur', this.onBlur.bind(this));
+
         } else if (type === 'file') {
             $input.dropify({
                 tpl: {
                     clearButton: '<span class="material-icons small drest-field__clear">cancel</span>'
                 }
             });
+            $input.on('focus', this.onFocus.bind(this));
+            $input.on('blur', this.onBlur.bind(this));
             $input.on('dropify.afterClear', function(evt, el) {
                 // clearing the dropify doesnt trigger input's change
                 this.onChange();
@@ -1974,16 +1977,23 @@ function DRESTField(config) {
 
             // open select2 whenever the field is clicked in edit mode
             $field.off('click.drest-field').on('click.drest-field', function() {
-                if (!this.disabled && !$form.hasClass('drest-form--readonly')) {
-                    $input.select2('open');
-                }
+                field.opening = true;
+                field.onFocus();
             }.bind(this));
             // add focused class whenever the select2 is open
-            $input.on('select2:open', function(e){
-                $field.addClass('drest-field--focused');
+            $input.on('select2:opening', function(e){
+                if (!field.opening) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    field.opening = true;
+                    field.onFocus();
+                    return false;
+                } else {
+                    field.opening = false;
+                }
             });
             $input.on('select2:close', function(e){
-                $field.removeClass('drest-field--focused');
+                field.onBlur(e);
             });
             // fix dropdown positioning
             select2.on('results:message', function() {
@@ -2009,7 +2019,8 @@ function DRESTField(config) {
 
         // bind change handler
         $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
-
+        $field.off('focus.drest-field').on('focus.drest-field', this.onFocus.bind(this));
+        $field.off('blur.drest-field').on('blur.drest-field', this.onBlur.bind(this));
         // trigger disable
         if (this.disabled) {
             this.disable();
