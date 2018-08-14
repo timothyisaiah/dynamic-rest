@@ -1,3 +1,5 @@
+{% load dynamic_rest %}
+
 <div id="{{ field.id }}" class="drest-field--file drest-field {% if field.errors %}drest-field--invalid{% endif %}">
     <label for="{{ field.id }}-input" class="drest-field__label">
         {{ field.label }}
@@ -24,15 +26,13 @@
             disabled
         {% endif %}
     >
-
-    <p class="mdc-text-field-helper-text {% if field.errors %}mdc-text-field-helper-text--persistent{% endif %}" id="{{ field.id }}-helper">
-        {% if field.errors %}
-          {% for error in field.errors %}
-            <span>{{ error }}</span>
-          {% endfor %}
+    <p
+        id="{{ field.id }}-helper"
+        class="drest-field__helper">
+        {% if field.help_text %}
+            {{ field.help_text | help_text_format | safe }}
         {% endif %}
     </p>
-
     {% include "./field-js.html" %}
 </div>
 

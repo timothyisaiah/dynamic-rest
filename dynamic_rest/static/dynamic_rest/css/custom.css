@@ -343,7 +343,17 @@ body .tippy-popper {
 }
 
 /** drest-field **/
-
+.drest-field__helper {
+    height: 0;
+    overflow: hidden;
+    font-size: 0.75rem;
+    display: block;
+}
+.drest-field--focused {
+}
+.drest-field--focused .drest-field__helper {
+    height: auto;
+}
 .drest-field .mdc-checkbox__background::before {
     background-color: var(--mdc-theme-primary);
 }

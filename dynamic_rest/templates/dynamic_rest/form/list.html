@@ -16,15 +16,13 @@
         </select>
     </div>
 
-    <p id="{{ field.id }}-helper" class="push-up {% if field.errors %}mdc-text-field-helper-text--persistent{% endif %} mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
-        {% if field.errors %}
-            {% for error in field.errors %}
-                <span>{{error}}</span>
-            {% endfor %}
-        {% else %}
-            <span>{{ field.help_text | help_text_format | safe }}</span>
+    <p
+        id="{{ field.id }}-helper"
+        class="drest-field__helper">
+        {% if field.help_text %}
+            {{ field.help_text | help_text_format | safe }}
         {% endif %}
     </p>
+    {% include "./field-js.html" %}
 </div>
 
-{% include "./field-js.html" %}

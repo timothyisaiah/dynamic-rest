@@ -25,17 +25,13 @@
             {{ field.label }}
         </label>
         <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
-        <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--persistent {% endif %}mdc-text-field-helper-text" aria-hidden="{% if field.errors %}false{% else %}true{% endif %}">
-            {% if field.errors %}
-                {% for error in field.errors %}
-                    <span>{{error}}</span>
-                {% endfor %}
-            {% else %}
-                {% if field.help_text %}
-                    {{ field.help_text | help_text_short_format | safe }}
-                {% endif %}
-            {% endif %}
-        </p>
     </div>
+    <p
+        id="{{ field.id }}-helper"
+        class="drest-field__helper">
+        {% if field.help_text %}
+            {{ field.help_text | help_text_format | safe }}
+        {% endif %}
+    </p>
     {% include "./field-js.html" %}
 </div>

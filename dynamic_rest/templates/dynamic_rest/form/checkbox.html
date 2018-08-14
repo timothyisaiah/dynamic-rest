@@ -34,6 +34,13 @@
         </div>
         <label for="{{ field.id }}-input" class="drest-field__block-label">{{ field.label }}{% if field.required %} *{% endif %}</label>
     </div>
+    <p
+        id="{{ field.id }}-helper"
+        class="drest-field__helper">
+        {% if field.help_text %}
+            {{ field.help_text | help_text_format | safe }}
+        {% endif %}
+    </p>
     {% include "./field-js.html" %}
 </div>
 

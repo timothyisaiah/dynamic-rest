@@ -1582,8 +1582,8 @@ function DRESTField(config) {
         }
         this.$select.addClass('mdc-text-field--invalid');
         this.$helper
-            .addClass('mdc-text-field-helper-text--persistent')
-            .addClass('mdc-text-field-helper-text--validation-msg')
+            .addClass('d--show')
+            .addClass('d--invalid')
             .html(error);
     };
     this.fromErrorMode = function(permanent) {
@@ -1600,9 +1600,9 @@ function DRESTField(config) {
             textField.valid = true;
         }
         this.$helper
-            .removeClass('mdc-text-field-helper-text--persistent')
-            .removeClass('mdc-text-field-helper-text--validation-msg')
-            .html(this.helpTextShort);
+            .removeClass('d--show')
+            .removeClass('d--invalid')
+            .html(this.helpText);
     };
     this.hide = function() {
         this.hidden = true;
@@ -1663,19 +1663,17 @@ function DRESTField(config) {
         this.$.removeClass('drest-field--focused');
         this.focused = false;
         this.$ripple.removeClass('mdc-line-ripple--active');
-        this.$.find('.mdc-helper-text').hide();
     };
     this.onFocus = function(e) {
         var after;
         this.focused = true;
+        this.$.addClass('drest-field--focused');
         if (this.opening) {
             after = function() {
                 this.$input.select2('open');
             }.bind(this);
         }
         app.scrollTo(this.$, after);
-        this.$.find('.mdc-helper-text').show();
-        this.$.addClass('drest-field--focused');
         this.$ripple.addClass('mdc-line-ripple--active');
     };
     this.onLoad = function() {

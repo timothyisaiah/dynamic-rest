@@ -37,10 +37,12 @@
             </select>
         </div>
 
-        <p id="{{ field.id }}-helper" class="{% if field.errors %}mdc-text-field-helper-text--persistent {% endif %}push-up mdc-text-field-helper-text" aria-hidden="false">
-            {% for error in field.errors %}
-                <span>{{error}}</span>
-            {% endfor %}
+        <p
+            id="{{ field.id }}-helper"
+            class="drest-field__helper">
+            {% if field.help_text %}
+                {{ field.help_text | help_text_format | safe }}
+            {% endif %}
         </p>
 
         {% include "./field-js.html" %}
