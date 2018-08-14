@@ -1439,6 +1439,15 @@ function DRESTField(config) {
         }
         this.$field.blur();
     };
+    this.onClick = function() {
+        if (this.disabled) {
+            if (this.focused) {
+                this.onBlur();
+            } else {
+                this.onFocus();
+            }
+        }
+    };
     this.addSelect2ChoiceHandlers = function() {
         var $choice;
         var field = this;
@@ -1462,6 +1471,11 @@ function DRESTField(config) {
                 $search.focus();
             }
         };
+        /*this.$.find('.select2-selection')
+            .off('focus.drest').off('blur.drest')
+            .on('focus.drest', this.onFocus.bind(this))
+            .on('blur.drest', this.onBlur.bind(this));*/
+
         if (this.many) {
             var $choices = this.$field.find('.select2-selection__choice');
             for (var i = 0; i < $choices.length; i++) {
@@ -1674,7 +1688,18 @@ function DRESTField(config) {
             }.bind(this);
         }
         app.scrollTo(this.$, after);
-        this.$ripple.addClass('mdc-line-ripple--active');
+        if (!this.disabled) {
+            this.$ripple.addClass('mdc-line-ripple--active');
+        }
+        var form = this.getForm();
+        if (form) {
+            var name = this.name;
+            form.getFields().each(function() {
+                if (this.focused && this.name !== name) {
+                    this.onBlur();
+                }
+            });
+        }
     };
     this.onLoad = function() {
         if (this.loaded) {
@@ -1733,7 +1758,7 @@ function DRESTField(config) {
                         return field.helpTextShort || "Start typing";
                     }
                 },
-                dropdownParent: $field
+                dropdownParent: $field.find('.drest-field__select')
             });
             select2 = $input.data('select2');
         } else if (type === 'select') {
@@ -1757,7 +1782,7 @@ function DRESTField(config) {
                             return field.helpTextShort || "Start typing";
                         }
                     },
-                    dropdownParent: $field
+                    dropdownParent: $field.find('.drest-field__select')
                 });
                 select2 = $input.data('select2');
             } else {
@@ -1866,7 +1891,7 @@ function DRESTField(config) {
                 }
                 $input.select2({
                     data: initials,
-                    dropdownParent: $field,
+                    dropdownParent: $field.find('.drest-field__select'),
                     language: {
                         inputTooShort: function() {
                             return field.helpTextShort;
@@ -1997,6 +2022,7 @@ function DRESTField(config) {
             select2.on('results:message', function() {
                 this.dropdown._resizeDropdown();
                 this.dropdown._positionDropdown();
+                field.$helper.html(field.helpText);
                 this.$results.removeClass('has-results');
             });
             // set has-results on select2-results for styling
@@ -2004,8 +2030,10 @@ function DRESTField(config) {
             select2.on('results:all', function(data) {
                 if (data.data.results && data.data.results.length) {
                     this.$results.addClass('has-results');
+                    field.$helper.html(field.helpText);
                 } else {
                     this.$results.removeClass('has-results');
+                    field.$helper.html('No results');
                 }
             });
         }
@@ -2019,6 +2047,7 @@ function DRESTField(config) {
         $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
         $field.off('focus.drest-field').on('focus.drest-field', this.onFocus.bind(this));
         $field.off('blur.drest-field').on('blur.drest-field', this.onBlur.bind(this));
+        $field.off('click.drest-field').on('click.drest-field', this.onClick.bind(this));
         // trigger disable
         if (this.disabled) {
             this.disable();

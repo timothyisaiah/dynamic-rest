@@ -625,12 +625,6 @@ body .tippy-popper {
 
 /** drest-field--select2 **/
 
-.mdc-card--solo .drest-field.drest-field--select2 .drest-field__label {
-    opacity: 0;
-}
-.mdc-card--solo .drest-field.drest-field--file .drest-field__label {
-    display: none;
-}
 .mdc-card--solo .drest-field.drest-field--file.drest-field--disabled .dropify-wrapper:hover {
     background-size: 0 0;
     cursor: auto;
@@ -738,7 +732,7 @@ body .tippy-popper {
     /* opacity: 0; */
     transition: all 0.2s ease;
 }
-.drest-field--select2.drest-field--selected.drest-field--focused .select2-container .select2-selection--single {
+.drest-field--select2.drest-field--selected.drest-field--focused:not(.drest-field--disabled) .select2-container .select2-selection--single {
     opacity: 0;
 }
 
@@ -1021,6 +1015,7 @@ body .tippy-popper {
     margin-top: 5px;
     margin-left: 0px;
     font-weight: 400;
+    display: none;
     font-family: Roboto,sans-serif;
 }
 .drest-field.drest-field--disabled.drest-field--select2.drest-field--selected .select2-container .select2-search--inline .select2-search__field {
@@ -1028,9 +1023,7 @@ body .tippy-popper {
 }
 .drest-field .drest-field__select {
     padding: 20px 0 0px;
-}
-.drest-field.many .drest-field__select {
-    /* padding: 5px 0 1px; */
+    position: relative;
 }
 .mdc-card__fields {
     padding-top: 2rem;
