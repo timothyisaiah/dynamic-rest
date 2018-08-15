@@ -497,8 +497,9 @@ function DRESTApp(config) {
         var $scene = this.form.$.closest('.drest-scene');
         var el = el.length ? el[0] : el;
         var $el = $(el);
+        var field = el.DRESTField;
         var scrollTop =  $scene.scrollTop() + el.getBoundingClientRect().top - $scene.offset().top - 24;
-        var center = $(window).width() >= 500;
+        var center = !field || field.disabled || field.type !== 'relation' || $(window).width() >= 500;
         if (center) {
             scrollTop -= $(window).height() / 2;
         }
