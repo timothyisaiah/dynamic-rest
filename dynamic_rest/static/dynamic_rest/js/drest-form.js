@@ -497,11 +497,13 @@ function DRESTApp(config) {
         var $scene = this.form.$.closest('.drest-scene');
         var el = el.length ? el[0] : el;
         var $el = $(el);
-        var scrollTop =  $scene.scrollTop() + el.getBoundingClientRect().top - (
-            $(window).height() / 2 - $el.height() / 2
-        );
+        var scrollTop =  $scene.scrollTop() + el.getBoundingClientRect().top - $scene.offset().top - 24;
+        var center = $(window).width() >= 500;
+        if (center) {
+            scrollTop -= $(window).height() / 2;
+        }
         fn = fn || function() {};
-        $scene.focus().animate({
+        $scene.animate({
             scrollTop: scrollTop
         }, 200, fn);
     };
@@ -1678,28 +1680,26 @@ function DRESTField(config) {
         this.focused = false;
         this.$ripple.removeClass('mdc-line-ripple--active');
     };
-    this.onFocus = function(e) {
-        var after;
+    this.onFocus = function() {
+        var form = this.getForm();
+        if (form) {
+            var id = this.id;
+            form.getFields().each(function() {
+                if (this.focused && this.id !== id) {
+                    this.onBlur();
+                }
+            });
+        }
         this.focused = true;
         this.$.addClass('drest-field--focused');
+        var after;
         if (this.opening) {
             after = function() {
                 this.$input.select2('open');
             }.bind(this);
         }
         app.scrollTo(this.$, after);
-        if (!this.disabled) {
-            this.$ripple.addClass('mdc-line-ripple--active');
-        }
-        var form = this.getForm();
-        if (form) {
-            var name = this.name;
-            form.getFields().each(function() {
-                if (this.focused && this.name !== name) {
-                    this.onBlur();
-                }
-            });
-        }
+        this.$ripple.addClass('mdc-line-ripple--active');
     };
     this.onLoad = function() {
         if (this.loaded) {
