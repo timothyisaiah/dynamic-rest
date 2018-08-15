@@ -1714,6 +1714,9 @@ function DRESTField(config) {
             autosize($input[0]);
         }
         var $helper = this.$helper = $('#' + field.id + '-helper');
+        if (this.helpText === this.helpTextShort && this.type === 'boolean') {
+            this.$helper.addClass('absolute');
+        }
         var $form = this.$form = $field.closest('.drest-form');
         var $textField = this.$textField = $field.find('.mdc-text-field');
         var $select = this.$select = $field.find('.mdc-select');
@@ -1735,6 +1738,7 @@ function DRESTField(config) {
         if (!this.isEmpty(value)) {
             $field.addClass('drest-field--selected');
         }
+
 
         // setup dependents and listeners
         if (type === 'list') {

@@ -344,22 +344,23 @@ display: none;
 
 /** drest-field **/
 .drest-field__helper {
-height: 0;
-overflow: hidden;
-          font-size: 0.75rem;
-display: block;
+    height: 0;
+    overflow: hidden;
+    font-size: 0.75rem;
+    display: block;
+    position: relative;
 }
 .drest-field__helper.d--show {
-height: auto;
+    height: auto;
 }
 .drest-field__helper.d--invalid {
-color: var(--mdc-theme-error);
+    color: var(--mdc-theme-error);
 }
 .drest-field__helper.absolute {
-position: absolute;
+    position: absolute;
 }
 .drest-field--focused .drest-field__helper {
-height: auto;
+    height: auto;
 }
 .drest-field .mdc-checkbox__background::before {
     background-color: var(--mdc-theme-primary);
@@ -1170,7 +1171,7 @@ opacity: 1; */
     margin: 0;
     margin-right: auto;
 }
-.drest-form .drest-field.drest-field--focused .drest-field__block-label {
+.drest-field.drest-field--focused .drest-field__block-label {
     color: var(--mdc-theme-primary);
 }
 /** drest-app **/
@@ -1381,6 +1382,57 @@ opacity: 1; */
 .drest-field .mdc-line-ripple {
     background-color: var(--mdc-theme-primary);
 }
+.drest-field.drest-field--disabled:not(.drest-field--invalid) .mdc-line-ripple {
+    background-color: black;
+}
+.drest-field--disabled.drest-field.drest-field--focused:not(.drest-field--invalid) .drest-field__label,
+.drest-field--disabled.drest-field.drest-field--focused:not(.drest-field--invalid) .drest-field__block-label {
+    color: black;
+}
+.drest-field--checkbox .drest-field__helper {
+    bottom: -22px;
+}
+.drest-field:hover::after {
+    z-index: 0;
+    pointer-events: none;
+    content: '';
+    position: absolute;
+    left: -1.25rem;
+    top: -1rem;
+    right: -1.25rem;
+    bottom: -1rem;
+}
+.drest-field:hover::after {
+    background-color: rgba(0,0,0,0.02);
+}
+.drest-field.drest-field--focused::after,
+.drest-field.drest-field--focused::before {
+    top: -0.5rem;
+    bottom: -0.5rem;
+    position: absolute;
+    content: '';
+    width: 10px;
+    pointer-events: none;
+}
+.drest-field.drest-field--focused::after {
+    left: -2rem;
+}
+.drest-field.drest-field--focused::before {
+    right: -2rem;
+}
+.drest-field.drest-field--focused:not(.drest-field--disabled):not(.drest-field--invalid)::after,
+.drest-field.drest-field--focused:not(.drest-field--disabled):not(.drest-field--invalid)::before {
+    background-color: var(--mdc-theme-primary);
+}
+.drest-field.drest-field--focused.drest-field--disabled:not(.drest-field--invalid)::after,
+.drest-field.drest-field--focused.drest-field--disabled:not(.drest-field--invalid)::before {
+    background-color: black;
+}
+.drest-field--focused.drest-field--invalid::after,
+.drest-field--focused.drest-field--invalid::before {
+    background-color: var(--mdc-theme-error);
+}
+
 .drest-field.drest-field--invalid .mdc-line-ripple {
     background-color: var(--mdc-theme-error);
 }

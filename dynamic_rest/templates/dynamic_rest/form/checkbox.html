@@ -1,6 +1,6 @@
 {% load dynamic_rest %}
 
-<div id="{{ field.id }}" title="{{ field.help_text | help_text_format }}" class="drest-field">
+<div id="{{ field.id }}" title="{{ field.help_text | help_text_format }}" class="drest-field drest-field--checkbox">
     <div class="mdc-form-field mdc-form-field--align-end">
 
         <div class="mdc-checkbox {% if field.errors %}has-error{% endif %}" data-mdc-auto-init="MDCCheckbox">
