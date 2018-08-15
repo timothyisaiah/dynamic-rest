@@ -780,7 +780,7 @@ class WithDynamicSerializerMixin(
         if pk:
             return '%s/%s/' % (url, pk)
 
-        if not url.endswith('/'):
+        if url and not url.endswith('/'):
             url = url + '/'
         return url
 
