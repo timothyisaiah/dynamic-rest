@@ -8,6 +8,7 @@ import json
 from decimal import Decimal
 from django.db.models.fields.files import FieldFile
 from django.http.request import QueryDict
+from dynamic_rest.version import version
 from urlparse import urlparse, urlunparse
 from uuid import UUID
 from django import template
@@ -262,3 +263,8 @@ def get_related_url(serializer, related_name):
         serializer.get_url(instance.pk),
         related_name
     )
+
+
+@register.simple_tag
+def drest_version():
+    return version

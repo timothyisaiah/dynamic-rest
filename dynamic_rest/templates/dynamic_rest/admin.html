@@ -43,7 +43,7 @@
                     <link href="{% static "dynamic_rest/css/material.css" %}" rel="stylesheet" type="text/css"/>
                 {% endblock %}
                 {% block css__drest %}
-                    <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
+                    <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}?version={% drest_version %}"/>
                 {% endblock %}
                 {% block css__datetimepicker %}
                     <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/bootstrap-material-datetimepicker.css" %}"></link>
@@ -54,7 +54,7 @@
                     <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
                 {% endblock %}
                 {% block script__drest %}
-                    <script src="{% static "dynamic_rest/js/drest-form.js" %}"></script>
+                    <script src="{% static "dynamic_rest/js/drest-form.js" %}?version={% drest_version %}"></script>
                 {% endblock %}
                 {% block script__tether %}
                     <script
