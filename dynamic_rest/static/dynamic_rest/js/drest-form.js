@@ -498,10 +498,12 @@ function DRESTApp(config) {
         var el = el.length ? el[0] : el;
         var $el = $(el);
         var field = el.DRESTField;
-        var scrollTop =  $scene.scrollTop() + el.getBoundingClientRect().top - $scene.offset().top - 24;
+        var scrollTop =  $scene.scrollTop() + el.getBoundingClientRect().top - $scene.offset().top;
         var center = !field || field.disabled || field.type !== 'relation' || $(window).width() >= 500;
         if (center) {
-            scrollTop -= $(window).height() / 2;
+            scrollTop -= ($(window).height() / 2 - $el.height());
+        } else {
+            scrollTop -= 24;
         }
         fn = fn || function() {};
         $scene.animate({
@@ -1460,7 +1462,7 @@ function DRESTField(config) {
         var onClick = function(e) {
             var $el = $(this);
             var url = $el.data('url');
-            if (url && $el.closest('.drest-form').hasClass('drest-form--readonly')) {
+            if (url && $el.closest('.drest-form').hasClass('drest-form--readonly') && $el.closest('.drest-field').hasClass('drest-field--focused')) {
                 app.toSubmitMode();
                 window.location = url;
             }
@@ -1493,7 +1495,6 @@ function DRESTField(config) {
                     );
                 }
                 if (url) {
-                    $choice.addClass('drest--clickable');
                     $choice.attr('data-url', pathJoin(url, v));
                     $choice.off('click.drest-field').on('click.drest-field', onChoiceClick);
                 }
@@ -1504,7 +1505,6 @@ function DRESTField(config) {
                 if (!this.isEmpty(this.value)) {
                     if (url) {
                         $choice.attr('data-url', pathJoin(url, this.value));
-                        $choice.addClass('drest--clickable');
                         $choice.off('click.drest-field').on('click.drest-field', onClick);
                     }
                 }

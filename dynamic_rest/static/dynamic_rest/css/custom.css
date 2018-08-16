@@ -772,9 +772,10 @@ opacity: 1; */
     margin: 0;
     overflow-y: hidden;
 }
-.drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container .select2-selection--multiple .select2-selection__choice,
-.drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container .select2-selection__rendered {
+.drest-form--readonly .drest-field--relation.drest-field--disabled.drest-field--focused .select2-container .select2-selection--multiple .select2-selection__choice,
+.drest-form--readonly .drest-field--relation.drest-field--disabled.drest-field--focused .select2-container .select2-selection__rendered {
     color: var(--mdc-theme-primary);
+    cursor: pointer;
 }
 .drest-field--select2 .select2-container .select2-selection--multiple .select2-selection__choice {
   height: 30px;
