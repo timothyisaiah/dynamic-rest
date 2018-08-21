@@ -82,7 +82,7 @@ $(function(){
 /** select2 patches **/
 
 // https://github.com/peledies/select2-tab-fix
-// jQuery(document).ready(function(a){var b=a(document.body),c=!1,d=!1;b.on("keydown",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!0)}),b.on("keyup",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!1)}),b.on("mousedown",function(b){d=!1,1!=a(b.target).is('[class*="select2"]')&&(d=!0)}),b.on("select2:opening",function(b){d=!1,a(b.target).attr("data-s2open",1)}),b.on("select2:closing",function(b){a(b.target).removeAttr("data-s2open")}),b.on("select2:close",function(b){var e=a(b.target);e.removeAttr("data-s2open");var f=e.closest("form"),g=f.has("[data-s2open]").length;if(0==g&&0==d){var h=f.find(":input:enabled:not([readonly], input:hidden, button:hidden, textarea:hidden)").not(function(){return a(this).parent().is(":hidden")}),i=null;if(a.each(h,function(b){var d=a(this);if(d.attr("id")==e.attr("id"))return i=c?h.eq(b-1):h.eq(b+1),!1}),null!==i){var j=i.siblings(".select2").length>0;j?i.select2("open"):i.focus()}}}),b.on("focus",".select2",function(b){var c=a(this).siblings("select");0==c.is("[disabled]")&&0==c.is("[data-s2open]")&&a(this).has(".select2-selection--single").length>0&&(c.attr("data-s2open",1),c.select2("open"))})});
+jQuery(document).ready(function(a){var b=a(document.body),c=!1,d=!1;b.on("keydown",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!0)}),b.on("keyup",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!1)}),b.on("mousedown",function(b){d=!1,1!=a(b.target).is('[class*="select2"]')&&(d=!0)}),b.on("select2:opening",function(b){d=!1,a(b.target).attr("data-s2open",1)}),b.on("select2:closing",function(b){a(b.target).removeAttr("data-s2open")}),b.on("select2:close",function(b){var e=a(b.target);e.removeAttr("data-s2open");var f=e.closest("form"),g=f.has("[data-s2open]").length;if(0==g&&0==d){var h=f.find(":input:enabled:not([readonly], input:hidden, button:hidden, textarea:hidden)").not(function(){return a(this).parent().is(":hidden")}),i=null;if(a.each(h,function(b){var d=a(this);if(d.attr("id")==e.attr("id"))return i=c?h.eq(b-1):h.eq(b+1),!1}),null!==i){var j=i.siblings(".select2").length>0;j?i.select2("open"):i.focus()}}}),b.on("focus",".select2",function(b){var c=a(this).siblings("select");0==c.is("[disabled]")&&0==c.is("[data-s2open]")&&a(this).has(".select2-selection--single").length>0&&(c.attr("data-s2open",1),c.select2("open"))})});
 
 function DRESTSearch(config) {
     this.onLoad = function() {
@@ -330,7 +330,7 @@ function DRESTApp(config) {
         var $form = this.navigation.$active.find('.drest-form');
         this.form = $form.length ? $form[0].DRESTForm : null;
 
-        this.fromErrorMode();
+        this.fromError();
         this.fromChangedMode();
 
         if (toEditMode) {
@@ -410,7 +410,7 @@ function DRESTApp(config) {
     };
     this.onDeleteFailed = function() {
         this.fromSubmitMode();
-        this.toErrorMode();
+        this.toError();
     };
     this.onDeleteOk = function() {
         this.showNotice('Deleted successfully, redirecting...');
@@ -501,7 +501,7 @@ function DRESTApp(config) {
         var scrollTop =  $scene.scrollTop() + el.getBoundingClientRect().top - $scene.offset().top;
         var center = !field || field.disabled || field.type !== 'relation' || $(window).width() >= 500;
         if (center) {
-            scrollTop -= ($(window).height() / 2 - $el.height());
+            scrollTop -= ($(window).height() / 2 - $el.height() / 2);
         } else {
             scrollTop -= 24;
         }
@@ -538,12 +538,12 @@ function DRESTApp(config) {
         this.$.removeClass('drest-app--scrolling');
         this.$header.removeClass('drest-app--scrolling');
     };
-    this.toErrorMode = function() {
+    this.toError = function() {
         this.error = true;
         this.$.addClass('drest-app--error');
         this.$header.addClass('drest-app--error');
     };
-    this.fromErrorMode = function() {
+    this.fromError = function() {
         this.error = false;
         this.$.removeClass('drest-app--error');
         this.$header.removeClass('drest-app--error');
@@ -576,13 +576,13 @@ function DRESTApp(config) {
     };
     this.onEditFailed = function() {
         this.fromSubmitMode();
-        this.toErrorMode();
+        this.toError();
         this.focusError();
     };
     this.focusError = function() {
         var $error = this.form.$.find('.drest-field--invalid').first();
         if ($error.length) {
-            $error[0].DRESTField.onFocus();
+            $error[0].DRESTField.$input.focus();
         }
     };
     this.onEditNoop = function() {
@@ -597,12 +597,12 @@ function DRESTApp(config) {
     };
     this.onAddFailed = function() {
         this.fromSubmitMode();
-        this.toErrorMode();
+        this.toError();
         this.focusError();
     };
     this.onAddOk = function(e, response) {
         var url = response.data.links.self;
-        this.fromErrorMode();
+        this.fromError();
         this.fromChangedMode();
 
         this.showNotice('Saved successfully, redirecting...');
@@ -634,7 +634,7 @@ function DRESTApp(config) {
 
         var onAccept = function() {
             form.reset();
-            app.fromErrorMode();
+            app.fromError();
             app.fromChangedMode();
 
             if (form === app.editForm) {
@@ -692,9 +692,9 @@ function DRESTApp(config) {
                 this.fromChangedMode();
             }
             if (form.hasError()) {
-                this.toErrorMode();
+                this.toError();
             } else {
-                this.fromErrorMode();
+                this.fromError();
             }
         }
     };
@@ -981,7 +981,7 @@ function DRESTForm(config) {
             if (this.hasChanged()) {
                 this.reset(this.initial);
             } else {
-                this.fromErrorMode();
+                this.fromError();
             }
         });
         this.updateAllDependents();
@@ -1271,9 +1271,9 @@ function DRESTForm(config) {
                 continue;
             }
             if (error) {
-                f.toErrorMode(error[0]);
+                f.toError(error[0]);
             } else {
-                f.fromErrorMode(true);
+                f.fromError(true);
             }
             hasFieldErrors = true;
             delete errors[key];
@@ -1300,7 +1300,7 @@ function DRESTForm(config) {
             if (typeof d !== 'undefined') {
                 field.reset(d);
             } else {
-                field.fromErrorMode(true);
+                field.fromError(true);
             }
         }
     };
@@ -1409,6 +1409,7 @@ function DRESTField(config) {
         this.$field.removeClass('drest-field--disabled');
         if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
             this.$input[0].readOnly = false;
+            this.$input.attr('tabindex', "0");
         } else {
             this.$input[0].disabled = false;
         }
@@ -1419,6 +1420,7 @@ function DRESTField(config) {
         this.$field.addClass('drest-field--disabled');
         if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
             this.$input[0].readOnly = true;
+            this.$input.attr('tabindex', '-1');
         } else {
             this.$input[0].disabled = true;
         }
@@ -1430,15 +1432,12 @@ function DRESTField(config) {
         this.$field.blur();
     };
     this.inputOnClick = function(e) {
-        console.log('input click', this.name);
-        e.stopPropagation();
+        if (this.disabled) {
+            e.stopPropagation();
+        }
     };
     this.onClick = function() {
-        console.log('click', this.name);
-        var now = (new Date()).getTime();
-        if (this.focused || this.lastBlur && now - this.lastBlur < 25) {
-            this.onBlur();
-        } else {
+        if (this.disabled || this.select2) {
             this.onFocus();
         }
     };
@@ -1519,9 +1518,9 @@ function DRESTField(config) {
         }
         if (!this.isEqual(this.value, value)) {
             if (this.isEmpty(value)) {
-                this.$field.removeClass('drest-field--selected');
+                this.fromFilled();
             } else {
-                this.$field.addClass('drest-field--selected');
+                this.toFilled();
             }
 
             if (this.type === 'file') {
@@ -1566,13 +1565,13 @@ function DRESTField(config) {
             this.value = value;
         }
         this.initial = value;
-        this.$field.removeClass('drest-field--changed');
-        this.fromErrorMode(true);
-        if (this.type === 'relation' || this.type === 'list') {
+        this.fromChanged();
+        this.fromError(true);
+        if (this.select2) {
             this.addSelect2ChoiceHandlers();
         }
     };
-    this.toErrorMode = function(error) {
+    this.toError = function(error) {
         this.error = error;
         this.hasError = true;
         // this is sticky through change until submit
@@ -1583,7 +1582,23 @@ function DRESTField(config) {
             .addClass('d--invalid')
             .html(error);
     };
-    this.fromErrorMode = function(permanent) {
+    this.fromChanged = function() {
+        this.changed = false;
+        this.$field.removeClass('drest-field--changed');
+    };
+    this.toChanged = function() {
+        this.changed = true;
+        this.$field.addClass('drest-field--changed');
+    };
+    this.fromFilled = function() {
+        this.filled = false;
+        this.$field.removeClass('drest-field--selected');
+    };
+    this.toFilled = function() {
+        this.filled = true;
+        this.$field.addClass('drest-field--selected');
+    };
+    this.fromError = function(permanent) {
         if (permanent) {
             this.error = null;
             this.valueOnError = undefined;
@@ -1614,11 +1629,6 @@ function DRESTField(config) {
         var value = this.getInputValue();
         var form = this.getForm();
         var $form = this.$form;
-        if (this.isEmpty(value)) {
-            this.$field.removeClass('drest-field--selected');
-        } else {
-            this.$field.addClass('drest-field--selected');
-        }
 
         var was = this.value;
         this.value = value;
@@ -1626,15 +1636,20 @@ function DRESTField(config) {
         if (this.error) {
             // set or temp-clear error
             if (this.isEqual(this.value, this.valueOnError)) {
-                this.toErrorMode(this.error);
+                this.toError(this.error);
             } else {
-                this.fromErrorMode();
+                this.fromError();
             }
         }
-        if (this.hasChanged()) {
-            this.$field.addClass('drest-field--changed');
+        if (this.isEmpty(value)) {
+            this.fromFilled();
         } else {
-            this.$field.removeClass('drest-field--changed');
+            this.toFilled();
+        }
+        if (this.hasChanged()) {
+            this.toChanged();
+        } else {
+            this.fromChanged();
         }
         if (form) {
             form.$.trigger('drest-form:change', [{
@@ -1651,8 +1666,10 @@ function DRESTField(config) {
         }
         return value;
     };
-    this.onBlur = function() {
-        console.log('blur', this.name);
+    this.onBlur = function(e) {
+        if (this.disabled && e) {
+            return;
+        }
         this.lastBlur = (new Date()).getTime();
         if (!this.focused) {
             return;
@@ -1662,7 +1679,6 @@ function DRESTField(config) {
         this.$ripple.removeClass('mdc-line-ripple--active');
     };
     this.onFocus = function(e) {
-        console.log('focus', this.name);
         if (this.focused) {
             return;
         }
@@ -1719,7 +1735,9 @@ function DRESTField(config) {
         //  set classes
         $field.addClass('drest-field--js');
         if (!this.isEmpty(value)) {
-            $field.addClass('drest-field--selected');
+            this.toFilled();
+        } else {
+            this.fromFilled();
         }
 
         // setup dependents and listeners
@@ -1975,13 +1993,14 @@ function DRESTField(config) {
             $field.find('.dropify-preview')
             .addClass('drest--clickable')
             .off('click.drest').on('click.drest', function() {
-                if (this.disabled && this.value) {
+                if (this.disabled && this.focused && this.value) {
                     window.open(this.value, '_blank');
                 }
             }.bind(this));
         }
 
         if (select2) {
+            this.select2 = select2;
             // change styles
             $field.find(".select2-selection__arrow")
             .addClass("material-icons")

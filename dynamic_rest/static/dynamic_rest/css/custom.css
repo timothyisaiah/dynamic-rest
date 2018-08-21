@@ -138,11 +138,6 @@ position: relative;
     text-align: left;
     font-size: 0.9rem;
 }
-.mdc-card.mdc-card--solo .drest-field.drest-field--disabled .select2-selection {
-    /*margin-top: 0;
-      margin-bottom: 0;
-      border-bottom: 1px solid transparent;*/
-}
 .mdc-card__title {
     font-size: 1.25rem;
     padding-bottom: 0;
@@ -241,7 +236,7 @@ width: 100%;
 
 .drest-table.table th {
     font-weight: 400;
-color: rgba(0,0,0,0.6);
+    color: rgba(0,0,0,0.6);
 }
 .drest-table__header {
 position: relative;
@@ -266,17 +261,6 @@ opacity: 0.05;
 .drest-goto.drest-table__header:active::after {
 opacity: 0.2;
 }
-/*
-   .fixedHeader-floating .drest-goto.drest-table__header::after {
-   background-color: white;
-   }
-   .fixedHeader-floating .drest-goto.drest-table__header:hover:not(:active)::after {
-opacity: 0.1;
-}
-.fixedHeader-floating .drest-goto.drest-table__header:active::after {
-opacity: 0.4;
-}
- */
 
 .drest-table__header-inner {
 display: flex;
@@ -404,28 +388,20 @@ display: none;
 .drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .select2-selection__placeholder {
     color: var(--mdc-theme-secondary);
 }
-.drest-field--text.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .drest-field__body,
-.drest-field--select.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .drest-field__body .drest-field__input:not(:focus) {
+.drest-field.drest-field--changed:not(.drest-field--invalid):not(.drest-field--focused) .drest-field__body {
     border-bottom-color: var(--mdc-theme-secondary);
 }
 .drest-field.drest-field--file.drest-field--changed:not(.drest-field--invalid) .dropify-wrapper {
     border: 1px solid var(--mdc-theme-secondary);
-}
-.drest-field--file .drest-field__helper {
-    position: relative;
-    top: 1.5rem;
-}
-.drest-field .dropify-wrapper {
-    top: 1.5rem;
-}
-.drest-field.drest-field--disabled .select2-selection__placeholder {
-    color: rgba(0, 0, 0, 0.8);
 }
 .drest-field .select2-selection__placeholder {
     /* remove this for floating select2 labels */
     display: none;
 }
 
+.drest-field.drest-field--disabled .select2-selection__placeholder {
+    color: rgba(0, 0, 0, 0.8);
+}
 .drest-field label,
 .drest-field .select2-selection__placeholder {
     color: rgba(0, 0, 0, 0.6);
@@ -450,14 +426,9 @@ display: none;
 .drest-field.drest-field--focused .drest-label {
     color: rgba(0, 174, 141, 0.87);
 }
-.drest-field--text textarea.drest-field__input {
-    padding-bottom: 0;
-    padding-top: 20px;
-}
-.drest-field.drest-field--disabled .drest-field__input {
-    border-bottom: 1px solid rgba(0,0,0,0.2);
-}
-.drest-field .drest-field__input {
+
+.drest-field--select.drest-field--disabled .drest-field__input {
+    pointer-events: none;
 }
 .drest-field {
     position: relative;
@@ -570,9 +541,6 @@ display: none;
 
 /** drest-field--datetime **/
 
-.drest-field.drest-field--focused.drest-field--datetime .drest-field__input {
-    border-bottom: 1px solid var(--mdc-theme-primary);
-}
 .drest-field--select2 .select2-selection__placeholder {
     transform: translateY(-100%) scale(0.75);
 }
@@ -665,28 +633,21 @@ display: none;
   touch-action: manipulation;
   margin: 0;
   line-height: inherit;
-  border-radius: 0;
   box-sizing: inherit;
   /* @extend .form-control */
   display: block;
   color: #55595c;
   background-clip: padding-box;
-  border: 1px solid rgba(0, 0, 0, 0.15);
   padding: 0; /* .5rem 0 .6rem; */
   font-size: 1rem;
   line-height: 1.5;
   background-color: transparent;
   background-image: none;
-  border-radius: 0;
-  /* @extend input[type=text] */
-  background-color: transparent;
   border: none;
-  border-bottom: 1px solid #ccc;
   border-radius: 0;
   outline: 0;
   font-size: 1rem;
   box-shadow: none;
-  /* transition: all .3s; */
 }
 .drest-field--select2 .select2-container .select2-selection .select2-selection__rendered {
   margin-bottom: 0px;
@@ -719,17 +680,14 @@ display: none;
     min-width: auto;
     width: 0;
 }
-.drest-field--select2.drest-field--selected .select2-container .select2-selection--multiple .select2-selection__rendered {
-}
 .drest-form--readonly .drest-field.drest-field--writeonly {
     height: 0;
     margin: 0;
     overflow-y: hidden;
 }
-.drest-form--readonly .drest-field--relation.drest-field--disabled.drest-field--focused .select2-container .select2-selection--multiple .select2-selection__choice,
-.drest-form--readonly .drest-field--relation.drest-field--disabled.drest-field--focused .select2-container .select2-selection__rendered {
+.drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container .select2-selection--multiple .select2-selection__choice,
+.drest-form--readonly .drest-field--relation.drest-field--disabled .select2-container .select2-selection__rendered {
     color: var(--mdc-theme-primary);
-    cursor: pointer;
 }
 .drest-field--select2 .select2-container .select2-selection--multiple .select2-selection__choice {
   height: 30px;
@@ -815,7 +773,7 @@ display: none;
     -moz-appearance:textfield;
 }
 
-.drest-field.drest-field--select2 .select2-container--disabled .select2-selection__clear {
+.drest-field.drest-field--disabled .select2-selection__clear {
     display: none;
 }
 .drest-form.drest-form--readonly .drest-field.drest-field--select2:not(.drest-field--relation) .select2-container--disabled .select2-selection__choice__remove {
@@ -880,7 +838,6 @@ display: none;
   /* min-height: 2.1rem; */
   margin-bottom: -4px;  /* change */
   border: 0;
-  /* border-bottom: 1px solid #ccc; */
   transition: all .3s;
 }
 .drest-field--select2 .select2-search--dropdown .select2-search__field {
@@ -933,17 +890,6 @@ display: none;
   background-color: var(--mdc-theme-primary);
   color: var(--mdc-theme-on-primary);
 }
-.drest-field--select2 .select2-container--focus .select2-selection {
-  border-bottom: 1px solid var(--mdc-theme-primary);
-  box-shadow: 0 1px 0 0 var(--mdc-theme-primary);
-}
-.drest-field--invalid.drest-field--select2 .select2-container--focus .select2-selection {
-  border-bottom: 1px solid var(--mdc-theme-error);
-  box-shadow: 0 1px 0 0 var(--mdc-theme-error);
-}
-.drest-field--select2.drest-field--changed:not(.drest-field--focused):not(.drest-field--invalid) .select2-container--focus .select2-selection {
-  border-bottom: 1px solid var(--mdc-theme-secondary);
-}
 .drest-field--select2:not(.drest-field--disabled) .select2-container--disabled .select2-selection {
   -webkit-user-select: none;
      -moz-user-select: none;
@@ -956,12 +902,6 @@ display: none;
      -moz-user-select: text;
       -ms-user-select: text;
           user-select: text;
-}
-.drest-field--select2 .select2-container--disabled .select2-selection {
-  /* @extend .select-wrapper input.select-dropdown:disabled */
-  color: rgba(0, 0, 0, 0.4);
-  cursor: default;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
 }
 .drest-field--select2 .select2-container--disabled.select2-container--focus .select2-selection {
   box-shadow: none;
@@ -986,8 +926,12 @@ display: none;
     display: none;
 }
 .drest-field .drest-field__body {
-    padding: 20px 0 0px;
     position: relative;
+    width: 100%;
+}
+.drest-field--select2 .drest-field__body,
+.drest-field--file .drest-field__body {
+    padding-top: 20px;
 }
 .mdc-card__fields {
     padding-top: 2rem;
@@ -1005,9 +949,6 @@ display: none;
 
 /*** drest-field--select ***/
 
-.drest-field.drest-field--disabled .drest-field__input {
-    border-bottom: 1px solid rgba(0,0,0,0.2);
-}
 .drest-field .drest-field__input {
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -1016,7 +957,23 @@ display: none;
     background-color: initial;
     font-family: Roboto, sans-serif;
     border: 0;
+    border-radius: 0;
+    padding-top: 24px;
+    padding-bottom: 0px;
+    position: relative;
+    opacity: 0.6;
+}
+.drest-field.drest-field--focused .drest-field__input {
+    opacity: 1;
+}
+.drest-field.drest-field--disabled .drest-field__body {
+    border-bottom: 1px solid rgba(0,0,0,0.2);
+}
+.drest-field .drest-field__body {
     border-bottom: 1px solid rgba(0,0,0,0.3);
+}
+.drest-field.drest-field--focused .drest-field__body {
+    border-bottom: 1px solid rgba(0,0,0,0);
 }
 
 /* Misc */

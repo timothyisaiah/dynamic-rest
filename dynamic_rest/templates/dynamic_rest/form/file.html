@@ -1,31 +1,33 @@
 {% load dynamic_rest %}
 
 <div id="{{ field.id }}" class="drest-field--file drest-field {% if field.errors %}drest-field--invalid{% endif %}">
-    <label for="{{ field.id }}-input" class="drest-field__label">
-        {{ field.label }}
-    </label>
-    <input
-        id="{{ field.id }}-input"
-        name="{{ field.name }}"
-        type="file"
-        {% if field.value %}
-            value="{{ field.value }}"
-            data-default-file="{{ field.value.url }}"
-        {% endif %}
-        {% if field.errors or field.help_text %}
-            aria-controls="{{ field.id }}-helper"
-            aria-describedby="{{ field.id }}-helper"
-        {% endif %}
-        {% if field.errors %}
-            invalid
-        {% endif %}
-        {% if field.required and not field.allow_null %}
-            required
-        {% endif %}
-        {% if field.read_only %}
-            disabled
-        {% endif %}
-    >
+    <div class="drest-field__body">
+        <label for="{{ field.id }}-input" class="drest-label">
+            {{ field.label }}
+        </label>
+        <input
+            id="{{ field.id }}-input"
+            name="{{ field.name }}"
+            type="file"
+            {% if field.value %}
+                value="{{ field.value }}"
+                data-default-file="{{ field.value.url }}"
+            {% endif %}
+            {% if field.errors or field.help_text %}
+                aria-controls="{{ field.id }}-helper"
+                aria-describedby="{{ field.id }}-helper"
+            {% endif %}
+            {% if field.errors %}
+                invalid
+            {% endif %}
+            {% if field.required and not field.allow_null %}
+                required
+            {% endif %}
+            {% if field.read_only %}
+                disabled
+            {% endif %}
+        >
+    </div>
     <p
         id="{{ field.id }}-helper"
         class="drest-field__helper">

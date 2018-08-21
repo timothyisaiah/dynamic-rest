@@ -7,7 +7,6 @@
         <select
             {% if field.required and not field.allow_null %}required{% endif %}
             id="{{ field.id }}-input"
-            {% if field.read_only %}disabled{% endif %}
             class="drest-field__input"
             {% if field.errors %}
                 invalid
