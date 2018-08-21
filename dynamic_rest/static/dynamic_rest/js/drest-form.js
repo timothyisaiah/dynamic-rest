@@ -2,7 +2,7 @@ function doGoto() {
     var goTo = $(this).data('goto');
     var target = $(this).data('goto-target') || '_self';
     if (goTo) {
-        app.toSubmitMode();
+        app.toSubmit();
         window.open(goTo, target);
     }
 };
@@ -82,7 +82,7 @@ $(function(){
 /** select2 patches **/
 
 // https://github.com/peledies/select2-tab-fix
-jQuery(document).ready(function(a){var b=a(document.body),c=!1,d=!1;b.on("keydown",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!0)}),b.on("keyup",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!1)}),b.on("mousedown",function(b){d=!1,1!=a(b.target).is('[class*="select2"]')&&(d=!0)}),b.on("select2:opening",function(b){d=!1,a(b.target).attr("data-s2open",1)}),b.on("select2:closing",function(b){a(b.target).removeAttr("data-s2open")}),b.on("select2:close",function(b){var e=a(b.target);e.removeAttr("data-s2open");var f=e.closest("form"),g=f.has("[data-s2open]").length;if(0==g&&0==d){var h=f.find(":input:enabled:not([readonly], input:hidden, button:hidden, textarea:hidden)").not(function(){return a(this).parent().is(":hidden")}),i=null;if(a.each(h,function(b){var d=a(this);if(d.attr("id")==e.attr("id"))return i=c?h.eq(b-1):h.eq(b+1),!1}),null!==i){var j=i.siblings(".select2").length>0;j?i.select2("open"):i.focus()}}}),b.on("focus",".select2",function(b){var c=a(this).siblings("select");0==c.is("[disabled]")&&0==c.is("[data-s2open]")&&a(this).has(".select2-selection--single").length>0&&(c.attr("data-s2open",1),c.select2("open"))})});
+// jQuery(document).ready(function(a){var b=a(document.body),c=!1,d=!1;b.on("keydown",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!0)}),b.on("keyup",function(a){var b=a.keyCode?a.keyCode:a.which;16==b&&(c=!1)}),b.on("mousedown",function(b){d=!1,1!=a(b.target).is('[class*="select2"]')&&(d=!0)}),b.on("select2:opening",function(b){d=!1,a(b.target).attr("data-s2open",1)}),b.on("select2:closing",function(b){a(b.target).removeAttr("data-s2open")}),b.on("select2:close",function(b){var e=a(b.target);e.removeAttr("data-s2open");var f=e.closest("form"),g=f.has("[data-s2open]").length;if(0==g&&0==d){var h=f.find(":input:enabled:not([readonly], input:hidden, button:hidden, textarea:hidden)").not(function(){return a(this).parent().is(":hidden")}),i=null;if(a.each(h,function(b){var d=a(this);if(d.attr("id")==e.attr("id"))return i=c?h.eq(b-1):h.eq(b+1),!1}),null!==i){var j=i.siblings(".select2").length>0;j?i.select2("open"):i.focus()}}}),b.on("focus",".select2",function(b){var c=a(this).siblings("select");0==c.is("[disabled]")&&0==c.is("[data-s2open]")&&a(this).has(".select2-selection--single").length>0&&(c.attr("data-s2open",1),c.select2("open"))})});
 
 function DRESTSearch(config) {
     this.onLoad = function() {
@@ -162,7 +162,7 @@ DRESTSearch.prototype.onResultClick = function(e) {
     var $this = $(e.target);
     var goTo = $this.data('goto');
     if (goTo) {
-        app.toSubmitMode();
+        app.toSubmit();
         var name = $this.text();
         var target = $this.data('goto-target') || '_self';
         this.$.val(name);
@@ -325,15 +325,15 @@ function DRESTApp(config) {
             scene = scene.index();
         }
 
-        var toEditMode = scene > 0;
+        var toEdit = scene > 0;
         this.navigation.switchTo(scene);
         var $form = this.navigation.$active.find('.drest-form');
         this.form = $form.length ? $form[0].DRESTForm : null;
 
         this.fromError();
-        this.fromChangedMode();
+        this.fromChanged();
 
-        if (toEditMode) {
+        if (toEdit) {
             // set edit styles
             this.enableEdit();
         } else {
@@ -342,7 +342,7 @@ function DRESTApp(config) {
         }
     };
     this.doDelete = function() {
-        this.toSubmitMode();
+        this.toSubmit();
         $.ajax({
             url: this.detailEndpoint,
             method: 'DELETE',
@@ -368,7 +368,7 @@ function DRESTApp(config) {
         }
     };
     this.onScroll = function() {
-        this.toScrollMode();
+        this.toScroll();
         var scrollTop = this.scroll = this.navigation.$active.scrollTop();
         if (!(this.style === 'list' && this.navigation.active === 0)) {
             if (scrollTop) {
@@ -397,7 +397,7 @@ function DRESTApp(config) {
         var time = this.getTime();
         var diff = this.scrollEndTime - time;
         if (diff <= 0) {
-            this.fromScrollMode();
+            this.fromScroll();
 
             delete this.scrollEndTime;
             delete this._scrollTimeout;
@@ -409,7 +409,7 @@ function DRESTApp(config) {
         }
     };
     this.onDeleteFailed = function() {
-        this.fromSubmitMode();
+        this.fromSubmit();
         this.toError();
     };
     this.onDeleteOk = function() {
@@ -491,7 +491,7 @@ function DRESTApp(config) {
         var form = this.form;
         this.$title.html(form.getTitle());
         form.enable();
-        this.toEditMode();
+        this.toEdit();
     };
     this.scrollTo = function(el, fn) {
         var $scene = this.form.$.closest('.drest-scene');
@@ -516,24 +516,24 @@ function DRESTApp(config) {
         if (form && form.type === 'edit') {
             form.disable();
         }
-        this.fromEditMode();
+        this.fromEdit();
     };
-    this.toEditMode = function() {
+    this.toEdit = function() {
         this.editing = true;
         this.$header.addClass('drest-app--editing');
         this.$fab.addClass('drest-app--editing');
     };
-    this.fromEditMode = function() {
+    this.fromEdit = function() {
         this.editing = false;
         this.$header.removeClass('drest-app--editing');
         this.$fab.removeClass('drest-app--editing');
     }
-    this.toScrollMode = function() {
+    this.toScroll = function() {
         this.scrolling = true;
         this.$.addClass('drest-app--scrolling');
         this.$header.addClass('drest-app--scrolling');
     };
-    this.fromScrollMode = function() {
+    this.fromScroll = function() {
         this.scrolling = false;
         this.$.removeClass('drest-app--scrolling');
         this.$header.removeClass('drest-app--scrolling');
@@ -548,34 +548,34 @@ function DRESTApp(config) {
         this.$.removeClass('drest-app--error');
         this.$header.removeClass('drest-app--error');
     };
-    this.fromSubmitMode = function() {
+    this.fromSubmit = function() {
         this.submitting = false;
         this.$header.removeClass('drest-app--submitting');
     };
-    this.toSearchMode = function() {
+    this.toSearch = function() {
         this.searching = true;
         this.$header.addClass('drest-app--searching');
         this.$searchInput.focus();
     };
-    this.fromSearchMode = function() {
+    this.fromSearch = function() {
         this.searching = false;
         this.$header.removeClass('drest-app--searching');
         this.search.clear();
     };
-    this.toSubmitMode = function() {
+    this.toSubmit = function() {
         this.submitting = true;
         this.$header.addClass('drest-app--submitting');
     };
-    this.toChangedMode = function() {
+    this.toChanged = function() {
         this.changed = true;
         this.$header.addClass('drest-app--changed');
     };
-    this.fromChangedMode = function() {
+    this.fromChanged = function() {
         this.changed = false;
         this.$header.removeClass('drest-app--changed');
     };
     this.onEditFailed = function() {
-        this.fromSubmitMode();
+        this.fromSubmit();
         this.toError();
         this.focusError();
     };
@@ -586,24 +586,24 @@ function DRESTApp(config) {
         }
     };
     this.onEditNoop = function() {
-        this.fromSubmitMode();
+        this.fromSubmit();
         this.disableEdit();
     };
     this.onEditOk = function() {
-        this.fromSubmitMode();
-        this.fromChangedMode();
+        this.fromSubmit();
+        this.fromChanged();
         this.disableEdit();
         this.showNotice('Saved successfully');
     };
     this.onAddFailed = function() {
-        this.fromSubmitMode();
+        this.fromSubmit();
         this.toError();
         this.focusError();
     };
     this.onAddOk = function(e, response) {
         var url = response.data.links.self;
         this.fromError();
-        this.fromChangedMode();
+        this.fromChanged();
 
         this.showNotice('Saved successfully, redirecting...');
         window.location = url;
@@ -616,13 +616,13 @@ function DRESTApp(config) {
             return;
         }
         this.search.clear();
-        this.fromSubmitMode();
+        this.fromSubmit();
     };
     this.back = function(e) {
         if (this.searching) {
             // do not deal with form state
-            this.fromSubmitMode();
-            this.fromSearchMode();
+            this.fromSubmit();
+            this.fromSearch();
             return;
         }
 
@@ -635,7 +635,7 @@ function DRESTApp(config) {
         var onAccept = function() {
             form.reset();
             app.fromError();
-            app.fromChangedMode();
+            app.fromChanged();
 
             if (form === app.editForm) {
                 app.disableEdit();
@@ -687,9 +687,9 @@ function DRESTApp(config) {
         var form = data.form;
         if (form === this.form) {
             if (form.hasChanged()) {
-                this.toChangedMode();
+                this.toChanged();
             } else {
-                this.fromChangedMode();
+                this.fromChanged();
             }
             if (form.hasError()) {
                 this.toError();
@@ -699,16 +699,16 @@ function DRESTApp(config) {
         }
     };
     this.onSearchFailed = function() {
-        this.fromSubmitMode();
+        this.fromSubmit();
     };
     this.onSearchStart = function() {
-        this.toSubmitMode();
+        this.toSubmit();
     };
     this.onSearchOk = function() {
-        this.fromSubmitMode();
+        this.fromSubmit();
     };
     this.onSearchEmpty = function() {
-        this.fromSubmitMode();
+        this.fromSubmit();
     };
     this.onSearchChange = function() {
         var val = this.$searchInput.val();
@@ -768,7 +768,7 @@ function DRESTApp(config) {
             this.search.$.on('drest-search:failed', this.onSearchFailed.bind(this));
         }
         if (this.$searchButton.length) {
-            this.$searchButton.off('click.drest').on('click.drest', this.toSearchMode.bind(this));
+            this.$searchButton.off('click.drest').on('click.drest', this.toSearch.bind(this));
         }
         if (this.$deleteButton.length) {
             this.$deleteButton.off('click.drest').on('click.drest', this.confirmDelete.bind(this));
@@ -851,7 +851,7 @@ function DRESTApp(config) {
                 .on('drest-form:submit-ok', this.onAddOk.bind(this))
                 .on('drest-form:submit-failed', this.onAddFailed.bind(this));
         }
-        this.$.find('.drest-form').on('drest-form:submit-start', this.toSubmitMode.bind(this));
+        this.$.find('.drest-form').on('drest-form:submit-start', this.toSubmit.bind(this));
 
         $('.drest-app__switch-to').each(function() {
             var $button = $(this);
@@ -1243,7 +1243,7 @@ function DRESTForm(config) {
         });
 
     };
-    this.makeErrorDialogBody = function(errors, other) {
+    this.makeError = function(errors, other) {
         var body = '';
         for (var name in errors) {
             if (errors.hasOwnProperty(name)) {
@@ -1283,7 +1283,7 @@ function DRESTForm(config) {
         if (!$.isEmptyObject(errors)) {
             window.app.showDialog({
                 title: 'Failed to save!',
-                body: this.makeErrorDialogBody(errors, hasFieldErrors)
+                body: this.makeError(errors, hasFieldErrors)
             });
         }
     };
@@ -1426,8 +1426,8 @@ function DRESTField(config) {
         }
         this.disabled = true;
 
-        if (this.type === 'relation' || this.type === 'list') {
-            this.addSelect2ChoiceHandlers();
+        if (this.select2) {
+            this.addSelect2Handlers();
         }
         this.$field.blur();
     };
@@ -1441,7 +1441,7 @@ function DRESTField(config) {
             this.onFocus();
         }
     };
-    this.addSelect2ChoiceHandlers = function() {
+    this.addSelect2Handlers = function() {
         var $choice;
         var field = this;
         var relation = this.type === 'relation';
@@ -1451,7 +1451,7 @@ function DRESTField(config) {
             var $el = $(this);
             var url = $el.data('url');
             if (url && $el.closest('.drest-form').hasClass('drest-form--readonly') && $el.closest('.drest-field').hasClass('drest-field--focused')) {
-                app.toSubmitMode();
+                app.toSubmit();
                 window.location = url;
             }
         };
@@ -1568,7 +1568,7 @@ function DRESTField(config) {
         this.fromChanged();
         this.fromError(true);
         if (this.select2) {
-            this.addSelect2ChoiceHandlers();
+            this.addSelect2Handlers();
         }
     };
     this.toError = function(error) {
@@ -1695,7 +1695,7 @@ function DRESTField(config) {
         this.focused = true;
         this.$.addClass('drest-field--focused');
         var after;
-        if (this.opening) {
+        if (this.select2 && this.opening) {
             after = function() {
                 this.$input.select2('open');
             }.bind(this);
@@ -2000,6 +2000,12 @@ function DRESTField(config) {
         }
 
         if (select2) {
+            $field.find('.select2-search__field, .select2-selection--single').on('focus', function() {
+                console.log('select2 focus');
+                this.opening = true;
+                this.onFocus();
+            }.bind(this));
+
             this.select2 = select2;
             // change styles
             $field.find(".select2-selection__arrow")
