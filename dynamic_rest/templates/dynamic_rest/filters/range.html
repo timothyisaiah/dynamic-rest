@@ -1,9 +1,9 @@
 {% load dynamic_rest %}
 
 <div id="{{ filter.id }}1" class="drest-field {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}drest-field--datetime{% endif %}">
-    <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+    <div class="drest-field__body">
         <input
-            class="mdc-text-field__input"
+            class="drest-field__input"
             name="{{ filter.key }}"
             data-type="{{ real_type }}"
             type="{{ range_type }}"
@@ -20,14 +20,14 @@
             {% endif %}
         />
         <label
-            class="drest-field__label"
+            class="drest-label"
             for="{{ filter.id }}1-input"
         >
             {{ filter.label }} (min)
         </label>
         <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
     </div>
-    <p id="{{ filter.id }}1-helper" class="mdc-text-field-helper-text" aria-hidden="true">
+    <p id="{{ filter.id }}1-helper" class="drest-field__helper" aria-hidden="true">
         {% if filter.help_text %}
             {{ filter.help_text | help_text_short_format | safe }}
         {% endif %}
@@ -49,9 +49,9 @@
 </div>
 
 <div id="{{ filter.id }}2" class="drest-field {% if real_type == 'date' or real_type == 'datetime-local' or real_type == 'time' %}drest-field--datetime{% endif %}">
-    <div class="mdc-text-field mdc-text-field--fullwidth" data-mdc-auto-init="MDCTextField">
+    <div class="drest-field__body">
         <input
-            class="mdc-text-field__input"
+            class="drest-field__input"
             name="{{ filter.key }}"
             type="{{ range_type }}"
             id="{{ filter.id }}2-input"
@@ -68,14 +68,14 @@
             {% endif %}
         />
         <label
-            class="drest-field__label"
+            class="drest-label"
             for="{{ filter.id }}2-input"
         >
             {{ filter.label }} (max)
         </label>
         <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
     </div>
-    <p id="{{ filter.id }}2-helper" class="mdc-text-field-helper-text" aria-hidden="true">
+    <p id="{{ filter.id }}2-helper" class="drest-field__helper">
         {% if filter.help_text %}
             {{ filter.help_text | help_text_short_format | safe }}
         {% endif %}

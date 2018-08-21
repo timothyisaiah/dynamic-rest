@@ -5,7 +5,7 @@
 {% if field.image %}
     {% get_image_url field as image_url %}
     <div id="{{ field.id }}" class="drest-field--file drest-field--relation drest-field{% if image_url %} drest-field--selected{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
-        <label for="{{ field.id }}" class="drest-field__label">{{ field.label }}</label>
+        <label for="{{ field.id }}" class="drest-label">{{ field.label }}</label>
         <input type="hidden" value={{ field | field_to_json }} id="{{field.id}}-input">
         <div class="dropify-wrapper">
             <div class="dropify-message">
@@ -24,12 +24,12 @@
 
     {% trans "No items to select." as no_items %}
 
-    <div id="{{ field.id }}" class="drest-field--relation w-100 drest-field--relation drest-field--select2 drest-field{% if field.many %} many{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
-        <label for="{{ field.id }}-input" class="drest-field__label">{{ field.label }}</label>
+    <div id="{{ field.id }}" class="drest-field--relation drest-field--relation drest-field--select2 drest-field{% if field.many %} many{% endif %}{% if field.errors %} drest-field--invalid{% endif %}{% if field.read_only %} drest-field--disabled{% endif %}">
+        <label for="{{ field.id }}-input" class="drest-label">{{ field.label }}</label>
 
-        <div class="drest-field__select w-100">
+        <div class="drest-field__body">
             <select
-                class='w-100'
+                class='drest-field__input'
                 id="{{ field.id }}-input"
                 {% if field.many %}multiple="multiple"{% endif %}
                 {% if field.read_only %}disabled{% endif %}

@@ -5,12 +5,13 @@
 {% trans "No items to select." as no_items %}
 
 <div id="{{ field.id }}" class="drest-field drest-field--select2 many {% if field.errors %}drest-field--invalid{% endif %}">
-    <label for="{{ field.id }}-input" class="drest-field__label">{{ field.label }}</label>
+    <label for="{{ field.id }}-input" class="drest-label">{{ field.label }}</label>
 
-    <div class="drest-field__select">
+    <div class="drest-field__body">
         <select
             id="{{ field.id }}-input"
             multiple="multiple"
+            class="drest-field__input"
             {% if field.read_only %}disabled{% endif %}
             name="{{ field.name }}">
         </select>

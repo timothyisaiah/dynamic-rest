@@ -1377,17 +1377,6 @@ function DRESTField(config) {
         }
         return val;
     };
-    this.getTextField = function() {
-        if (typeof this._textField === 'undefined') {
-            var el = this.$textField.length ? this.$textField[0] : null;
-            if (el && el.MDCTextField) {
-                this._textField = el.MDCTextField;
-            } else {
-                this._textField = null;
-            }
-        }
-        return this._textField;
-    };
     this.getForm = function() {
         if (typeof this._form === 'undefined') {
             var el = this.$form[0];
@@ -1423,8 +1412,6 @@ function DRESTField(config) {
         } else {
             this.$input[0].disabled = false;
         }
-        this.$textField.removeClass('mdc-text-field--disabled');
-        this.$select.removeClass('mdc-select--disabled');
         this.disabled = false;
     };
     this.disable = function() {
@@ -1435,8 +1422,6 @@ function DRESTField(config) {
         } else {
             this.$input[0].disabled = true;
         }
-        this.$textField.addClass('mdc-text-field--disabled');
-        this.$select.addClass('mdc-select--disabled');
         this.disabled = true;
 
         if (this.type === 'relation' || this.type === 'list') {
@@ -1444,13 +1429,17 @@ function DRESTField(config) {
         }
         this.$field.blur();
     };
+    this.inputOnClick = function(e) {
+        console.log('input click', this.name);
+        e.stopPropagation();
+    };
     this.onClick = function() {
-        if (this.disabled) {
-            if (this.focused) {
-                this.onBlur();
-            } else {
-                this.onFocus();
-            }
+        console.log('click', this.name);
+        var now = (new Date()).getTime();
+        if (this.focused || this.lastBlur && now - this.lastBlur < 100) {
+            this.onBlur();
+        } else {
+            this.onFocus();
         }
     };
     this.addSelect2ChoiceHandlers = function() {
@@ -1531,12 +1520,8 @@ function DRESTField(config) {
         if (!this.isEqual(this.value, value)) {
             if (this.isEmpty(value)) {
                 this.$field.removeClass('drest-field--selected');
-                this.$label.removeClass('mdc-floating-label--float-above');
             } else {
                 this.$field.addClass('drest-field--selected');
-                if (this.$label.hasClass('mdc-floating-label')) {
-                    this.$label.addClass('mdc-floating-label--float-above');
-                }
             }
 
             if (this.type === 'file') {
@@ -1593,11 +1578,6 @@ function DRESTField(config) {
         // this is sticky through change until submit
         this.valueOnError = this.getInputValue();
         this.$field.addClass('drest-field--invalid');
-        var textField = this.getTextField();
-        if (textField) {
-            textField.valid = false;
-        }
-        this.$select.addClass('mdc-text-field--invalid');
         this.$helper
             .addClass('d--show')
             .addClass('d--invalid')
@@ -1611,11 +1591,6 @@ function DRESTField(config) {
 
         this.hasError = false;
         this.$field.removeClass('drest-field--invalid');
-        this.$select.removeClass('mdc-text-field--invalid');
-        var textField = this.getTextField();
-        if (textField) {
-            textField.valid = true;
-        }
         this.$helper
             .removeClass('d--show')
             .removeClass('d--invalid')
@@ -1677,11 +1652,21 @@ function DRESTField(config) {
         return value;
     };
     this.onBlur = function() {
+        console.log('blur', this.name);
+        if (!this.focused) {
+            return;
+        }
+        this.lastBlur = (new Date()).getTime();
         this.$.removeClass('drest-field--focused');
         this.focused = false;
         this.$ripple.removeClass('mdc-line-ripple--active');
     };
-    this.onFocus = function() {
+    this.onFocus = function(e) {
+        console.log('focus', this.name);
+        if (this.focused) {
+            return;
+        }
+        this.lastFocus = (new Date()).getTime();
         var form = this.getForm();
         if (form) {
             var id = this.id;
@@ -1719,9 +1704,6 @@ function DRESTField(config) {
             this.$helper.addClass('absolute');
         }
         var $form = this.$form = $field.closest('.drest-form');
-        var $textField = this.$textField = $field.find('.mdc-text-field');
-        var $select = this.$select = $field.find('.mdc-select');
-        var $label = this.$label = field.$field.find('label, .drest-field__label');
         var type = this.type;
         var relation = this.relation;
 
@@ -1739,7 +1721,6 @@ function DRESTField(config) {
         if (!this.isEmpty(value)) {
             $field.addClass('drest-field--selected');
         }
-
 
         // setup dependents and listeners
         if (type === 'list') {
@@ -1763,7 +1744,7 @@ function DRESTField(config) {
                         return field.helpTextShort || "Start typing";
                     }
                 },
-                dropdownParent: $field.find('.drest-field__select')
+                dropdownParent: $field.find('.drest-field__body')
             });
             select2 = $input.data('select2');
         } else if (type === 'select') {
@@ -1787,7 +1768,7 @@ function DRESTField(config) {
                             return field.helpTextShort || "Start typing";
                         }
                     },
-                    dropdownParent: $field.find('.drest-field__select')
+                    dropdownParent: $field.find('.drest-field__body')
                 });
                 select2 = $input.data('select2');
             } else {
@@ -1830,9 +1811,11 @@ function DRESTField(config) {
         } else if (type === 'text') {
             $input.on('blur', this.onBlur.bind(this));
             $input.on('focus', this.onFocus.bind(this));
+            $input.on('click', this.inputOnClick.bind(this));
         } else if (type === 'integer' || type === 'decimal') {
             $input.on('blur', this.onBlur.bind(this));
             $input.on('focus', this.onFocus.bind(this));
+            $input.on('click', this.inputOnClick.bind(this));
             // format via cleave
             this.cleave = new Cleave('#' + this.id + '-input', {
                 numeral: true,
@@ -1896,7 +1879,7 @@ function DRESTField(config) {
                 }
                 $input.select2({
                     data: initials,
-                    dropdownParent: $field.find('.drest-field__select'),
+                    dropdownParent: $field.find('.drest-field__body'),
                     language: {
                         inputTooShort: function() {
                             return field.helpTextShort;

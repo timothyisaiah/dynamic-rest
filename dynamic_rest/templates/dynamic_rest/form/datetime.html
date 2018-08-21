@@ -2,13 +2,13 @@
 
 <div id="{{ field.id }}" class="{% if field.read_only %} drest-field--disabled{% endif %}{% if not field.is_empty %} drest-field--selected{% endif %} drest-field--datetime drest-field{% if field.errors %} drest-field--invalid{% endif %}">
     <div
-        class="mdc-text-field mdc-text-field--fullwidth{% if field.read_only %} mdc-text-field--disabled{% endif %}">
+        class="drest-field__body">
         <input
             id="{{ field.id }}-input"
             name="{{ field.name }}"
             {% if field.read_only %}disabled{% endif %}
             data-type="{{ style.input_type }}"
-            class="mdc-text-field__input"
+            class="drest-field__input"
             type="text"
             {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %}
             {% if field.value %}value="{{ field.value }}"{% endif %}
@@ -20,7 +20,7 @@
             {% endif %}
             {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}/>
         <label
-            class="drest-field__label"
+            class="drest-label"
             for="{{ field.id }}-input">
             {{ field.label }}
         </label>

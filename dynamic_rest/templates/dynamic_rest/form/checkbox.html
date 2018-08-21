@@ -26,13 +26,8 @@
                </svg>
                 <div class="mdc-checkbox__mixedmark"></div>
              </div>
-            {% if field.errors %}
-                {% for error in field.errors %}
-                    <span class="text-danger">{{ error }}</span>
-                {% endfor %}
-            {% endif %}
         </div>
-        <label for="{{ field.id }}-input" class="drest-field__block-label">{{ field.label }}{% if field.required %} *{% endif %}</label>
+        <label for="{{ field.id }}-input" class="drest-label--block">{{ field.label }}{% if field.required %} *{% endif %}</label>
     </div>
     <p
         id="{{ field.id }}-helper"

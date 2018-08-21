@@ -2,18 +2,18 @@
 
 <div
     id="{{ field.id }}"
-    class="drest-field
+    class="drest-field drest-field--text
     {% if field.errors %}drest-field--invalid{% endif %}
     {% if field.read_only %}drest-field--disabled{% endif %}
     {% if field.write_only %}drest-field--writeonly{% endif %}">
 
     <div
-        class="mdc-text-field mdc-text-field--fullwidth {% if field.read_only %}mdc-text-field--disabled{% endif %}">
+        class="drest-field__body">
         {% if field.long %}
             <textarea
                 rows=1
                 name="{{field.name}}"
-                id="{{field.id}}-input" class="mdc-text-field__input"
+                id="{{field.id}}-input" class="drest-field__input"
                 {% if field.read_only %}readonly{% endif %}
                 {% if field.errors or field.help_text %}
                     aria-controls="{{ field.id }}-helper"
@@ -24,7 +24,7 @@
             >{{ field.value }}</textarea>
         {% else %}
             <input
-                class="mdc-text-field__input"
+                class="drest-field__input"
                 name="{{ field.name }}"
                 type="{% if style.input_type %}{{ style.input_type}}{% else %}text{% endif %}"
                 id="{{ field.id }}-input"
@@ -39,7 +39,7 @@
             />
         {% endif %}
         <label
-            class="drest-field__label"
+            class="drest-label"
             for="{{ field.id }}-input"
         >
             {{ field.label }}

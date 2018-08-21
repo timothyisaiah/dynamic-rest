@@ -3,18 +3,18 @@
 {% load dynamic_rest %}
 
 <div id="{{ filter.id }}" class="drest-field drest-field--select2 {% if filter.many %}many{% endif %}">
-    <label class="drest-field__label">{{ filter.label }}</label>
+    <label class="drest-label">{{ filter.label }}</label>
 
-    <div class="drest-field__select w-100">
+    <div class="drest-field__body">
         <select
-            class='w-100'
+            class='drest-field__input'
             id="{{ filter.id }}-input"
             {% if filter.many %}multiple="multiple"{% endif %}
             name="{{ filter.key }}">
         </select>
     </div>
 
-    <p id="{{ filter.id }}-helper" class="{% if filter.errors %}mdc-text-field-helper-text--persistent {% endif %}push-up mdc-text-field-helper-text" aria-hidden="false">
+    <p id="{{ filter.id }}-helper" class="drest-field__helper">
         {% for error in filter.errors %}
             <span>{{error}}</span>
         {% endfor %}

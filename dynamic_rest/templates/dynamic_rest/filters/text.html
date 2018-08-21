@@ -1,11 +1,11 @@
 {% load dynamic_rest %}
 
-    <div id="{{ filter.id }}" class="drest-field {% if filter.errors %}drest-field--invalid{% endif %}">
+    <div id="{{ filter.id }}" class="drest-field--text drest-field {% if filter.errors %}drest-field--invalid{% endif %}">
         <div
-            class="{% if filter.errors %}mdc-text-field--invalid{% endif %} mdc-text-field mdc-text-field--fullwidth {% if filter.value %}mdc-text-field--upgraded{% endif %}"
+            class="drest-field__body"
             data-mdc-auto-init="MDCTextField">
             <input
-                class="mdc-text-field__input"
+                class="drest-field__input"
                 name="{{ filter.key }}"
                 type="text"
                 id="{{ filter.id }}-input"
@@ -19,7 +19,7 @@
                 {% endif %}
             />
             <label
-                class="drest-field__label"
+                class="drest-label"
                 for="{{ filter.id }}-input"
             >
                 {{ filter.label }}
@@ -28,7 +28,7 @@
         </div>
         <p
             id="{{ filter.id }}-helper"
-            class="{% if filter.errors %}mdc-text-field-helper-text--validation-msg {% endif %}mdc-text-field-helper-text"
+            class="drest-field__helper"
             aria-hidden="{% if filter.errors %}false{% else %}true{% endif %}">
                 {% if filter.errors %}
                     {% for error in filter.errors %}

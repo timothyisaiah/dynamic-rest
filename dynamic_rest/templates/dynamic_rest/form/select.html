@@ -1,46 +1,45 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 
-<div id="{{ field.id }}" class="drest-field drest-field--select {% if field.read_only %}drest-field--disabled{% endif%}">
-    <div class="w-100 mdc-select {% if field.read_only %}mdc-select--disabled {% endif %}{% if field.errors %}mdc-text-field--invalid{% endif %}" data-mdc-auto-init="MDCSelect">
-    <select
-        {% if field.required and not field.allow_null %}required{% endif %}
-        id="{{ field.id }}-input"
-        {% if field.read_only %}disabled{% endif %}
-        class="w-100 mdc-select__native-control"
-        {% if field.errors %}
-            invalid
-        {% endif %}
-        {% if field.required and not field.allow_null %}
-            required
-        {% endif %}
-        name="{{ field.name }}"
-    >
-      {% if field.required and not field.allow_null %}
-        {% if not field.value %}
-            <option value="" selected disabled></option>
-        {% endif %}
-      {% else %}
-        <option value="" {% if not field.value %}selected{% endif %}>
-        </option>
-      {% endif %}
-
-      {% for select in field.iter_options %}
-          {% if select.start_option_group %}
-            <optgroup label="{{ select.label }}">
-          {% elif select.end_option_group %}
-            </optgroup>
+<div id="{{ field.id }}" class="drest-field drest-field--select {% if field.read_only %}drest-field--disabled{% endif%}
+{% if field.errors %}drest-field--invalid{% endif %}">
+    <div class="drest-field__body">
+        <select
+            {% if field.required and not field.allow_null %}required{% endif %}
+            id="{{ field.id }}-input"
+            {% if field.read_only %}disabled{% endif %}
+            class="drest-field__input"
+            {% if field.errors %}
+                invalid
+            {% endif %}
+            {% if field.required and not field.allow_null %}
+                required
+            {% endif %}
+            name="{{ field.name }}"
+        >
+          {% if field.required and not field.allow_null %}
+            {% if not field.value %}
+                <option value="" selected disabled></option>
+            {% endif %}
           {% else %}
-            <option value="{{ select.value }}" {% if select.value|as_string == field.value|as_string %}selected{% endif %} {% if select.disabled %}disabled{% endif %}>{{ select.display_text }}</option>
+            <option value="" {% if not field.value %}selected{% endif %}>
+            </option>
           {% endif %}
-      {% endfor %}
-    </select>
-      <label class="drest-field__label" for="{{ field.id }}-input">
+
+          {% for select in field.iter_options %}
+              {% if select.start_option_group %}
+                <optgroup label="{{ select.label }}">
+              {% elif select.end_option_group %}
+                </optgroup>
+              {% else %}
+                <option value="{{ select.value }}" {% if select.value|as_string == field.value|as_string %}selected{% endif %} {% if select.disabled %}disabled{% endif %}>{{ select.display_text }}</option>
+              {% endif %}
+          {% endfor %}
+        </select>
+      <label class="drest-label" for="{{ field.id }}-input">
         {{ field.label }}
       </label>
       <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
-
-
     </div>
     <p
         id="{{ field.id }}-helper"
