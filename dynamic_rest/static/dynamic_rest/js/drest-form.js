@@ -582,7 +582,7 @@ function DRESTApp(config) {
     this.focusError = function() {
         var $error = this.form.$.find('.drest-field--invalid').first();
         if ($error.length) {
-            this.scrollTo($error);
+            $error[0].DRESTField.onFocus();
         }
     };
     this.onEditNoop = function() {
@@ -1407,7 +1407,7 @@ function DRESTField(config) {
     };
     this.enable = function() {
         this.$field.removeClass('drest-field--disabled');
-        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer') {
+        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
             this.$input[0].readOnly = false;
         } else {
             this.$input[0].disabled = false;
@@ -1417,7 +1417,7 @@ function DRESTField(config) {
     this.disable = function() {
         var field = this;
         this.$field.addClass('drest-field--disabled');
-        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer') {
+        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
             this.$input[0].readOnly = true;
         } else {
             this.$input[0].disabled = true;
@@ -1436,7 +1436,7 @@ function DRESTField(config) {
     this.onClick = function() {
         console.log('click', this.name);
         var now = (new Date()).getTime();
-        if (this.focused || this.lastBlur && now - this.lastBlur < 100) {
+        if (this.focused || this.lastBlur && now - this.lastBlur < 25) {
             this.onBlur();
         } else {
             this.onFocus();
@@ -1653,10 +1653,10 @@ function DRESTField(config) {
     };
     this.onBlur = function() {
         console.log('blur', this.name);
+        this.lastBlur = (new Date()).getTime();
         if (!this.focused) {
             return;
         }
-        this.lastBlur = (new Date()).getTime();
         this.$.removeClass('drest-field--focused');
         this.focused = false;
         this.$ripple.removeClass('mdc-line-ripple--active');
@@ -1807,6 +1807,7 @@ function DRESTField(config) {
                 this.cleave = new Cleave('#' + this.id + '-input', opts);
                 $input.on('blur', this.onBlur.bind(this));
                 $input.on('focus', this.onFocus.bind(this));
+                $input.on('click', this.inputOnClick.bind(this));
             }
         } else if (type === 'text') {
             $input.on('blur', this.onBlur.bind(this));
