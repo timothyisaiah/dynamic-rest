@@ -1432,14 +1432,9 @@ function DRESTField(config) {
         this.$field.blur();
     };
     this.inputOnClick = function(e) {
-        if (this.disabled) {
-            e.stopPropagation();
-        }
     };
     this.onClick = function() {
-        if (this.disabled || this.select2) {
-            this.onFocus();
-        }
+        this.onFocus();
     };
     this.addSelect2Handlers = function() {
         var $choice;
@@ -1676,7 +1671,7 @@ function DRESTField(config) {
         }
         this.$.removeClass('drest-field--focused');
         this.focused = false;
-        this.$ripple.removeClass('mdc-line-ripple--active');
+        // this.$ripple.removeClass('mdc-line-ripple--active');
     };
     this.onFocus = function(e) {
         if (this.focused) {
@@ -1694,6 +1689,7 @@ function DRESTField(config) {
         }
         this.focused = true;
         this.$.addClass('drest-field--focused');
+        // this.$ripple.addClass('mdc-line-ripple--active');
         var after;
         if (this.select2 && this.opening) {
             after = function() {
@@ -1701,7 +1697,6 @@ function DRESTField(config) {
             }.bind(this);
         }
         app.scrollTo(this.$, after);
-        this.$ripple.addClass('mdc-line-ripple--active');
     };
     this.onLoad = function() {
         if (this.loaded) {
@@ -1986,10 +1981,8 @@ function DRESTField(config) {
             });
             $input.on('focus', this.onFocus.bind(this));
             $input.on('blur', this.onBlur.bind(this));
-            $input.on('dropify.afterClear', function(evt, el) {
-                // clearing the dropify doesnt trigger input's change
-                this.onChange();
-            }.bind(this));
+            $input.on('dropify.afterClear', this.onChange.bind(this));
+
             $field.find('.dropify-preview')
             .addClass('drest--clickable')
             .off('click.drest').on('click.drest', function() {
@@ -2000,12 +1993,10 @@ function DRESTField(config) {
         }
 
         if (select2) {
-            $field.find('.select2-search__field, .select2-selection--single').on('focus', function() {
-                console.log('select2 focus');
-                this.opening = true;
-                this.onFocus();
-            }.bind(this));
-
+            var canFocus = $field.find('.select2-search__field, .select2-selection--single');
+            canFocus.each(function() {
+                this.addEventListener('focus', field.onFocus.bind(field))
+            });
             this.select2 = select2;
             // change styles
             $field.find(".select2-selection__arrow")
@@ -2056,7 +2047,9 @@ function DRESTField(config) {
         if (type === 'relation' || type === 'list') {
             $input.trigger('change');
         }
-
+        if (type === 'text' || type === 'decimal' || type === 'integer') {
+            $input.on('keyup.drest-field', this.onChange.bind(this));
+        }
         // bind change handler
         $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
         $field.off('focus.drest-field').on('focus.drest-field', this.onFocus.bind(this));

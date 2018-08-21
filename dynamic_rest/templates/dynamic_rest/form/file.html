@@ -1,7 +1,7 @@
 {% load dynamic_rest %}
 
 <div id="{{ field.id }}" class="drest-field--file drest-field {% if field.errors %}drest-field--invalid{% endif %}">
-    <div class="drest-field__body">
+    <div class="drest-field__block">
         <label for="{{ field.id }}-input" class="drest-label">
             {{ field.label }}
         </label>
