@@ -78,6 +78,12 @@ class UIField(object):
              self.errors, self.instance))
 
     @cached_property
+    def add(self):
+        if self.type == 'relation':
+            return self.name in self._field.parent.create_related_serializers
+        return False
+
+    @cached_property
     def rendered_value(self):
         if callable(getattr(self._field, 'admin_render', None)):
             return self._field.admin_render(
@@ -101,8 +107,9 @@ class UIField(object):
         if request_method == 'GET':
             if (
                 getattr(field, 'hide', None) and
-                field.read_only and not getattr(field, 'create', None)
-                and self.is_empty
+                field.read_only and
+                self.is_empty and
+                not self.add
             ):
                 return False
 

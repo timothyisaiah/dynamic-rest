@@ -441,28 +441,15 @@ class WithDynamicSerializerMixin(
 
     @cached_property
     def default_sections(self):
-        sections = []
         field_names = self._readable_field_names
         instance = self.instance
-        others = []
-        for field_name in field_names:
-            field = self.fields.get(field_name)
-            if getattr(field, 'many', False):
-                sections.append(
-                    UISection(
-                        inflection.humanize(field_name),
-                        [field_name],
-                        self,
-                        instance
-                    )
-                )
-            else:
-                others.append(field_name)
-
-        sections = [
-            UISection('Details', others, self, self.instance, main=True)
-        ] + sections
-        return sections
+        return [UISection(
+            'Details',
+            field_names,
+            self,
+            instance,
+            main=True
+        )]
 
     def get_sections(self, instance=None):
         sections = getattr(self.get_meta(), 'sections', {})

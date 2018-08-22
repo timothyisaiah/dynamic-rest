@@ -11,7 +11,7 @@
                     {% endif %}
 
                     {% if section.should_render %}
-                        <div class="mdc-card__fields {% if section.field and section.field.is_empty and section.field.read_only %}hide{% endif %} ">
+                        <div class="mdc-card__fields">
                             {% for field in section.fields %}
                                 {% if field.should_render %}
                                     {% render_field field style=style %}

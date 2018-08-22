@@ -38,6 +38,15 @@
             <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
         </div>
 
+        {% if field.add %}
+            <div class="drest-field__menu">
+                <div
+                    class="mdc-icon-button material-icons drest-app__switch-to"
+                    data-target="#drest-add-form-{{ field.name }}">
+                    add
+                </div>
+            </div>
+        {% endif %}
         <p
             id="{{ field.id }}-helper"
             class="drest-field__helper">

@@ -14,17 +14,7 @@
                         {% if section.name %}
                             <div class="mdc-card__title">{{ section.name }}</div>
                         {% endif %}
-                        {% if section.field and section.field.name in create_related_forms %}
-                            <div class="mdc-card__mainaction">
-                                <div
-                                    class="drest-btn btn btn-secondary drest-app__switch-to"
-                                    data-target="#drest-add-form-{{ section.field.name }}">
-                                    <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
-                                    <span class="drest-btn-label">Add</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                        <div class="mdc-card__fields {% if section.field and section.field.is_empty and section.field.read_only %}hide{% endif %}">
+                        <div class="mdc-card__fields">
                             {% for field in section.fields %}
                                 {% if field.should_render %}
                                     {% render_field field style=render_style %}

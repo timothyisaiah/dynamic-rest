@@ -8,6 +8,7 @@ from .file import DynamicFileField, DynamicImageField
 from .relation import DynamicRelationField, DynamicCreatorField
 from .generic import DynamicGenericRelationField
 from .choice import DynamicChoiceField
+from .link import DynamicLinkField
 from .json import DynamicJSONField
 from .datetime import DynamicDateTimeField
 from .phone import DynamicPhoneField

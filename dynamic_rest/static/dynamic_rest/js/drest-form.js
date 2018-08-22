@@ -856,8 +856,9 @@ function DRESTApp(config) {
         $('.drest-app__switch-to').each(function() {
             var $button = $(this);
             var target = $button.attr('data-target');
-            $button.on('click.drest', function() {
+            $button.on('click.drest', function(e) {
                 app.switchTo($(target))
+                e.stopPropagation();
             });
         });
         if (this.$saveButton.length) {
@@ -1416,6 +1417,9 @@ function DRESTField(config) {
         this.disabled = false;
     };
     this.disable = function() {
+        if (this.readOnly && !this.$input.length) {
+            return;
+        }
         var field = this;
         this.$field.addClass('drest-field--disabled');
         if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {

@@ -393,11 +393,23 @@ left: 0.75rem;
 .drest-field.drest-field--changed:not(.drest-field--invalid) .drest-field__body {
     border-bottom-color: var(--mdc-theme-secondary);
 }
-.drest-field.drest-field--focused:not(.drest-field--invalid) .dropify-wrapper {
-    border: 1px solid var(--mdc-theme-primary);
+.drest-field.drest-field--focused:not(.drest-field--disabled):not(.drest-field--invalid) .dropify-wrapper {
+    box-shadow: 0 0 0 2px var(--mdc-theme-primary);
+}
+.drest-field.drest-field--focused.drest-field--disabled:not(.drest-field--invalid) .dropify-wrapper {
+    box-shadow: 0 0 0 2px black;
+}
+.drest-field.drest-field--file.drest-field--focused.drest-field--changed:not(.drest-field--invalid) .dropify-wrapper {
+    box-shadow: 0 0 0 2px var(--mdc-theme-secondary);
+}
+.drest-field.drest-field--file.drest-field--focused.drest-field--invalid .dropify-wrapper {
+    box-shadow: 0 0 0 2px var(--mdc-theme-error);
 }
 .drest-field.drest-field--file.drest-field--changed:not(.drest-field--invalid) .dropify-wrapper {
-    border: 1px solid var(--mdc-theme-secondary);
+    box-shadow: 0 0 0 1px var(--mdc-theme-secondary);
+}
+.drest-field.drest-field--file.drest-field--invalid .dropify-wrapper {
+    box-shadow: 0 0 0 1px var(--mdc-theme-error);
 }
 .drest-field .select2-selection__placeholder {
     /* remove this for floating select2 labels */
@@ -433,6 +445,9 @@ left: 0.75rem;
 }
 
 .drest-field--select.drest-field--disabled .drest-field__input {
+    pointer-events: none;
+}
+.drest-field--file.drest-field--disabled input[type="file"] {
     pointer-events: none;
 }
 .drest-field--datetime.drest-field--disabled .drest-field__input {
@@ -533,10 +548,7 @@ left: 0.75rem;
 .drest-form .drest-field:first-child {
     margin-top: 0;
 }
-.drest-form.drest-form--readonly .drest-field .drest-btn {
-    display: none;
-}
-.drest-form:not(.drest-form--readonly) .drest-btn {
+.drest-form:not(.drest-form--readonly) .drest-field__menu {
     display: none;
 }
 
@@ -565,7 +577,9 @@ left: 0.75rem;
     display: none;
 }
 .drest-field.drest-field--file .dropify-wrapper {
-    border: 1px solid rgba(0,0,0,0.12)
+    border: 0;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.12);
+    transition: all 0.2s linear;
 }
 .drest-field.drest-field--file.drest-field--selected .dropify-preview {
     display: block;
@@ -644,7 +658,6 @@ left: 0.75rem;
   box-sizing: inherit;
   /* @extend .form-control */
   display: block;
-  color: #55595c;
   background-clip: padding-box;
   padding: 0; /* .5rem 0 .6rem; */
   font-size: 1rem;
@@ -940,8 +953,20 @@ left: 0.75rem;
     position: relative;
     width: 100%;
 }
+.drest-field .drest-field__block iframe {
+    min-height: 200px;
+    border: 0;
+    overflow: auto;
+    transition: all 0.2s ease;
+    width: 100%;
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+}
+.drest-field.drest-field--focused .drest-field__block iframe {
+    box-shadow: 0 0 0 2px black;
+}
 .drest-field--select2 .drest-field__body,
-.drest-field--file .drest-field__block {
+.drest-field--file .drest-field__block,
+.drest-field--text .drest-field__block {
     padding-top: 20px;
 }
 .mdc-card__fields {
@@ -973,6 +998,9 @@ left: 0.75rem;
     padding-bottom: 0px;
     position: relative;
     opacity: 0.7;
+}
+.drest-field--disabled .drest-field__input {
+    color: black;
 }
 .drest-field--select.drest-field--disabled .drest-field__input {
     color: black;
@@ -1380,4 +1408,14 @@ left: 0.75rem;
     display: block;
     transform: scaleX(1);
     opacity: 1;
+}
+.drest-app .mdc-menu-anchor {
+    top: 40px;
+}
+
+
+.drest-field__menu {
+    position: absolute;
+    right: -1rem;
+    top: -1rem;
 }

@@ -7,36 +7,40 @@
     {% if field.read_only %}drest-field--disabled{% endif %}
     {% if field.write_only %}drest-field--writeonly{% endif %}">
 
-    <div
-        class="drest-field__body">
-        {% if field.long %}
-            <textarea
-                rows=1
-                name="{{field.name}}"
-                id="{{field.id}}-input" class="drest-field__input"
-                {% if field.read_only %}readonly{% endif %}
-                {% if field.errors or field.help_text %}
-                    aria-controls="{{ field.id }}-helper"
-                    aria-describedby="{{ field.id }}-helper"
-                {% endif %}
-                {% if field.errors %}invalid{% endif %}
-                {% if field.required %}required{% endif %}
-            >{{ field.value }}</textarea>
+    <div {% if field.iframe %}
+            class="drest-field__block">
+            <iframe src="{{ field.value }}"></iframe>
         {% else %}
-            <input
-                class="drest-field__input"
-                name="{{ field.name }}"
-                type="{% if style.input_type %}{{ style.input_type}}{% else %}text{% endif %}"
-                id="{{ field.id }}-input"
-                {% if field.read_only %}readonly{% endif %}
-                {% if field.errors or field.help_text %}
-                    aria-controls="{{ field.id }}-helper"
-                    aria-describedby="{{ field.id }}-helper"
-                {% endif %}
-                {% if field.errors %}invalid{% endif %}
-                {% if field.required %}required{% endif %}
-                value={{ field | field_to_json }}
-            />
+            class="drest-field__body">
+            {% if field.long %}
+                <textarea
+                    rows=1
+                    name="{{field.name}}"
+                    id="{{field.id}}-input" class="drest-field__input"
+                    {% if field.read_only %}readonly{% endif %}
+                    {% if field.errors or field.help_text %}
+                        aria-controls="{{ field.id }}-helper"
+                        aria-describedby="{{ field.id }}-helper"
+                    {% endif %}
+                    {% if field.errors %}invalid{% endif %}
+                    {% if field.required %}required{% endif %}
+                >{{ field.value }}</textarea>
+            {% else %}
+                <input
+                    class="drest-field__input"
+                    name="{{ field.name }}"
+                    type="{% if style.input_type %}{{ style.input_type}}{% else %}text{% endif %}"
+                    id="{{ field.id }}-input"
+                    {% if field.read_only %}readonly{% endif %}
+                    {% if field.errors or field.help_text %}
+                        aria-controls="{{ field.id }}-helper"
+                        aria-describedby="{{ field.id }}-helper"
+                    {% endif %}
+                    {% if field.errors %}invalid{% endif %}
+                    {% if field.required %}required{% endif %}
+                    value={{ field | field_to_json }}
+                />
+            {% endif %}
         {% endif %}
         <label
             class="drest-label"
@@ -44,7 +48,9 @@
         >
             {{ field.label }}
         </label>
-        <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+        {% if not field.iframe %}
+            <div class="mdc-line-ripple" data-mdc-auto-init="MDCLineRipple"></div>
+        {% endif %}
     </div>
     <p
         id="{{ field.id }}-helper"
