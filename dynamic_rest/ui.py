@@ -103,6 +103,9 @@ class UIField(object):
             return False
 
         request_method = field.parent.get_request_method().upper()
+        hidden = field.read_only and field.write_only
+        if hidden:
+            return False
 
         if request_method == 'GET':
             if (
