@@ -1154,7 +1154,10 @@ class WithDynamicSerializerMixin(
                     f.set(v)
 
         except Exception as e:
-            raise exceptions.ValidationError(e)
+            if settings.DEBUG:
+                raise
+            else:
+                raise exceptions.ValidationError(e)
 
         return instance
 
@@ -1190,7 +1193,10 @@ class WithDynamicSerializerMixin(
                 for s in to_save:
                     s.save()
         except Exception as e:
-            raise exceptions.ValidationError(e)
+            if self.debug:
+                raise
+            else:
+                raise exceptions.ValidationError(e)
 
         return instance
 

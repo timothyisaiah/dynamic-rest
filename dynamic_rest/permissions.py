@@ -297,10 +297,10 @@ class PermissionsSerializerMixin(object):
                     return instance
                 else:
                     # check filters
-                    model = self.serializer_class.get_model()
+                    model = self.get_model()
                     if model:
                         if not model.objects.filter(access.filters).filter(
-                            pk__in=instance.pk
+                            pk=str(instance.pk)
                         ).exists():
                             raise exceptions.PermissionDenied()
                     return instance

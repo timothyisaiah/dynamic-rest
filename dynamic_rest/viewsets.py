@@ -407,7 +407,7 @@ class WithDynamicViewSetBase(object):
         if 'sideloading' not in kwargs:
             kwargs['sideloading'] = self.get_request_sideloading()
         if 'debug' not in kwargs:
-            kwargs['debug'] = self.get_request_debug()
+            kwargs['debug'] = self.get_request_debug() or settings.DEBUG
         if 'envelope' not in kwargs:
             kwargs['envelope'] = True
         if list_fields and not kwargs['request_fields']:
