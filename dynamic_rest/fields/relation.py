@@ -279,8 +279,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         serializer.parent = self
         serializer.field_name = self.field_name
-        if hasattr(serializer, 'initialized'):
-            serializer.initialized(nested=True)
 
         return serializer
 
@@ -290,6 +288,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             return self._serializer
 
         serializer = self.get_serializer()
+        if hasattr(serializer, 'initialized'):
+            serializer.initialized(nested=True)
+
         self._serializer = serializer
         return serializer
 

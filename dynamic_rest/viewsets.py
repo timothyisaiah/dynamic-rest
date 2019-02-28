@@ -535,6 +535,7 @@ class WithDynamicViewSetBase(object):
                     '"%s" has no inverse field' % field_name
                 )
 
+        related_serializer.initialized()
         related_serializer.is_valid(raise_exception=True)
         self.perform_create(related_serializer)
 

@@ -343,7 +343,7 @@ class WithDynamicSerializerMixin(
         else:
             return super(WithDynamicSerializerMixin, self).__getitem__(key)
 
-    @property
+    @cached_property
     def create_related_serializers(self):
         return self.get_create_related_serializers()
 
@@ -380,6 +380,11 @@ class WithDynamicSerializerMixin(
                 ) and has_permission
 
                 if can_create:
+                    if hasattr(related_serializer, 'initialized'):
+                        # call initialized for permissions hooks/etc
+                        # this is simulating a primary request
+                        # so do not pass nested=True
+                        related_serializer.initialized()
                     forms[related_name] = related_serializer
         return forms
 
