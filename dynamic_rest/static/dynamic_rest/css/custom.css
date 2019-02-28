@@ -985,7 +985,7 @@ left: 0.75rem;
 
 /*** drest-field--select ***/
 
-.drest-field .drest-field__input {
+.drest-field.drest-field .drest-field__input {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;

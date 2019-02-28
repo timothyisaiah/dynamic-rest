@@ -38,8 +38,14 @@ class Filter(object):
         if access:
             return self
 
-        filters = self.filters & other.filters
+        filters = self.do_and(self.filters, other.filters)
         return self(filters, self.user)
+
+    def do_and(self, a, b):
+        return a & b
+
+    def do_or(self, a, b):
+        return a | b
 
     def __or__(self, other):
         access = self.full_access
@@ -56,7 +62,7 @@ class Filter(object):
         if no_access:
             return self
 
-        filters = self.filters | other.filters
+        filters = self.do_or(self.filters, other.filters)
         return Filter(filters, self.user)
 
     def __bool__(self):
@@ -96,20 +102,40 @@ class Filter(object):
             }
             return Q(**spec)
 
-        if isinstance(spec, (list, tuple, set)):
-            return set(spec)
-
         raise Exception(
             "Not sure how to deal with: %s" % spec
         )
 
     @property
     def no_access(self):
-        return self.spec is False or self.spec is None
+        return self.spec is False or self.spec is None or self.spec == {}
 
     @property
     def full_access(self):
         return self.spec is True
+
+
+def merge(source, destination):
+    for key, value in source.items():
+        if isinstance(value, dict):
+            # get node or create one
+            node = destination.setdefault(key, {})
+            merge(value, node)
+        else:
+            destination[key] = value
+    return destination
+
+
+class Fields(Filter):
+    @cached_property
+    def filters(self):
+        return self.spec
+
+    def do_and(self, a, b):
+        return merge(a, b)
+
+    def do_or(self, a, b):
+        return self.do_and(a, b)
 
 
 Filter.FULL_ACCESS = Filter(True)
@@ -126,12 +152,8 @@ class Role(object):
         self.spec = spec
 
     @cached_property
-    def write_fields(self):
-        return self.get('write_fields')
-
-    @cached_property
-    def read_fields(self):
-        return self.get('read_fields')
+    def fields(self):
+        return self.get_fields()
 
     @cached_property
     def list(self):
@@ -152,6 +174,15 @@ class Role(object):
     @cached_property
     def update(self):
         return self.get('update')
+
+    def get_fields(self):
+        spec = self.spec.get('fields', None)
+        if spec is None:
+            return Fields.NO_ACCESS
+        return Fields(
+            spec,
+            self.user
+        )
 
     def get(self, name):
         spec = self.spec.get(name, False)
@@ -194,12 +225,8 @@ class Permissions(object):
         ]
 
     @cached_property
-    def write_fields(self):
-        return self.get('write_fields')
-
-    @cached_property
-    def read_fields(self):
-        return self.get('read_fields')
+    def fields(self):
+        return self.get('fields')
 
     @cached_property
     def list(self):
@@ -242,17 +269,13 @@ class PermissionsSerializerMixin(object):
 
         full_permissions = self.full_permissions
 
-        if full_permissions and (
-            full_permissions.write_fields or
-            full_permissions.read_fields
-        ):
-            write_fields = full_permissions.write_fields.filters
-            read_fields = full_permissions.read_fields.filters
-            for name, field in self.fields.items():
-                if name in write_fields:
-                    field.read_only = False
-                if name in read_fields:
-                    field.write_only = False
+        if full_permissions and full_permissions.fields:
+            spec = full_permissions.fields.spec
+            fields = self.fields
+            for name, values in spec.items():
+                field = fields[name]
+                for key, value in values.items():
+                    setattr(field, key, value)
 
     @classmethod
     def get_user_permissions(cls, user, even_if_superuser=False):

@@ -45,7 +45,7 @@ $(INSTALL_DIR)/bin/activate: requirements.txt install_requires.txt dependency_li
 	$(call header,"Updating dependencies")
 	@test -d $(INSTALL_DIR) || virtualenv $(INSTALL_DIR)
 	@$(INSTALL_DIR)/bin/pip install -q --upgrade pip setuptools flake8==2.4.0
-	@$(INSTALL_DIR)/bin/pip install --process-dependency-links -Ur requirements.txt
+	@$(INSTALL_DIR)/bin/pip install -Ur requirements.txt
 	@touch $(INSTALL_DIR)/bin/activate
 
 fixtures: install

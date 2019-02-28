@@ -279,12 +279,12 @@ class PermissionsUserSerializer(
                 'update': lambda u: Q(pk=u.pk),
             },
             'is_superuser': {
-                'write_fields': (
-                    'is_superuser',
-                ),
-                'read_fields': (
-                    'is_superuser',
-                )
+                'fields': {
+                    'is_superuser': {
+                        'read_only': False,
+                        'write_only': False
+                    }
+                },
             },
             '*': {
                 'read': True
