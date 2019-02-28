@@ -386,7 +386,7 @@ class WithDynamicSerializerMixin(
     def get_router(self):
         return getattr(self, '_router', None)
 
-    def initialized(self):
+    def initialized(self, **kwargs):
         return
 
     def _dynamic_init(self, only_fields, include_fields, exclude_fields):

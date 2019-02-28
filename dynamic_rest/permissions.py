@@ -118,7 +118,6 @@ class Filter(object):
 def merge(source, destination):
     for key, value in source.items():
         if isinstance(value, dict):
-            # get node or create one
             node = destination.setdefault(key, {})
             merge(value, node)
         else:
@@ -132,7 +131,7 @@ class Fields(Filter):
         return self.spec
 
     def do_and(self, a, b):
-        return merge(a, b)
+        return merge(a, merge(b, {}))
 
     def do_or(self, a, b):
         return self.do_and(a, b)
@@ -261,21 +260,21 @@ class Permissions(object):
 
 
 class PermissionsSerializerMixin(object):
-    def initialized(self):
+    def initialized(self, **kwargs):
         super(
             PermissionsSerializerMixin,
             self
-        ).initialized()
+        ).initialized(**kwargs)
+        if not kwargs.get('nested', False):
+            full_permissions = self.full_permissions
 
-        full_permissions = self.full_permissions
-
-        if full_permissions and full_permissions.fields:
-            spec = full_permissions.fields.spec
-            fields = self.fields
-            for name, values in spec.items():
-                field = fields[name]
-                for key, value in values.items():
-                    setattr(field, key, value)
+            if full_permissions and full_permissions.fields:
+                spec = full_permissions.fields.spec
+                fields = self.fields
+                for name, values in spec.items():
+                    field = fields[name]
+                    for key, value in values.items():
+                        setattr(field, key, value)
 
     @classmethod
     def get_user_permissions(cls, user, even_if_superuser=False):

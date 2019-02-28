@@ -280,7 +280,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         serializer.parent = self
         serializer.field_name = self.field_name
         if hasattr(serializer, 'initialized'):
-            serializer.initialized()
+            serializer.initialized(nested=True)
 
         return serializer
 
