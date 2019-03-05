@@ -12,6 +12,7 @@
         type: {{ field.type | to_json }},
         many: {{ field.many | to_json }},
         name: {{ field.name | to_json }},
+        chart: {{ field.chart | to_json }},
         required: {{ field.required | to_json }},
         value: {{ field | field_to_json }}{% if field.type == 'relation' %},
             relation: {

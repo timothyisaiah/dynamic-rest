@@ -571,6 +571,10 @@ left: 0.75rem;
     height: auto;
     min-height: 223px;
 }
+.drest-field .drest-chart {
+    height: 223px;
+    width: 100%;
+}
 .drest-field--disabled .dropify-wrapper .dropify-clear,
 .drest-field--disabled .dropify-wrapper .drest-field__clear,
 .drest-field:not(.drest-field--selected) .dropify-wrapper .drest-field__clear {

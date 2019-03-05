@@ -726,6 +726,7 @@ function DRESTApp(config) {
         this.$ = $(config.content);
         this.scrollHideSeconds = config.scrollHideSeconds || 2;
         this.$.show();
+
         this.$table = $(config.table);
         this.$fab = $(config.fab);
         this.$drawer = $(config.drawer);
@@ -1422,11 +1423,13 @@ function DRESTField(config) {
         }
         var field = this;
         this.$field.addClass('drest-field--disabled');
-        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
-            this.$input[0].readOnly = true;
-            this.$input.attr('tabindex', '-1');
-        } else {
-            this.$input[0].disabled = true;
+        if (this.$input.length) {
+            if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
+                this.$input[0].readOnly = true;
+                this.$input.attr('tabindex', '-1');
+            } else {
+                this.$input[0].disabled = true;
+            }
         }
         this.disabled = true;
 
@@ -1711,7 +1714,7 @@ function DRESTField(config) {
         var $field = this.$ = this.$field = $('#' + field.id);
         var $input = this.$input = $('#' + field.id + '-input');
         this.$ripple = this.$.find('.mdc-line-ripple');
-        if ($input.is('textarea') && autosize) {
+        if ($input.length && $input.is('textarea') && autosize) {
             autosize($input[0]);
         }
         var $helper = this.$helper = $('#' + field.id + '-helper');
@@ -1740,6 +1743,20 @@ function DRESTField(config) {
         }
 
         // setup dependents and listeners
+        if (this.chart) {
+            var value = this.value;
+            if (value.chart) {
+              value.chart.width = '100%';
+              value.chart.height = 223;
+            }
+            this.chart = new ApexCharts(
+                document.querySelector('#' + this.id + '-chart'),
+                value
+            );
+            setTimeout(function() {
+                this.chart.render();
+            }.bind(this), 100);
+        }
         if (type === 'list') {
             // fixed-style select2
             if (value) {
@@ -2051,11 +2068,13 @@ function DRESTField(config) {
         if (type === 'relation' || type === 'list') {
             $input.trigger('change');
         }
-        if (type === 'text' || type === 'decimal' || type === 'integer') {
+        if ($input.length && type === 'text' || type === 'decimal' || type === 'integer') {
             $input.on('keyup.drest-field', this.onChange.bind(this));
         }
         // bind change handler
-        $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
+        if ($input.length) {
+            $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
+        }
         $field.off('focus.drest-field').on('focus.drest-field', this.onFocus.bind(this));
         $field.off('blur.drest-field').on('blur.drest-field', this.onBlur.bind(this));
         $field.off('click.drest-field').on('click.drest-field', this.onClick.bind(this));
@@ -2071,6 +2090,7 @@ function DRESTField(config) {
     this.name = config.name;
     this.depends = config.depends;
     this.type = config.type;
+    this.chart = config.chart;
     this.initial = this.value = this.getValue(config.value);
     this.choices = config.choices;
     this.relation = config.relation;
