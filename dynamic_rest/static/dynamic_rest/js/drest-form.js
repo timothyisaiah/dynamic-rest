@@ -1745,17 +1745,19 @@ function DRESTField(config) {
         // setup dependents and listeners
         if (this.chart) {
             var value = this.value;
-            if (value.chart) {
-              value.chart.width = '100%';
-              value.chart.height = 223;
+            if (value) {
+                if (value.chart) {
+                  value.chart.width = '100%';
+                  value.chart.height = 223;
+                }
+                this.chart = new ApexCharts(
+                    document.querySelector('#' + this.id + '-chart'),
+                    value
+                );
+                setTimeout(function() {
+                    this.chart.render();
+                }.bind(this), 100);
             }
-            this.chart = new ApexCharts(
-                document.querySelector('#' + this.id + '-chart'),
-                value
-            );
-            setTimeout(function() {
-                this.chart.render();
-            }.bind(this), 100);
         }
         if (type === 'list') {
             // fixed-style select2
