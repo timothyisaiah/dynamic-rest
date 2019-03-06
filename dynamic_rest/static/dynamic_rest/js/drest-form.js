@@ -67,10 +67,6 @@ function throttle(func, wait, options) {
 $(function(){
 
     numeral.register('locale', 'drest', {
-        delimiters: {
-            thousands: ',',
-            decimal: '.'
-        },
         abbreviations: {
             thousand: 'K',
             million: 'M',
@@ -78,7 +74,7 @@ $(function(){
             trillion: 'T'
         }
     });
-    // numeral.locale('drest');
+    numeral.locale('drest');
 
     Dropify.prototype.isTouchDevice = function() { return false; }
     Dropify.prototype.getFileType = function() {
@@ -1771,9 +1767,9 @@ function DRESTField(config) {
         if (this.chart) {
             var value = this.value;
             var xformatter = (!value.xaxis || (value.xaxis && value.xaxis.type !== 'datetime')) ?
-              this.numeralFormatter('0,0 A') : this.momentFormatter('MMM Do');
+              this.numeralFormatter('0,0a') : this.momentFormatter('MMM Do');
             var yformatter = (!value.yaxis || (value.yaxis && value.yaxis.type !== 'datetime')) ?
-              this.numeralFormatter('0,0 A') : this.momentFormatter('MMM Do');
+              this.numeralFormatter('0,0a') : this.momentFormatter('MMM Do');
 
             var defaults = {
               tooltip: {
