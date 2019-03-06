@@ -53,6 +53,9 @@
                 {% block script__jquery %}
                     <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
                 {% endblock %}
+                {% block script__numeral %}
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/numeral.js/2.0.6/numeral.min.js"></script>
+                {% endblock %}
                 {% block script__drest %}
                     <script src="{% static "dynamic_rest/js/drest-form.js" %}?version={% drest_version %}"></script>
                 {% endblock %}
@@ -104,7 +107,7 @@
                     <script src="https://cdnjs.cloudflare.com/ajax/libs/cleave.js/1.4.2/cleave.min.js"></script>
                 {% endblock %}
                 {% block script__apexcharts %}
-                    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/apexcharts/2.2.4/apexcharts.js"></script>
                 {% endblock %}
             {% endblock %}
        </head>

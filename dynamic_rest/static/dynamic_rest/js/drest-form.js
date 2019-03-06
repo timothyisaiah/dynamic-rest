@@ -65,6 +65,21 @@ function throttle(func, wait, options) {
 
 /** dropify patches **/
 $(function(){
+
+    numeral.register('locale', 'drest', {
+        delimiters: {
+            thousands: ',',
+            decimal: '.'
+        },
+        abbreviations: {
+            thousand: 'K',
+            million: 'M',
+            billion: 'B',
+            trillion: 'T'
+        }
+    });
+    // numeral.locale('drest');
+
     Dropify.prototype.isTouchDevice = function() { return false; }
     Dropify.prototype.getFileType = function() {
         return this.file.name.split('.').pop().split('?').shift().toLowerCase();
@@ -1705,6 +1720,16 @@ function DRESTField(config) {
         }
         app.scrollTo(this.$, after);
     };
+    this.numeralFormatter = function(fmt) {
+        return function(x) {
+            return numeral(x).format(fmt);
+        };
+    };
+    this.momentFormatter = function(fmt) {
+        return function(x) {
+            return moment(x).format(fmt);
+        }
+    };
     this.onLoad = function() {
         if (this.loaded) {
             return;
@@ -1745,11 +1770,47 @@ function DRESTField(config) {
         // setup dependents and listeners
         if (this.chart) {
             var value = this.value;
-            if (value) {
-                if (value.chart) {
-                  value.chart.width = '100%';
-                  value.chart.height = 223;
+            var xformatter = (!value.xaxis || (value.xaxis && value.xaxis.type !== 'datetime')) ?
+              this.numeralFormatter('0,0 A') : this.momentFormatter('MMM Do');
+            var yformatter = (!value.yaxis || (value.yaxis && value.yaxis.type !== 'datetime')) ?
+              this.numeralFormatter('0,0 A') : this.momentFormatter('MMM Do');
+
+            var defaults = {
+              tooltip: {
+                x: {
+                  formatter: xformatter
+                },
+                y: {
+                  formatter: yformatter
                 }
+              },
+              xaxis: {
+                labels: {
+                  formatter: xformatter
+                }
+              },
+              yaxis: {
+                labels: {
+                  formatter: yformatter
+                }
+              },
+              chart: {
+                width: '100%',
+                height: 223,
+                toolbar: {
+                  download: false,
+                  selection: false,
+                  zoom: true,
+                  zoomin: true,
+                  zoomout: true,
+                  pan: true,
+                  reset: true
+                },
+                autoSelected: 'zoom'
+              }
+            };
+            if (value) {
+                this.value = value = Object.assign(value, defaults, value);
                 this.chart = new ApexCharts(
                     document.querySelector('#' + this.id + '-chart'),
                     value
