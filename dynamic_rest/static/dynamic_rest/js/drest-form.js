@@ -1827,9 +1827,9 @@ function DRESTField(config) {
         if (this.chart) {
             var value = this.value;
             var xformatter = (!value.xaxis || (value.xaxis && value.xaxis.type !== 'datetime')) ?
-              this.numeralFormatter('0,0a') : this.momentFormatter('MMM Do');
+              this.numeralFormatter('0,0a') : this.momentFormatter("MMM Do 'YY");
             var yformatter = (!value.yaxis || (value.yaxis && value.yaxis.type !== 'datetime')) ?
-              this.numeralFormatter('0,0a') : this.momentFormatter('MMM Do');
+              this.numeralFormatter('0,0a') : this.momentFormatter("MMM Do 'YY");
 
             var defaults = {
               tooltip: {
@@ -1857,18 +1857,18 @@ function DRESTField(config) {
                   tools: {
                     download: false,
                     selection: false,
-                    zoom: true,
+                    zoom: false,
                     zoomin: true,
                     zoomout: true,
-                    pan: false,
+                    pan: true,
                     reset: true
                   },
-                  autoSelected: 'zoom'
+                  autoSelected: 'pan'
                 },
               }
             };
             if (value) {
-                this.value = value = deepmerge.all([defaults, value]);
+                this.initial = this.value = value = deepmerge.all([defaults, value]);
                 this.chart = new ApexCharts(
                     document.querySelector('#' + this.id + '-chart'),
                     value
