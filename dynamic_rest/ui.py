@@ -135,22 +135,6 @@ class UIField(object):
         return result
 
 
-class UIJSONField(UIField):
-    def as_form_field(self):
-        value = self.value
-        try:
-            value = json.dumps(self.value, sort_keys=True, indent=4)
-        except TypeError:
-            pass
-
-        parent_name = self._field.parent.get_name()
-        rand = ''.join([str(randint(0, 9)) for _ in range(6)])
-        id = '%s-%s-%s' % (parent_name, self.name, rand)
-        result = self.__class__(self._field, value, self.errors, self._prefix,
-                                self.instance, id)
-        return result
-
-
 class UISection(object):
     def __init__(self, name, fields, serializer, instance=None, main=False):
         self.serializer = serializer

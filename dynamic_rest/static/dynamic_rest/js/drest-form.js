@@ -1,3 +1,74 @@
+function isMergeableObject(val) {
+    var nonNullObject = val && typeof val === 'object'
+
+    return nonNullObject
+        && Object.prototype.toString.call(val) !== '[object RegExp]'
+        && Object.prototype.toString.call(val) !== '[object Date]'
+}
+
+function emptyTarget(val) {
+    return Array.isArray(val) ? [] : {}
+}
+
+function cloneIfNecessary(value, optionsArgument) {
+    var clone = optionsArgument && optionsArgument.clone === true
+    return (clone && isMergeableObject(value)) ? deepmerge(emptyTarget(value), value, optionsArgument) : value
+}
+
+function defaultArrayMerge(target, source, optionsArgument) {
+    var destination = target.slice()
+    source.forEach(function(e, i) {
+        if (typeof destination[i] === 'undefined') {
+            destination[i] = cloneIfNecessary(e, optionsArgument)
+        } else if (isMergeableObject(e)) {
+            destination[i] = deepmerge(target[i], e, optionsArgument)
+        } else if (target.indexOf(e) === -1) {
+            destination.push(cloneIfNecessary(e, optionsArgument))
+        }
+    })
+    return destination
+}
+
+function mergeObject(target, source, optionsArgument) {
+    var destination = {}
+    if (isMergeableObject(target)) {
+        Object.keys(target).forEach(function (key) {
+            destination[key] = cloneIfNecessary(target[key], optionsArgument)
+        })
+    }
+    Object.keys(source).forEach(function (key) {
+        if (!isMergeableObject(source[key]) || !target[key]) {
+            destination[key] = cloneIfNecessary(source[key], optionsArgument)
+        } else {
+            destination[key] = deepmerge(target[key], source[key], optionsArgument)
+        }
+    })
+    return destination
+}
+
+function deepmerge(target, source, optionsArgument) {
+    var array = Array.isArray(source);
+    var options = optionsArgument || { arrayMerge: defaultArrayMerge }
+    var arrayMerge = options.arrayMerge || defaultArrayMerge
+
+    if (array) {
+        return Array.isArray(target) ? arrayMerge(target, source, optionsArgument) : cloneIfNecessary(source, optionsArgument)
+    } else {
+        return mergeObject(target, source, optionsArgument)
+    }
+}
+
+deepmerge.all = function deepmergeAll(array, optionsArgument) {
+    if (!Array.isArray(array) || array.length < 2) {
+        throw new Error('first argument should be an array with at least two elements')
+    }
+
+    // we are sure there are at least 2 values, so it is safe to have no initial value
+    return array.reduce(function(prev, next) {
+        return deepmerge(prev, next, optionsArgument)
+    })
+}
+
 function doGoto() {
     var goTo = $(this).data('goto');
     var target = $(this).data('goto-target') || '_self';
@@ -726,6 +797,7 @@ function DRESTApp(config) {
         this.$ = $(config.content);
         this.scrollHideSeconds = config.scrollHideSeconds || 2;
         this.$.show();
+
         this.$table = $(config.table);
         this.$fab = $(config.fab);
         this.$drawer = $(config.drawer);
@@ -1422,11 +1494,13 @@ function DRESTField(config) {
         }
         var field = this;
         this.$field.addClass('drest-field--disabled');
-        if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
-            this.$input[0].readOnly = true;
-            this.$input.attr('tabindex', '-1');
-        } else {
-            this.$input[0].disabled = true;
+        if (this.$input.length) {
+            if (this.type === 'text' || this.type === 'decimal' || this.type === 'integer' || this.type === 'date' || this.type === 'time') {
+                this.$input[0].readOnly = true;
+                this.$input.attr('tabindex', '-1');
+            } else {
+                this.$input[0].disabled = true;
+            }
         }
         this.disabled = true;
 
@@ -1702,6 +1776,16 @@ function DRESTField(config) {
         }
         app.scrollTo(this.$, after);
     };
+    this.numeralFormatter = function(fmt) {
+        return function(x) {
+            return numeral(x).format(fmt);
+        };
+    };
+    this.momentFormatter = function(fmt) {
+        return function(x) {
+            return moment(x).format(fmt);
+        }
+    };
     this.onLoad = function() {
         if (this.loaded) {
             return;
@@ -1711,7 +1795,7 @@ function DRESTField(config) {
         var $field = this.$ = this.$field = $('#' + field.id);
         var $input = this.$input = $('#' + field.id + '-input');
         this.$ripple = this.$.find('.mdc-line-ripple');
-        if ($input.is('textarea') && autosize) {
+        if ($input.length && $input.is('textarea') && autosize) {
             autosize($input[0]);
         }
         var $helper = this.$helper = $('#' + field.id + '-helper');
@@ -1740,6 +1824,60 @@ function DRESTField(config) {
         }
 
         // setup dependents and listeners
+        if (this.chart) {
+            var value = this.value;
+            var xformatter = (!value.xaxis || (value.xaxis && value.xaxis.type !== 'datetime')) ?
+              this.numeralFormatter('0,0a') : this.momentFormatter("MMM Do 'YY");
+            var yformatter = (!value.yaxis || (value.yaxis && value.yaxis.type !== 'datetime')) ?
+              this.numeralFormatter('0,0a') : this.momentFormatter("MMM Do 'YY");
+
+            var defaults = {
+              tooltip: {
+                x: {
+                  formatter: xformatter
+                },
+                y: {
+                  formatter: yformatter
+                }
+              },
+              xaxis: {
+                labels: {
+                  formatter: xformatter
+                }
+              },
+              yaxis: {
+                labels: {
+                  formatter: yformatter
+                }
+              },
+              chart: {
+                width: '100%',
+                height: 223,
+                toolbar: {
+                  tools: {
+                    download: false,
+                    selection: false,
+                    zoom: false,
+                    zoomin: true,
+                    zoomout: true,
+                    pan: true,
+                    reset: true
+                  },
+                  autoSelected: 'pan'
+                },
+              }
+            };
+            if (value) {
+                this.initial = this.value = value = deepmerge.all([defaults, value]);
+                this.chart = new ApexCharts(
+                    document.querySelector('#' + this.id + '-chart'),
+                    value
+                );
+                setTimeout(function() {
+                    this.chart.render();
+                }.bind(this), 100);
+            }
+        }
         if (type === 'list') {
             // fixed-style select2
             if (value) {
@@ -2051,11 +2189,13 @@ function DRESTField(config) {
         if (type === 'relation' || type === 'list') {
             $input.trigger('change');
         }
-        if (type === 'text' || type === 'decimal' || type === 'integer') {
+        if ($input.length && type === 'text' || type === 'decimal' || type === 'integer') {
             $input.on('keyup.drest-field', this.onChange.bind(this));
         }
         // bind change handler
-        $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
+        if ($input.length) {
+            $input.off('change.drest-field').on('change.drest-field', this.onChange.bind(this));
+        }
         $field.off('focus.drest-field').on('focus.drest-field', this.onFocus.bind(this));
         $field.off('blur.drest-field').on('blur.drest-field', this.onBlur.bind(this));
         $field.off('click.drest-field').on('click.drest-field', this.onClick.bind(this));
@@ -2071,6 +2211,7 @@ function DRESTField(config) {
     this.name = config.name;
     this.depends = config.depends;
     this.type = config.type;
+    this.chart = config.chart;
     this.initial = this.value = this.getValue(config.value);
     this.choices = config.choices;
     this.relation = config.relation;

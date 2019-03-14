@@ -14,7 +14,7 @@ from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
-from dynamic_rest.ui import UIFilter, UISection, UIField, UIJSONField
+from dynamic_rest.ui import UIFilter, UISection, UIField
 from dynamic_rest.permissions import PermissionsSerializerMixin
 from dynamic_rest.conf import settings
 from dynamic_rest import fields as _fields
@@ -494,11 +494,6 @@ class WithDynamicSerializerMixin(
             else:
                 value = getattr(value, 'instance', value)
         error = self.errors.get(key) if hasattr(self, '_errors') else None
-
-        if isinstance(field, JSONField):
-            return UIJSONField(
-                field, value, error, prefix='', instance=instance
-            )
         return UIField(
             field, value, error, prefix='', instance=instance
         )
