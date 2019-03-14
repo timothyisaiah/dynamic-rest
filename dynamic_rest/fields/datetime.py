@@ -13,6 +13,17 @@ class DynamicDateTimeField(
 ):
     ADMIN_FORMAT = settings.ADMIN_DATETIME_FORMAT
 
+    def to_representation(self, value):
+        try:
+            return super(
+                DynamicDateTimeField,
+                self
+            ).to_representation(value)
+        except ValueError as e:
+            if '>= 1900' in str(e):
+                # strftime cant handle dates before 1900
+                return value.isoformat()
+
     def prepare_value(self, instance):
         value = super(DynamicDateTimeField, self).prepare_value(
             instance
