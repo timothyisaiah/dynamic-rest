@@ -4,7 +4,6 @@ from itertools import chain
 from django.db import models
 
 from dynamic_rest.related import RelatedObject
-from dynamic_rest.compat import DJANGO110
 
 
 class Meta(object):
@@ -110,24 +109,17 @@ class Meta(object):
                 meta = model._meta
 
         try:
-            if DJANGO110:
-                field = meta.get_field(field_name)
-            else:
-                field = meta.get_field_by_name(field_name)[0]
+            field = meta.get_field(field_name)
         except:
-            if DJANGO110:
-                related_objs = (
-                    f for f in meta.get_fields()
-                    if (f.one_to_many or f.one_to_one)
-                    and f.auto_created and not f.concrete
-                )
-                related_m2m_objs = (
-                    f for f in meta.get_fields(include_hidden=True)
-                    if f.many_to_many and f.auto_created
-                )
-            else:
-                related_objs = meta.get_all_related_objects()
-                related_m2m_objs = meta.get_all_related_many_to_many_objects()
+            related_objs = (
+                f for f in meta.get_fields()
+                if (f.one_to_many or f.one_to_one)
+                and f.auto_created and not f.concrete
+            )
+            related_m2m_objs = (
+                f for f in meta.get_fields(include_hidden=True)
+                if f.many_to_many and f.auto_created
+            )
 
             related_objects = {
                 o.get_accessor_name(): o

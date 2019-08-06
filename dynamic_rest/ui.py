@@ -1,5 +1,4 @@
 from random import randint
-import json
 
 from django.utils.functional import cached_property
 from django.utils import six
@@ -7,6 +6,7 @@ from decimal import Decimal
 from django.template import loader
 from rest_framework.compat import unicode_to_repr
 
+from rest_framework.fields import SkipField
 from dynamic_rest.utils import is_truthy
 from dynamic_rest import fields as dfields
 
@@ -144,7 +144,7 @@ class UISection(object):
         for field in fields:
             try:
                 self.fields.append(serializer.get_field_value(field, instance))
-            except KeyError:
+            except (KeyError, SkipField):
                 pass
         if len(self.fields) == 1:
             self.field = self.fields[0]

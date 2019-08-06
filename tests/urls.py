@@ -22,9 +22,9 @@ router.register(r'user_locations', viewsets.UserLocationViewSet)
 router.register_resource(viewsets.CatViewSet, namespace='v2')  # canonical
 router.register(r'v1/user_locations', viewsets.UserLocationViewSet)
 router.register(r'p/users', viewsets.PermissionsUserViewSet, namespace='p')
-router.register('login', login)
-router.register('logout', logout)
 
 urlpatterns = [
-    url(r'^', include(router.urls))
+    url(r'^', include(router.urls)),
+    url('login', login),
+    url('logout', logout)
 ]

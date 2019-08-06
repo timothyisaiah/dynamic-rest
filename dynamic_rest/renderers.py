@@ -6,7 +6,8 @@ from rest_framework.renderers import (
     ClassLookupDict
 )
 from django.utils.html import mark_safe
-from dynamic_rest.compat import reverse, NoReverseMatch, AdminRenderer
+from dynamic_rest.compat import reverse, NoReverseMatch
+from rest_framework.renderers import AdminRenderer
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
 

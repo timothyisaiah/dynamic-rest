@@ -9,7 +9,11 @@ from decimal import Decimal
 from django.db.models.fields.files import FieldFile
 from django.http.request import QueryDict
 from dynamic_rest.version import version
-from urlparse import urlparse, urlunparse
+try:
+    from urlparse import urlparse, urlunparse
+except ImportError:
+    from urllib.parse import urlparse, urlunparse
+
 from uuid import UUID
 from django import template
 from django.utils.safestring import mark_safe

@@ -8,7 +8,7 @@ from model_mommy import mommy
 from rest_framework.fields import empty
 from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
-from .compat import resolve
+from dynamic_rest.compat import resolve
 from dynamic_rest.meta import Meta
 
 

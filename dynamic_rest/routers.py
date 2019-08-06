@@ -5,15 +5,11 @@ from django.utils import six
 from django.shortcuts import redirect
 from rest_framework import views
 from rest_framework.response import Response
-from rest_framework.routers import DefaultRouter, Route, replace_methodname
+from rest_framework.routers import DefaultRouter, Route
 
 from dynamic_rest.meta import get_model_table
 from dynamic_rest.conf import settings
-from dynamic_rest.compat import (
-    get_script_prefix,
-)
-
-from django.core.urlresolvers import resolve
+from dynamic_rest.compat import get_script_prefix, resolve, replace_methodname
 
 resource_map = {}
 resource_name_map = {}
@@ -343,6 +339,7 @@ class DynamicRouter(DefaultRouter):
                     url=url,
                     mapping=mapping,
                     name=replace_methodname(route_name, field_name),
-                    initkwargs={}
+                    initkwargs={},
+                    detail='post' in mapping
                 ))
         return routes

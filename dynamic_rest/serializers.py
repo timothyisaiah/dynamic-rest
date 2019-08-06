@@ -9,7 +9,7 @@ from django.utils import six
 from django.db.models.fields.files import FieldFile
 from django.utils.functional import cached_property
 from rest_framework import exceptions, serializers
-from rest_framework.fields import SkipField, JSONField, empty
+from rest_framework.fields import SkipField, empty
 from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList

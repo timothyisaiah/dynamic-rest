@@ -1,5 +1,6 @@
 import json
 
+
 from django.test import TestCase
 from django.test.client import RequestFactory
 from rest_framework import exceptions, status
@@ -10,7 +11,6 @@ from dynamic_rest.test import ViewSetTestCase
 from tests.models import Dog, Group, User
 from tests.setup import create_fixture
 from tests.viewsets import (
-    GroupNoMergeDictViewSet,
     UserViewSet
 )
 
@@ -121,34 +121,6 @@ class TestUserViewSet(TestCase):
         self.assertEqual(out['_include']['f10__isnull'], False)
         self.assertEqual(out['_include']['f11__isnull'], False)
         self.assertEqual(out['_include']['f12__isnull'], None)
-
-
-class TestMergeDictConvertsToDict(TestCase):
-
-    def setUp(self):
-        self.fixture = create_fixture()
-        self.view = GroupNoMergeDictViewSet.as_view({'post': 'create'})
-        self.rf = RequestFactory()
-
-    def test_merge_dict_request(self):
-        data = {
-            'name': 'miao',
-            'random_input': [1, 2, 3]
-        }
-        # Django test submits data as multipart-form by default,
-        # which results in request.data being a MergeDict.
-        # Wrote UserNoMergeDictViewSet to raise an exception (return 400)
-        # if request.data ends up as MergeDict, is not a dict, or
-        # is a dict of lists.
-        request = Request(self.rf.post('/groups/', data))
-        try:
-            response = self.view(request)
-            self.assertEqual(response.status_code, 201)
-        except NotImplementedError as e:
-            message = '{0}'.format(e)
-            if 'request.FILES' not in message:
-                self.fail('Unexpected error: %s' % message)
-            # otherwise, this is a known DRF 3.2 bug
 
 
 class BulkUpdateTestCase(TestCase):
