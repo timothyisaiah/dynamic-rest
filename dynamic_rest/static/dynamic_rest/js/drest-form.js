@@ -1975,7 +1975,7 @@ function DRESTField(config) {
             // format via cleave
             this.cleave = new Cleave('#' + this.id + '-input', {
                 numeral: true,
-                numeralDecimalScale: this.type === 'integer' ? 0 : 2,
+                numeralDecimalScale: this.type === 'integer' ? 0 : 4,
                 numeralThousandsGroupStyle: 'thousand'
             });
         } else if (type === 'relation') {
