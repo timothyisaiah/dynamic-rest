@@ -73,7 +73,7 @@ class DynamicRouter(DefaultRouter):
             def get(self, request, *args, **kwargs):
                 if (
                     settings.API_ROOT_SECURE and
-                    not request.user.is_authenticated()
+                    not request.user.is_authenticated
                 ):
                     return redirect(
                         '%s?next=%s' % (
