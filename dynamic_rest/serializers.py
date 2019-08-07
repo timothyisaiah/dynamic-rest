@@ -1189,6 +1189,11 @@ class WithDynamicSerializerMixin(
                             setattr(instance, attr, value)
                     except AttributeError:
                         setattr(instance, attr, value)
+                    except TypeError as e:
+                        if 'Direct assignment to the forward side' in str(e):
+                            getattr(instance, attr).set(value)
+                        else:
+                            raise
 
                 for s in to_save:
                     s.save()
