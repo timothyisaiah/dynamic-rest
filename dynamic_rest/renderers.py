@@ -49,6 +49,9 @@ mapping[fields.DynamicPasswordField] = {
 mapping[fields.DynamicChoiceField] = {
     'base_template': 'select.html',
 }
+mapping[fields.DynamicJSONField] = {
+    'base_template': 'input.html',
+}
 mapping[fields.DynamicField] = {
     'base_template': 'input.html',
 }
