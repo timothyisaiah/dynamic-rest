@@ -1975,7 +1975,7 @@ function DRESTField(config) {
             // format via cleave
             this.cleave = new Cleave('#' + this.id + '-input', {
                 numeral: true,
-                numeralDecimalScale: this.type === 'integer' ? 0 : 4,
+                numeralDecimalScale: this.numDigits,
                 numeralThousandsGroupStyle: 'thousand'
             });
         } else if (type === 'relation') {
@@ -2217,6 +2217,7 @@ function DRESTField(config) {
     this.relation = config.relation;
     this.label = config.label;
     this.id = config.id;
+    this.numDigits = typeof config.numDigits !== 'undefined' ? config.numDigits : (this.type === 'decimal' ? 2 : 0);
     this.many = config.many || this.type === 'list';
     this.required = config.required;
     this.readOnly = config.readOnly;

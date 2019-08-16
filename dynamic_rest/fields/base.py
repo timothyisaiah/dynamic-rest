@@ -39,6 +39,7 @@ class DynamicField(fields.Field, DynamicBase):
                 saving related objects.
                 If source is '*', this will default to 'set_$FIELD_NAME'.
         """
+        self.num_digits = kwargs.pop('num_digits', 0)
         self.icon = kwargs.pop('icon', None)
         self.requires = kwargs.pop('requires', None)
         self.deferred = kwargs.pop('deferred', None)
