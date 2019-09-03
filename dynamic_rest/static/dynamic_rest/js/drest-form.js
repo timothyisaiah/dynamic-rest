@@ -1136,7 +1136,17 @@ function DRESTForm(config) {
                 var fieldName = Object.keys(dependent)[0];
                 var fieldValue = dependent[fieldName];
                 var field = fields[fieldName];
-                if (field.isEqual(fieldValue, value)) {
+                var show = false;
+                if ($.isArray(fieldValue)) {
+                    // if value is an array
+                    show = fieldValue.reduce(function(sho, next) {
+                        return sho || field.isEqual(next, value);
+                    }, show);
+                } else {
+                    show = field.isEqual(fieldValue, value);
+                }
+
+                if (show) {
                     field.show();
                 } else {
                     field.hide();
