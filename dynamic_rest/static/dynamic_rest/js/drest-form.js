@@ -1127,6 +1127,8 @@ function DRESTForm(config) {
         var dependents = this.getFieldDependents();
         var fields = this.getFieldsByName();
         dependents = dependents[field.name];
+        var didShow = false;
+        var didHide = false;
         if (dependents && dependents.length) {
             // e.g. suppose field B has changed
             // if field A depends on B=1,
@@ -1147,12 +1149,33 @@ function DRESTForm(config) {
                 }
 
                 if (show) {
+                    didShow = true;
                     field.show();
                 } else {
+                    didHide = false;
                     field.hide();
                 }
             }
         }
+        if (didShow) {
+            this.maybeShowCards();
+        } else if (didHide) {
+            this.maybeHideCards();
+        }
+    };
+    this.maybeHideCards = function(obj) {
+        this.$.find('.drest-grid__item').each(function() {
+            if ($(this).find('.drest-field').not('.drest-hidden').length == 0) {
+                $(this).hide();
+            }
+        });
+    };
+    this.maybeShowCards = function(obj) {
+        this.$.find('.drest-grid__item').each(function() {
+            if ($(this).find('.drest-field').not('.drest-hidden').length > 0) {
+                $(this).show();
+            }
+        });
     };
     this.serialize = function(obj) {
         var result = [];
