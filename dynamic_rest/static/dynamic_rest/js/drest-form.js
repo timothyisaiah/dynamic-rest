@@ -1157,22 +1157,17 @@ function DRESTForm(config) {
                 }
             }
         }
-        if (didShow) {
-            this.maybeShowCards();
-        } else if (didHide) {
-            this.maybeHideCards();
+        if (didShow || didHide) {
+            this.hideShowCards();
         }
     };
-    this.maybeHideCards = function(obj) {
+    this.hideShowCards = function(obj) {
         this.$.find('.drest-grid__item').each(function() {
             if ($(this).find('.drest-field').not('.drest-hidden').length == 0) {
+                // nothing in the card
                 $(this).hide();
-            }
-        });
-    };
-    this.maybeShowCards = function(obj) {
-        this.$.find('.drest-grid__item').each(function() {
-            if ($(this).find('.drest-field').not('.drest-hidden').length > 0) {
+            } else {
+                // something
                 $(this).show();
             }
         });
