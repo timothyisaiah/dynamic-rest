@@ -446,7 +446,7 @@ class WithDynamicSerializerMixin(
 
     @cached_property
     def default_sections(self):
-        field_names = self._readable_field_names
+        field_names = self._all_readable_field_names
         instance = self.instance
         return [UISection(
             'Details',
@@ -1008,6 +1008,13 @@ class WithDynamicSerializerMixin(
         # NOTE: Copied from DRF, exists in 3.2.x but not 3.1
         return [
             field for field in self.fields.values() if not field.write_only
+        ]
+
+    @cached_property
+    def _all_readable_field_names(self):
+        fields = self.get_all_fields()
+        return [
+            key for key in fields.keys() if not fields[key].write_only
         ]
 
     @cached_property
