@@ -1816,14 +1816,25 @@ function DRESTField(config) {
     };
     this.reload = function(url) {
         var self = this;
+        var relation = this.relation;
+        url = url + '?sideloading=false&exclude[]=*';
+        if (relation) {
+            // load name and pk field
+            var pkField = relation.pkField;
+            var nameField = relation.nameField;
+            url += '&exclude[]=' + self.name + '.*';
+            url += '&include[]=' + self.name + '.' + pkField + '&include[]=' + self.name + '.' + nameField;
+        } else {
+            url += '&include[]=' + self.name;
+        }
         $.ajax({
-            url: url + '?exclude[]=*&include[]=' + self.name,
+            url: url,
             xhrFields: {
                 withCredentials: true
             },
             contentType: 'application/json'
         }).done(function(data) {
-            self.value = self.getValue(Object.values(data)[0][self.name]);
+            self.initial = self.value = self.getValue(Object.values(data)[0][self.name]);
             self.reloaded = true;
             self.onLoad();
         });
@@ -1836,6 +1847,7 @@ function DRESTField(config) {
         var field = this;
         var $field = this.$ = this.$field = $('#' + field.id);
         var $form = this.$form = $field.closest('.drest-form');
+        var $input = this.$input = $('#' + field.id + '-input');
         $field.addClass('drest-field--js');
 
         if (this.deferred) {
@@ -1850,7 +1862,6 @@ function DRESTField(config) {
         }
 
         // set up input bindings
-        var $input = this.$input = $('#' + field.id + '-input');
         this.$ripple = this.$.find('.mdc-line-ripple');
         if ($input.length && $input.is('textarea') && autosize) {
             autosize($input[0]);
@@ -1984,6 +1995,9 @@ function DRESTField(config) {
                 $input.on('focus', this.onFocus.bind(this));
             }
         } else if (type === 'datetime' || type === 'date' || type === 'time') {
+            if (this.$input.length) {
+                this.$input[0].value = this.value;
+            }
             if (type === 'datetime') {
                 // picker UI
                 var opts = { clearButton: true };
@@ -2018,10 +2032,16 @@ function DRESTField(config) {
                 $input.on('click', this.inputOnClick.bind(this));
             }
         } else if (type === 'text') {
+            if (this.$input.length) {
+                this.$input[0].value = this.value;
+            }
             $input.on('blur', this.onBlur.bind(this));
             $input.on('focus', this.onFocus.bind(this));
             $input.on('click', this.inputOnClick.bind(this));
         } else if (type === 'integer' || type === 'decimal') {
+            if (this.$input.length) {
+                this.$input[0].value = this.value;
+            }
             $input.on('blur', this.onBlur.bind(this));
             $input.on('focus', this.onFocus.bind(this));
             $input.on('click', this.inputOnClick.bind(this));
