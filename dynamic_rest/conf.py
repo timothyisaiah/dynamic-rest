@@ -23,6 +23,10 @@ DYNAMIC_REST = {
 
     'API_GET_HOME': None,
 
+    # ALL_FIELDS_ON_UPDATE: set to true to include all deferred fields
+    # back automatically on POST, PUT, and PATCH requests
+    'ALL_FIELDS_ON_UPDATE': True,
+
     # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
     # instances of the primary resource when sideloading.
     'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+',

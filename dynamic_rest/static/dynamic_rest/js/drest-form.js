@@ -1814,6 +1814,20 @@ function DRESTField(config) {
             return moment(x).format(fmt);
         }
     };
+    this.reload = function(url) {
+        var self = this;
+        $.ajax({
+            url: url + '?exclude[]=*&include[]=' + self.name,
+            xhrFields: {
+                withCredentials: true
+            },
+            contentType: 'application/json'
+        }).done(function(data) {
+            self.value = self.getValue(Object.values(data)[0][self.name]);
+            self.reloaded = true;
+            self.onLoad();
+        });
+    };
     this.onLoad = function() {
         if (this.loaded) {
             return;
@@ -1821,6 +1835,21 @@ function DRESTField(config) {
         var config = this.config;
         var field = this;
         var $field = this.$ = this.$field = $('#' + field.id);
+        var $form = this.$form = $field.closest('.drest-form');
+        $field.addClass('drest-field--js');
+
+        if (this.deferred) {
+            if (!this.reloaded) {
+                // trigger reload before continuing
+                $field.addClass('drest-field--reloading');
+                this.reload($form.attr('action'));
+                return;
+            } else {
+                $field.removeClass('drest-field--reloading');
+            }
+        }
+
+        // set up input bindings
         var $input = this.$input = $('#' + field.id + '-input');
         this.$ripple = this.$.find('.mdc-line-ripple');
         if ($input.length && $input.is('textarea') && autosize) {
@@ -1830,27 +1859,23 @@ function DRESTField(config) {
         if (this.helpText === this.helpTextShort && this.type === 'boolean') {
             this.$helper.addClass('absolute');
         }
-        var $form = this.$form = $field.closest('.drest-form');
+
         var type = this.type;
         var relation = this.relation;
-
         var value = this.value;
         var label = this.label;
         var name = this.name;
         var many = this.many;
         var required = this.required;
         var disabled = this.disabled = !$form.length || $form.hasClass('drest-form--readonly');
-
         var select2;
 
-        //  set classes
-        $field.addClass('drest-field--js');
+        //  set empty status
         if (!this.isEmpty(value)) {
             this.toFilled();
         } else {
             this.fromFilled();
         }
-
         // setup dependents and listeners
         if (this.chart) {
             var value = this.value;
@@ -2252,6 +2277,7 @@ function DRESTField(config) {
     this.helpTextShort = config.helpTextShort;
     this.helpText = config.helpText;
     this.writeOnly = config.writeOnly;
+    this.deferred = config.deferred;
 
     var container = document.querySelector('#' + this.config.id);
     container.DRESTField = this;

@@ -1423,3 +1423,22 @@ left: 0.75rem;
     right: -1rem;
     top: -1rem;
 }
+@keyframes spin {
+  to {transform: rotate(360deg);}
+}
+
+.drest-field.drest-field--reloading:before {
+    content: '';
+    box-sizing: border-box;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin-top: -10px;
+    margin-left: -10px;
+    border-radius: 50%;
+    border: 2px solid #ccc;
+    border-top-color: #000;
+    animation: spin .7s linear infinite;
+}

@@ -397,3 +397,9 @@ class DynamicAdminRenderer(AdminRenderer):
             self.accepted_media_type,
             {'style': {'template_pack': 'dynamic_rest/form'}}
         )
+
+    def get_raw_data_form(self, *args, **kwargs):
+        return None
+
+    def get_rendered_html_form(self, *args, **kwargs):
+        return None

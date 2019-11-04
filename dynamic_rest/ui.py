@@ -51,7 +51,7 @@ class UIField(object):
     """
 
     def __init__(self, field, value, errors, prefix='', instance=None,
-                 id=None):
+                 id=None, deferred=False):
         self._field = field
         self._prefix = prefix
         rand = ''.join([str(randint(0, 9)) for _ in range(6)])
@@ -63,6 +63,7 @@ class UIField(object):
         self.type = get_type_for(self._field)
         self.is_null = value is None or value == ''
         self.is_empty = (not value and not (value == 0 or value is False))
+        self.deferred = deferred
 
     def __getattr__(self, attr_name):
         return getattr(self._field, attr_name)
@@ -110,6 +111,7 @@ class UIField(object):
         if request_method == 'GET':
             if (
                 getattr(field, 'hide', None) and
+                not self.deferred and
                 field.read_only and
                 self.is_empty and
                 not self.add
@@ -130,8 +132,15 @@ class UIField(object):
         rand = ''.join([str(randint(0, 9)) for _ in range(6)])
         id = '%s-%s-%s' % (parent_name, self.name, rand)
 
-        result = self.__class__(self._field, value, self.errors, self._prefix,
-                                self.instance, id)
+        result = self.__class__(
+            self._field,
+            value,
+            self.errors,
+            self._prefix,
+            self.instance,
+            id,
+            self.deferred
+        )
         return result
 
 
@@ -141,16 +150,31 @@ class UISection(object):
         self.name = name
         self.fields = []
         self.instance = instance
-        for field in fields:
+        all_fields = serializer.get_all_fields()
+        for name in fields:
             try:
-                self.fields.append(serializer.get_field_value(field, instance))
-            except (KeyError, SkipField):
+                self.fields.append(serializer.get_field_value(name, instance))
+            except KeyError:
+                if name in all_fields:
+                    field = all_fields[name]
+                    if not field.write_only:
+                        # render a deferred field
+                        self.fields.append(
+                            UIField(
+                                field,
+                                None,
+                                None,
+                                deferred=True
+                            )
+                        )
+                else:
+                    raise
+            except SkipField:
                 pass
         if len(self.fields) == 1:
             self.field = self.fields[0]
         else:
             self.field = None
-
         self.main = main
 
     @cached_property

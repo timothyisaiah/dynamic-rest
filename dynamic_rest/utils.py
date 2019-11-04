@@ -1,3 +1,4 @@
+from functools import wraps
 from decimal import Decimal
 from django.utils.six import string_types
 
@@ -40,3 +41,21 @@ def money_format(
     if '.' in number:
         number = number.strip('0').strip('.')
     return '%s%s' % (number, ext)
+
+
+def memoize(getter, by):
+    store = {}
+    if isinstance(by, string_types):
+        key_fn = lambda x: getattr(x, by)
+    else:
+        key_fn = by
+
+    @wraps(getter)
+    def inner(instance, *args, **kwargs):
+        key = key_fn(instance)
+        if key in store:
+            return store[key]
+        store[key] = getter(instance)
+        return store[key]
+
+    return inner

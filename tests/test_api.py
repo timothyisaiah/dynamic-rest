@@ -1607,11 +1607,11 @@ class TestCatsAPI(APITestCase):
             'parent': self.kitten.parent_id,
         }
         response = self.client.post(
-            '/cats/',
+            '/cats/?include[]=*',
             json.dumps(data),
             content_type='application/json',
         )
-        self.assertEqual(201, response.status_code)
+        self.assertEqual(201, response.status_code, response.content)
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['cat']['name'], '  Zahaklu  ')
 
@@ -1626,11 +1626,11 @@ class TestCatsAPI(APITestCase):
             'parent': parent_id
         }
         response = self.client.post(
-            '/cats/',
+            '/cats/?include[]=*',
             json.dumps(data),
             content_type='application/json'
         )
-        self.assertEqual(201, response.status_code)
+        self.assertEqual(201, response.status_code, response.content)
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['cat']['parent'], parent_id)
         self.assertEqual(data['cat']['name'], kitten_name)

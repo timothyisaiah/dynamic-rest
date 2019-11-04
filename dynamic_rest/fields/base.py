@@ -7,6 +7,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from dynamic_rest.meta import get_model_field, is_field_remote
 from dynamic_rest.base import DynamicBase
 from dynamic_rest.conf import settings
+from dynamic_rest.utils import memoize
 
 
 class DynamicField(fields.Field, DynamicBase):
@@ -91,9 +92,15 @@ class DynamicField(fields.Field, DynamicBase):
                     self.getter = self.method_name
                 else:
                     self.method_name = self.getter
+            if self.getter:
+                self.getter = memoize(getattr(self.parent, self.getter), 'pk')
             return
 
+        if self.getter:
+            self.getter = memoize(getattr(self.parent, self.getter), 'pk')
+
         self.source_attrs = source.split('.')
+
         parent_model = self.parent_model
         if parent_model:
             remote = is_field_remote(parent_model, source)
@@ -132,7 +139,6 @@ class DynamicField(fields.Field, DynamicBase):
         getter = self.getter
         if getter:
             # use custom getter to get the value
-            getter = getattr(self.parent, getter)
             if isinstance(instance, list):
                 value = [getter(i) for i in instance]
             else:
@@ -266,7 +272,7 @@ class DynamicField(fields.Field, DynamicBase):
 
     def get_attribute(self, instance):
         if self.getter and not hasattr(self, 'method_name'):
-            return getattr(self.parent, self.getter)(instance)
+            return self.getter(instance)
         else:
             return super(DynamicField, self).get_attribute(instance)
 

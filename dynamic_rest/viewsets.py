@@ -413,8 +413,9 @@ class WithDynamicViewSetBase(object):
         if list_fields and not kwargs['request_fields']:
             # default to list
             kwargs['only_fields'] = list_fields
-        if self.is_update():
-            kwargs['include_fields'] = '*'
+        if settings.ALL_FIELDS_ON_UPDATE:
+            if self.is_update():
+                kwargs['include_fields'] = '*'
         serializer = super(
             WithDynamicViewSetBase, self
         ).get_serializer(
