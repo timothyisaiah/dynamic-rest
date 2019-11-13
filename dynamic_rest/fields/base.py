@@ -10,6 +10,59 @@ from dynamic_rest.conf import settings
 from dynamic_rest.utils import memoize
 
 
+def no_assertions_init(self, *args, **kwargs):
+    empty = fields.empty
+    Field = fields.Field
+
+    self._creation_counter = Field._creation_counter
+    Field._creation_counter += 1
+
+    # If `required` is unset, then use `True` unless a default is provided.
+    required = kwargs.get('required', None)
+    default = kwargs.get('default', empty)
+    read_only = kwargs.get('read_only', False)
+    validators = kwargs.get('validators', None)
+    error_messages = kwargs.get('error_messages', None)
+
+    if required is None:
+        required = default is empty and not read_only
+
+    self.read_only = read_only
+    self.write_only = kwargs.get('write_only', False)
+    self.required = required
+    self.default = default
+    self.source = kwargs.get('source', None)
+
+    initial = kwargs.get('initial', empty)
+    self.initial = self.initial if (initial is empty) else initial
+    self.label = kwargs.get('label', None)
+    self.help_text = kwargs.get('help_text', None)
+    style = kwargs.get('style', None)
+    self.style = {} if style is None else style
+    self.allow_null = kwargs.get('allow_null', False)
+
+    if self.default_empty_html is not fields.empty:
+        if default is not fields.empty:
+            self.default_empty_html = default
+
+    if validators is not None:
+        self.validators = validators[:]
+
+    # These are set up when the field is added
+    self.field_name = None
+    self.parent = None
+
+    # Collect default error message from self and parent classes
+    messages = {}
+    for cls in reversed(self.__class__.__mro__):
+        messages.update(getattr(cls, 'default_error_messages', {}))
+    messages.update(error_messages or {})
+    self.error_messages = messages
+
+
+fields.Field.__init__ = no_assertions_init
+
+
 class DynamicField(fields.Field, DynamicBase):
 
     """
@@ -62,7 +115,7 @@ class DynamicField(fields.Field, DynamicBase):
                 kwargs['read_only'] = True
 
         self.kwargs = kwargs
-        super(DynamicField, self).__init__(*args, **kwargs)
+        return super(DynamicField, self).__init__(*args, **kwargs)
 
     def run_validation(self, data):
         if self.setter:
