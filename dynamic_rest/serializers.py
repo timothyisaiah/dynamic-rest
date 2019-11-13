@@ -842,11 +842,38 @@ class WithDynamicSerializerMixin(
             self._all_fields = super(WithDynamicSerializerMixin,
                                      self).get_fields()
             for k, field in six.iteritems(self._all_fields):
-                field.field_name = k
-                field.parent = self
-                label = inflection.humanize(k)
-                field.label = getattr(field, 'label', label) or label
+                self.setup_field(k, field)
+
         return self._all_fields
+
+    def setup_field(self, name, field):
+        field.field_name = name
+        field.parent = self
+        label = inflection.humanize(name)
+        field.label = getattr(field, 'label', label) or label
+
+        fields = {name: field}
+        meta = self.get_meta()
+        ro_fields = getattr(meta, 'read_only_fields', [])
+        self.flag_fields(fields, ro_fields, 'read_only', True)
+
+        wo_fields = getattr(meta, 'write_only_fields', [])
+        self.flag_fields(fields, wo_fields, 'write_only', True)
+
+        pw_fields = getattr(meta, 'untrimmed_fields', [])
+        self.flag_fields(
+            fields,
+            pw_fields,
+            'trim_whitespace',
+            False,
+        )
+
+        depends = getattr(meta, 'depends', {})
+        self.change_fields(
+            fields,
+            depends,
+            'depends'
+        )
 
     def _get_flagged_field_names(self, fields, attr, meta_attr=None):
         meta = self.get_meta()
@@ -884,6 +911,7 @@ class WithDynamicSerializerMixin(
             if not field:
                 continue
             setattr(field, attr, value)
+            field._kwargs[attr] = value
 
     def change_fields(self, all_fields, fields_dict, attr):
         for key, value in fields_dict.items():
@@ -891,6 +919,7 @@ class WithDynamicSerializerMixin(
             if not field:
                 continue
             setattr(field, attr, value)
+            field._kwargs[attr] = value
 
     def get_fields(self):
         """Returns the serializer's field set.
@@ -906,6 +935,14 @@ class WithDynamicSerializerMixin(
             return {}
 
         serializer_fields = copy.deepcopy(all_fields)
+        if (
+            'name' in serializer_fields and
+            getattr(self.get_meta(), 'untrimmed_fields', None) == ('name', )
+        ):
+            if serializer_fields['name'].trim_whitespace is not False:
+                import pdb
+                pdb.set_trace()
+
         request_fields = self.request_fields
         deferred = self._get_deferred_field_names(serializer_fields)
 
@@ -926,37 +963,16 @@ class WithDynamicSerializerMixin(
         for name in deferred:
             serializer_fields.pop(name)
 
-        # Set read_only flags based on read_only_fields meta list.
-        # Here to cover DynamicFields not covered by DRF.
-        meta = self.get_meta()
-        ro_fields = getattr(meta, 'read_only_fields', [])
-        self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
-
-        wo_fields = getattr(meta, 'write_only_fields', [])
-        self.flag_fields(serializer_fields, wo_fields, 'write_only', True)
-
-        pw_fields = getattr(meta, 'untrimmed_fields', [])
-        self.flag_fields(
-            serializer_fields,
-            pw_fields,
-            'trim_whitespace',
-            False,
-        )
-
-        depends = getattr(meta, 'depends', {})
-        self.change_fields(
-            serializer_fields,
-            depends,
-            'depends'
-        )
-
         method = self.get_request_method()
+
         # Toggle read_only flags for immutable fields.
         # Note: This overrides `read_only` if both are set, to allow
         #       inferred DRF fields to be made immutable.
 
         immutable_field_names = self._get_flagged_field_names(
-            serializer_fields, 'immutable')
+            serializer_fields,
+            'immutable'
+        )
 
         self.flag_fields(
             serializer_fields,
@@ -965,14 +981,22 @@ class WithDynamicSerializerMixin(
             value=method in ('GET', 'PUT', 'PATCH'))
 
         # Toggle read_only for only-update fields
+
         only_update_field_names = self._get_flagged_field_names(
-            serializer_fields, 'only_update')
+            serializer_fields,
+            'only_update'
+        )
         self.flag_fields(
             serializer_fields,
             only_update_field_names,
             'read_only',
-            value=method in ('POST'))
+            value=method in ('POST')
+        )
 
+        # TODO: move this to get_all_fields
+        # blocked by DRF field init assertion that read_only and write_only
+        # cannot both be true
+        meta = self.get_meta()
         hidden_fields = getattr(meta, 'hidden_fields', [])
         self.flag_fields(serializer_fields, hidden_fields, 'read_only', True)
         self.flag_fields(serializer_fields, hidden_fields, 'write_only', True)

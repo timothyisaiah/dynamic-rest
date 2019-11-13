@@ -1837,7 +1837,14 @@ function DRESTField(config) {
             self.initial = self.value = self.getValue(Object.values(data)[0][self.name]);
             self.reloaded = true;
             self.onLoad();
+        }).fail(function(error) {
+            self.onReloadError(error);
         });
+    };
+    this.onReloadError = function(error) {
+        var $field = this.$;
+        $field.removeClass('drest-field--reloading');
+        console.log(error);
     };
     this.onLoad = function() {
         if (this.loaded) {
@@ -1863,9 +1870,6 @@ function DRESTField(config) {
 
         // set up input bindings
         this.$ripple = this.$.find('.mdc-line-ripple');
-        if ($input.length && $input.is('textarea') && autosize) {
-            autosize($input[0]);
-        }
         var $helper = this.$helper = $('#' + field.id + '-helper');
         if (this.helpText === this.helpTextShort && this.type === 'boolean') {
             this.$helper.addClass('absolute');
@@ -2258,6 +2262,9 @@ function DRESTField(config) {
             });
         }
 
+        if (this.$input.length && this.$input.is('textarea') && autosize) {
+            autosize(this.$input[0]);
+        }
         // trigger change
         if (type === 'relation' || type === 'list') {
             $input.trigger('change');
