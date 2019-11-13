@@ -401,5 +401,8 @@ class DynamicAdminRenderer(AdminRenderer):
     def get_raw_data_form(self, *args, **kwargs):
         return None
 
-    def get_rendered_html_form(self, *args, **kwargs):
-        return None
+    def get_rendered_html_form(self, data, view, method, request):
+        if method == 'POST':
+            return super(DynamicAdminRenderer, self).get_rendered_html_form(data, view, method, request)
+        else:
+            return None
