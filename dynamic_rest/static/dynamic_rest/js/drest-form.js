@@ -1898,6 +1898,13 @@ function DRESTField(config) {
               this.numeralFormatter('0,0a') : this.momentFormatter("MMM Do 'YY");
             var yformatter = (!value.yaxis || (value.yaxis && value.yaxis.type !== 'datetime')) ?
               this.numeralFormatter('0,0a') : this.momentFormatter("MMM Do 'YY");
+            var totalFormatter = function(w) {
+                return yformatter(
+                  w.globals.seriesTotals.reduce(function(a, b) {
+                    return a + b;
+                  })
+                );
+            };
 
             var defaults = {
               tooltip: {
@@ -1922,17 +1929,32 @@ function DRESTField(config) {
                 width: '100%',
                 height: 223,
                 toolbar: {
+                  show: false,
                   tools: {
                     download: false,
                     selection: false,
                     zoom: false,
-                    zoomin: true,
-                    zoomout: true,
-                    pan: true,
-                    reset: true
+                    zoomin: false,
+                    zoomout: false,
+                    pan: false,
+                    reset: false
                   },
                   autoSelected: 'pan'
                 },
+              },
+              plotOptions: {
+                pie: {
+                  donut: {
+                    labels: {
+                      value: {
+                        formatter: yformatter
+                      },
+                      total: {
+                        formatter: totalFormatter
+                      }
+                    }
+                  }
+                }
               }
             };
             if (value) {
