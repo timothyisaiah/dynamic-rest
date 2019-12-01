@@ -16,6 +16,7 @@
         numDigits: {{ field.num_digits | to_json }},
         required: {{ field.required | to_json }},
         deferred: {{ field.deferred | to_json }},
+        choices: {{ field.choices | to_json }},
         value: {{ field | field_to_json }}{% if field.type == 'relation' %},
             relation: {
                 nameField: {{ field.get_name_field | to_json }},

@@ -1761,6 +1761,20 @@ function DRESTField(config) {
             }]);
         }
     };
+    this.getChoices = function(choices) {
+        var result = choices;
+        if (Array.isArray(choices)) {
+            result = {};
+            choices.forEach(function(choice) {
+                if (Array.isArray(choice)) {
+                    result[choice[0]] = choice[1];
+                } else {
+                    result[choice] = choice;
+                }
+            });
+        }
+        return result;
+    };
     this.getValue = function(value) {
         if (value === '' && this.type !== 'text') {
             value = null;
@@ -1970,17 +1984,29 @@ function DRESTField(config) {
         }
         if (type === 'list') {
             // fixed-style select2
-            if (value) {
-                for (var v in value) {
-                    if (value.hasOwnProperty(v)) {
+            var choices = this.choices;
+            if (choices) {
+                for (var c in choices) {
+                    if (choices.hasOwnProperty(c)) {
+                        var maybeSelected = value && value.indexOf(c.toString()) !== -1 ? ' selected="selected"' : '';
                         $input.append(
-                            '<option value="' + value[v] + '" selected="selected">' + value[v] + '</option>'
+                            '<option value="' + c + '"' + maybeSelected + '>' + choices[c] + '</option>'
                         );
+                    }
+                }
+            } else {
+                if (value) {
+                    for (var v in value) {
+                        if (value.hasOwnProperty(v)) {
+                            $input.append(
+                                '<option value="' + value[v] + '" selected="selected">' + value[v] + '</option>'
+                            );
+                        }
                     }
                 }
             }
             $input.select2({
-                tags: true,
+                tags: !choices,
                 placeholder: label,
                 theme: 'material',
                 minimumInputLength: 1,
@@ -2008,6 +2034,7 @@ function DRESTField(config) {
                 }
                 $input.select2({
                     placeholder: label,
+                    theme: 'material',
                     language: {
                         inputTooShort: function() {
                             return field.helpTextShort || "Start typing";
@@ -2315,7 +2342,7 @@ function DRESTField(config) {
     this.type = config.type;
     this.chart = config.chart;
     this.initial = this.value = this.getValue(config.value);
-    this.choices = config.choices;
+    this.choices = this.getChoices(config.choices);
     this.relation = config.relation;
     this.label = config.label;
     this.id = config.id;

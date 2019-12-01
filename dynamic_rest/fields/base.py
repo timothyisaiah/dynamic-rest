@@ -108,6 +108,9 @@ class DynamicField(fields.Field, DynamicBase):
         self.long = kwargs.pop('long', False)
         self.sort_by = kwargs.pop('sort_by', None)
         self.bound = False
+        choices = kwargs.get('choices', None)
+        if choices:
+            self.choices = choices
         if self.getter:
             # dont bind to model
             kwargs['source'] = '*'
