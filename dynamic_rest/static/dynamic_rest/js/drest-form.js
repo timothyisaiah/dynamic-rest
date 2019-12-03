@@ -77,9 +77,9 @@ function doGoto(app) {
         }
         var confirmation = $(this).data('goto-confirm');
         var target = $(this).data('goto-target') || '_self';
-        if (!noConfirmation && confirmation) {
+        if (confirmation && confirmation.toLowerCase() !== 'none') {
             app.showDialog({
-                title: confirmation,
+                title: 'Please confirm',
                 body: confirmation,
                 onAccept: function() {
                     app.toSubmit();
