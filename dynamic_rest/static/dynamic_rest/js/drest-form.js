@@ -69,14 +69,31 @@ deepmerge.all = function deepmergeAll(array, optionsArgument) {
     })
 }
 
-function doGoto() {
-    var goTo = $(this).data('goto');
-    var target = $(this).data('goto-target') || '_self';
-    if (goTo) {
-        app.toSubmit();
-        window.open(goTo, target);
+function doGoto(app) {
+    function go() {
+        var goTo = $(this).data('goto');
+        if (!goTo) {
+            return;
+        }
+        var confirmation = $(this).data('goto-confirm');
+        var target = $(this).data('goto-target') || '_self';
+        if (!noConfirmation && confirmation) {
+            app.showDialog({
+                title: confirmation,
+                body: confirmation,
+                onAccept: function() {
+                    app.toSubmit();
+                    window.open(goTo, target);
+                }
+            });
+        } else {
+            app.toSubmit();
+            window.open(goTo, target);
+        }
     }
+    return go
 };
+
 function pathJoin(a, b) {
     var result = a;
     var aEnds = a.match(/\/$/);
@@ -822,7 +839,7 @@ function DRESTApp(config) {
         this.notice = new mdc.snackbar.MDCSnackbar(document.querySelector(config.notice));
         this.$notice = $(config.notice);
 
-        $('.drest-goto').on('click', doGoto);
+        $('.drest-goto').on('click', doGoto(app));
 
         if (this.$searchInput.length) {
             this.search = new DRESTSearch({

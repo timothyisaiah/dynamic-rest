@@ -17,6 +17,7 @@ from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.utils import is_truthy
+from dynamic_rest.condition import evaluate
 
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
@@ -156,7 +157,7 @@ class WithDynamicViewSetBase(object):
                 actions.append(action)
         return actions
 
-    def get_actions(self):
+    def get_actions(self, instance=None):
         actions = self.actions
         is_list = self.is_list()
         is_detail = self.is_get()
@@ -166,7 +167,10 @@ class WithDynamicViewSetBase(object):
                 (action.on_list and is_list) or
                 (action.on_detail and is_detail)
             ):
-                result.append(action)
+                if not action.when or (
+                    evaluate(action.when, {'instance': instance})
+                ):
+                    result.append(action)
         return result
 
     def get_renderers(self):

@@ -6,18 +6,20 @@ class Action(object):
         self,
         icon=None,
         label=None,
-        permissions=None,
+        when=None,
         on_detail=False,
         on_list=False,
         url=None,
+        confirm=None,
         name=None,
         view=None,
         **kwargs
     ):
         self.icon = icon
         self.label = label
-        self.permissions = permissions
+        self.when = when
         self.url = url
+        self.confirm = confirm
         # set during binding
         self.name = name
         self.view = view
@@ -38,11 +40,13 @@ class Action(object):
         return Action(
             icon=self.icon,
             label=self.label,
+            confirm=self.confirm,
+            when=self.when,
             on_detail=self.on_detail,
             on_list=self.on_list,
             url=url,
             view=view,
-            name=name
+            name=name,
         )
 
 

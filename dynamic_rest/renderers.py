@@ -279,7 +279,7 @@ class DynamicAdminRenderer(AdminRenderer):
         from dynamic_rest.routers import get_directory, get_home
 
         if hasattr(view, 'get_actions'):
-            actions = view.get_actions()
+            actions = view.get_actions(instance=instance)
         else:
             actions = []
 

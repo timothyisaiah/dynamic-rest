@@ -163,7 +163,7 @@
                                                     </li>
                                                 {% endif %}
                                                 {% for action in actions %}
-                                                    <li data-goto="{{ action.url }}" tabindex="0" role="menuitem" class="drest-goto mdc-list-item">
+                                                    <li data-goto-confirm="{{ action.confirm }}" data-goto="{{ action.url }}" tabindex="0" role="menuitem" class="drest-goto mdc-list-item">
                                                         {% if action.icon %}
                                                             <span class="material-icons mr-2">{{ action.icon }}</span>
                                                         {% endif %}
