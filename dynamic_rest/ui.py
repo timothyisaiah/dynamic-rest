@@ -15,28 +15,24 @@ def get_type_for(field):
     if isinstance(field, dfields.DynamicChoiceField):
         return "select"
     elif isinstance(field, dfields.DynamicIntegerField):
-        return 'integer'
+        return "integer"
     elif isinstance(
-        field, (
-            dfields.DynamicBooleanField,
-            dfields.DynamicNullBooleanField
-        )
+        field, (dfields.DynamicBooleanField, dfields.DynamicNullBooleanField)
     ):
-        return 'boolean'
+        return "boolean"
     elif isinstance(field, dfields.DynamicDecimalField):
-        return 'decimal'
+        return "decimal"
     elif isinstance(field, dfields.DynamicDateField):
-        return 'date'
+        return "date"
     elif isinstance(field, dfields.DynamicDateTimeField):
-        return 'datetime'
+        return "datetime"
     elif isinstance(field, dfields.DynamicTimeField):
-        return 'time'
+        return "time"
     elif isinstance(field, dfields.DynamicRelationField):
         return "relation"
     elif isinstance(field, dfields.DynamicListField):
         return "list"
-    elif isinstance(field,
-                    (dfields.DynamicFileField, dfields.DynamicImageField)):
+    elif isinstance(field, (dfields.DynamicFileField, dfields.DynamicImageField)):
         return "file"
     else:
         return "text"
@@ -50,19 +46,20 @@ class UIField(object):
     providing an API similar to Django forms and form fields.
     """
 
-    def __init__(self, field, value, errors, prefix='', instance=None,
-                 id=None, deferred=False):
+    def __init__(
+        self, field, value, errors, prefix="", instance=None, id=None, deferred=False
+    ):
         self._field = field
         self._prefix = prefix
-        rand = ''.join([str(randint(0, 9)) for _ in range(6)])
+        rand = "".join([str(randint(0, 9)) for _ in range(6)])
         self.id = id or rand
         self.value = value
         self.errors = errors
         self.instance = instance
         self.name = prefix + self.field_name
         self.type = get_type_for(self._field)
-        self.is_null = value is None or value == ''
-        self.is_empty = (not value and not (value == 0 or value is False))
+        self.is_null = value is None or value == ""
+        self.is_empty = not value and not (value == 0 or value is False)
         self.deferred = deferred
 
     def __getattr__(self, attr_name):
@@ -74,23 +71,26 @@ class UIField(object):
 
     def __repr__(self):
         return unicode_to_repr(
-            '<%s %s value=%s errors=%s instance=%s>' %
-            (self.__class__.__name__, self._field.field_name, self.value,
-             self.errors, self.instance))
+            "<%s %s value=%s errors=%s instance=%s>"
+            % (
+                self.__class__.__name__,
+                self._field.field_name,
+                self.value,
+                self.errors,
+                self.instance,
+            )
+        )
 
     @cached_property
     def add(self):
-        if self.type == 'relation':
+        if self.type == "relation":
             return self.name in self._field.parent.create_related_serializers
         return False
 
     @cached_property
     def rendered_value(self):
-        if callable(getattr(self._field, 'admin_render', None)):
-            return self._field.admin_render(
-                instance=self.instance,
-                value=self.value
-            )
+        if callable(getattr(self._field, "admin_render", None)):
+            return self._field.admin_render(instance=self.instance, value=self.value)
         else:
             return
 
@@ -99,8 +99,8 @@ class UIField(object):
         field = self._field
         read_only = field.read_only
 
-        model_field = getattr(field, 'model_field', None)
-        if getattr(model_field, 'primary_key', None):
+        model_field = getattr(field, "model_field", None)
+        if getattr(model_field, "primary_key", None):
             return False
 
         request_method = field.parent.get_request_method().upper()
@@ -108,29 +108,28 @@ class UIField(object):
         if hidden:
             return False
 
-        if request_method == 'GET':
+        if request_method == "GET":
             if (
-                getattr(field, 'hide', None) and
-                not self.deferred and
-                field.read_only and
-                self.is_empty and
-                not self.add
+                getattr(field, "hide", None)
+                and not self.deferred
+                and field.read_only
+                and self.is_empty
+                and not self.add
             ):
                 return False
 
-        elif request_method in ('POST', 'PATCH', 'PUT'):
+        elif request_method in ("POST", "PATCH", "PUT"):
             if read_only:
                 return False
 
         return True
 
     def as_form_field(self):
-        value = '' if (self.value is None
-                       or self.value is False) else self.value
+        value = "" if (self.value is None or self.value is False) else self.value
 
         parent_name = self._field.parent.get_name()
-        rand = ''.join([str(randint(0, 9)) for _ in range(6)])
-        id = '%s-%s-%s' % (parent_name, self.name, rand)
+        rand = "".join([str(randint(0, 9)) for _ in range(6)])
+        id = "%s-%s-%s" % (parent_name, self.name, rand)
 
         result = self.__class__(
             self._field,
@@ -139,7 +138,7 @@ class UIField(object):
             self._prefix,
             self.instance,
             id,
-            self.deferred
+            self.deferred,
         )
         return result
 
@@ -159,14 +158,7 @@ class UISection(object):
                     field = all_fields[name]
                     if not field.write_only:
                         # render a deferred field
-                        self.fields.append(
-                            UIField(
-                                field,
-                                None,
-                                None,
-                                deferred=True
-                            )
-                        )
+                        self.fields.append(UIField(field, None, None, deferred=True))
                 else:
                     raise
             except SkipField:
@@ -183,10 +175,10 @@ class UISection(object):
 
 
 class UIFilter(object):
-    base_template_path = 'dynamic_rest/filters'
+    base_template_path = "dynamic_rest/filters"
 
     def __repr__(self):
-        return 'UIFilter( %s )' % self.name
+        return "UIFilter( %s )" % self.name
 
     def __init__(self, name, options, serializer=None):
         """
@@ -221,48 +213,58 @@ class UIFilter(object):
         self.resolve()
 
     def get_choices_for(self, field):
-        choices = getattr(field, 'choices', None)
+        choices = getattr(field, "choices", None)
         if choices:
             return choices
         else:
             field = field.model_field
-            if field and hasattr(field, 'choices'):
+            if field and hasattr(field, "choices"):
                 return dict(field.choices)
             return {}
 
     def get_key_for(self, name):
         type = self.type
         if type in ("select", "relation", "boolean"):
-            return 'filter{%s.in}' % name
+            return "filter{%s.in}" % name
         elif type in ("date", "datetime", "integer", "decimal"):
-            return 'filter{%s.range}' % name
-        elif type == 'text':
-            return 'filter{%s.icontains}' % name
+            return "filter{%s.range}" % name
+        elif type == "text":
+            return "filter{%s.icontains}" % name
         else:
-            return 'filter{%s}' % name
+            return "filter{%s}" % name
 
     def resolve(self):
-        self.id = 'filter-' + self.name
+        self.id = "filter-" + self.name
 
         if isinstance(self.options, six.string_types):
-            self.options = {'field': self.options}
+            self.options = {"field": self.options}
         name = self.name
-        field_name = self.options.get('field', None)
-        key = self.options.get('key', None)
-        type = self.options.get('type', None)
-        choices = self.options.get('choices', None)
-        help_text = self.options.get('help_text', None)
-        self.label = self.options.get('label', (field_name
-                                                or name).title().replace(
-                                                    '_', ' '))
-        self.many = self.options.get('many', True)
+        field_name = self.options.get("field", None)
+        key = self.options.get("key", None)
+        type = self.options.get("type", None)
+        choices = self.options.get("choices", None)
+        help_text = self.options.get("help_text", None)
+        self.label = self.options.get(
+            "label", (field_name or name).title().replace("_", " ")
+        )
+        self.many = self.options.get("many", True)
         if field_name:
-            field = self.serializer.get_field(field_name)
+            field = self.serializer
+            parts = field_name.split(".")
+            last = len(parts) - 1
+            for i, part in enumerate(parts):
+                field = field.get_field(part)
+                if (
+                    isinstance(field, dfields.DynamicRelationField) and
+                    i != last
+                ):
+                    field = field.serializer
+
             self.field = field
             self.type = get_type_for(field)
             self.key = self.get_key_for(field_name)
             self.choices = self.get_choices_for(field)
-            self.help_text = getattr(field, 'help_text', None)
+            self.help_text = getattr(field, "help_text", None)
 
         if key:
             # override key
@@ -270,7 +272,7 @@ class UIFilter(object):
         if type:
             # override type
             self.type = type
-        if self.type == 'text':
+        if self.type == "text":
             self.many = False
         if choices:
             self.choices = choices
@@ -281,22 +283,20 @@ class UIFilter(object):
             self.field.value = self.value
 
     def render(self):
-        template_name = '%s/%s.html' % (self.base_template_path, self.type)
+        template_name = "%s/%s.html" % (self.base_template_path, self.type)
         template = loader.get_template(template_name)
-        context = {
-            'filter': self,
-        }
+        context = {"filter": self}
         return template.render(context)
 
     def get_value(self):
         key = self.key
         assert key is not None
-        request = self.serializer.context.get('request')
+        request = self.serializer.context.get("request")
         type = self.type
         many = self.many
 
         return_list = False
-        if many or type == 'integer':
+        if many or type == "integer":
             return_list = True
             value = request.query_params.getlist(key)
         else:
@@ -317,8 +317,8 @@ class UIFilter(object):
                 v = str(int(v)) if v else None
             elif type == "decimal":
                 v = str(Decimal(v)) if v else None
-            elif type == 'text':
-                v = v if v else ''
+            elif type == "text":
+                v = v if v else ""
             else:
                 v = str(v) if v else None
             result.append(v)
