@@ -1,3 +1,184 @@
+function get(path, ctx, nulls) {
+    /*Resolve a value given a path and a deeply-nested object
+
+    Arguments:
+        path: a dot-separated string
+        context: any object, list, dictionary,
+            or single-argument callable
+        null: if Exception type, bad key raises Exception
+            if other, bad key returns passed-in value
+            default: None
+    Returns:
+        value at the end of the path, or None
+
+    Examples:
+
+        T = namedtuple('T', ['x'])
+        context = {"a": [T('y')]}
+        get(context, "a.0.x") == 'y'
+    */
+    nulls = nulls || null;
+    var i, context = ctx, part,
+        parts = path.split(".");
+        allow_null = nulls ? nulls.toString().indexOf('function Error') !== 0 : false;
+
+    for (i=0; i<parts.length; i++) {
+        part = parts[i];
+        if (!context) {
+            if (allow_null) {
+                return null;
+            }
+            else {
+                throw nulls(
+                    'context is null but next part: "' + part + '"'
+                );
+            }
+        }
+        if (context instanceof Function) {
+            // try to "call" into the context
+            try {
+                try {
+                    // 1. assume it is a method that takes no arguments
+                    // and returns a nested object
+                    context = context();
+                } catch (e) {
+                    context = context(part);
+                    return;
+                }
+            } catch (e) {
+                // fallback: assume this is a special object
+                // that we should not call into
+            }
+        }
+        if (typeof context === 'object') {
+            if (context[part]) {
+                context = context[part];
+            } else {
+                if (allow_null) {
+                    return null;
+                }
+                else {
+                    throw nulls('could not resolve context on part "' + part + '"')
+                }
+            }
+        } else if (context instanceof Array) {
+            // throws ValueError if part is NaN
+            part = parseInt(part);
+            try {
+                context = context[part];
+            } catch(e) {
+                if (allow_null) {
+                    return null;
+                } else {
+                    throw nulls('context index out of bounds: "' + part + '"')
+                }
+            }
+        }
+    }
+    if (context && context instanceof Function) {
+        // if the result is a callable,
+        // try to resolve it
+        context = context();
+    }
+    return context;
+}
+
+function resolve_template(value, context, nulls) {
+    nulls = nulls || Error;
+
+    if (!value) {
+        return value;
+    }
+
+    if (value.indexOf('{{') !== -1) {
+        if (!context) {
+            throw 'must have context to resolve ' + value;
+        }
+    }
+    else {
+        return value;
+    }
+
+    // find matches in the string
+    // build new string result consisting of segments
+    var start, end, path, replace, result = [],
+        results = null;
+        read = 0;
+        value_len = value.length;
+        FORMAT_STRING_REGEX = /\{\{\s*([^}{]+)\s*\}\}/g;
+
+    while ((match = FORMAT_STRING_REGEX.exec(value)) !== null) {
+        start = match.index;
+        end = start + match[0].length;
+        path = match[1].trim();
+
+        nulls = Error;
+        if (path.substr(-1) === '?') {
+            nulls = '';
+            path = path.substr(0, path.length - 1);
+        }
+
+        replace = get(path, context, nulls);
+
+        if (read < start) {
+            if (results) {
+                results.forEach(function(result) {
+                    result.push(value.substr(read, start-read));
+                });
+            }
+            else {
+                result.push(value.substr(read, start-read));
+            }
+        }
+
+        read = end;
+        if (replace instanceof Array) {
+            if (result.length) {
+                results.forEach(function(result) {
+                    replace.forEach(function(rep) {
+                        result.push(rep);
+                    });
+                });
+            } else {
+                results = Object.assign(replace);
+                for (var i=0; i<results.length; i++) {
+                    results[i] = replace + results[i];
+                }
+            }
+        }
+        else {
+            if (results) {
+                results.forEach(function(result) {
+                    result.push(replace);
+                });
+            }
+            else {
+                result.push(replace);
+            }
+        }
+    }
+
+    if (read < value_len) {
+        if (results) {
+            results.forEach(function(result) {
+                result.push(value.substr(read, value_len-read));
+            });
+        }
+        else {
+            result.push(value.substr(read, value_len-read));
+        }
+    }
+
+    if (results) {
+        return results.map(function() {
+            return result.join('');
+        });
+    }
+    else {
+        return result ? result.join('') : value;
+    }
+}
+
 function isMergeableObject(val) {
     var nonNullObject = val && typeof val === 'object'
 
@@ -1047,6 +1228,13 @@ function DRESTForm(config) {
             this.disable();
         });
         this.disabled = true;
+    };
+    this.getValues = function() {
+        var result = {};
+        Object.entries(this.getFieldsByName()).forEach(function(entry) {
+            result[entry[0]] = entry[1].value;
+        });
+        return result;
     };
     this.getTitle = function() {
         var verb;
@@ -2135,6 +2323,7 @@ function DRESTField(config) {
                 var nameField = relation.nameField;
                 var searchKey = relation.searchKey;
                 var pkField = relation.pkField;
+                var filter = relation.filter;
                 var resourceName = relation.resourceName;
                 var pluralName = relation.pluralName;
                 var url = relation.url;
@@ -2200,6 +2389,34 @@ function DRESTField(config) {
                           result[searchKey] = params.term;
                           result['exclude[]'] = '*';
                           result['include[]'] = includes;
+                          if (filter) {
+                              // dynamically add stuff to URL
+                              if (typeof filter === 'string') {
+                                if (filter.indexOf('{{') !== -1) {
+                                    filter = resolve_template(filter, field.getForm().getValues());
+                                }
+                                var f = filter;
+                                filter = {};
+                                f.split('&').forEach(function(part) {
+                                    var assignment = part.split('=');
+                                    var key = assignment[0];
+                                    var value = assignment[1];
+                                    var fk = filter[key];
+                                    if (typeof fk !== 'undefined') {
+                                        // array type based on params passed in
+                                        if (fk instanceof Array) {
+                                            fk.push(value)
+                                        } else {
+                                            filter[key] = [fk, value]
+                                        }
+                                    } else {
+                                        // single type
+                                        filter[key] = value;
+                                    }
+                                });
+                              }
+                              result = Object.assign(result, filter);
+                          }
                           return result;
                         },
                         processResults: function(data, params) {

@@ -55,7 +55,10 @@ def nested_update(instance, key, value, objects=None):
             if isinstance(v, dict):
                 nested_update(nested, k, v, objects)
             else:
-                setattr(nested, k, v)
+                if isinstance(getattr(nested, k), models.Manager):
+                    getattr(nested, k).set(v)
+                else:
+                    setattr(nested, k, v)
         objects.append(nested)
     return objects
 
@@ -1171,7 +1174,12 @@ class WithDynamicSerializerMixin(
                                         nested_update(instance, attr, value)
                                     )
                                 else:
-                                    setattr(instance, attr, value)
+                                    if isinstance(
+                                        getattr(instance, attr), models.Manager
+                                    ):
+                                        getattr(instance, attr).set(value)
+                                    else:
+                                        setattr(instance, attr, value)
                         else:
                             setattr(instance, attr, value)
                     except AttributeError:
@@ -1215,7 +1223,11 @@ class WithDynamicSerializerMixin(
                                     nested_update(instance, attr, value))
                             else:
                                 # normal relationship update
-                                setattr(instance, attr, value)
+                                field = getattr(instance, attr, None)
+                                if isinstance(field, models.Manager):
+                                    field.set(value)
+                                else:
+                                    setattr(instance, attr, value)
                         else:
                             setattr(instance, attr, value)
                     except AttributeError:
@@ -1244,7 +1256,7 @@ class WithDynamicSerializerMixin(
                 instance = super(WithDynamicSerializerMixin, self).save(
                     *args, **kwargs)
                 self.do_post_save(instance)
-            except exceptions.APIException as e:
+            except exceptions.APIException:
                 if self.debug:
                     import traceback
                     traceback.print_exc()

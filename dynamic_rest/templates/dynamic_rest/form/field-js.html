@@ -18,16 +18,17 @@
         deferred: {{ field.deferred | to_json }},
         choices: {{ field.choices | to_json }},
         value: {{ field | field_to_json }}{% if field.type == 'relation' %},
-            relation: {
-                nameField: {{ field.get_name_field | to_json }},
-                searchKey: {{ field.get_search_key | to_json }},
-                pkField: {{ field.get_pk_field | to_json }},
-                resourceName: {{ field.serializer.get_name | to_json }},
-                pluralName: {{ field.get_plural_name | to_json }},
-                url: {{ field.get_url | to_json }},
-                image: {% if field.image %}true{% else %}false{% endif %},
-                create: {{ field.create | to_json }}
-            }
+        relation: {
+            nameField: {{ field.get_name_field | to_json }},
+            searchKey: {{ field.get_search_key | to_json }},
+            pkField: {{ field.get_pk_field | to_json }},
+            resourceName: {{ field.serializer.get_name | to_json }},
+            pluralName: {{ field.get_plural_name | to_json }},
+            url: {{ field.get_url | to_json }},
+            image: {% if field.image %}true{% else %}false{% endif %},
+            create: {{ field.create | to_json }},
+            filter: {{ field.filter | to_json }},
+        }
         {% endif %}
     });
 </script>

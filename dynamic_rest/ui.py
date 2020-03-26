@@ -254,10 +254,7 @@ class UIFilter(object):
             last = len(parts) - 1
             for i, part in enumerate(parts):
                 field = field.get_field(part)
-                if (
-                    isinstance(field, dfields.DynamicRelationField) and
-                    i != last
-                ):
+                if isinstance(field, dfields.DynamicRelationField) and i != last:
                     field = field.serializer
 
             self.field = field

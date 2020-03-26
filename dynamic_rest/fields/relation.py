@@ -48,6 +48,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             inverse=None,
             create=False,
             image=False,
+            filter=None,
             **kwargs
     ):
         """
@@ -74,6 +75,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self.debug = debug
         self.create = create
         self.image = image
+        self.filter = filter
         self.inverse = inverse
         self.embed = embed if sideloading is None else not sideloading
         if 'link' in kwargs:
