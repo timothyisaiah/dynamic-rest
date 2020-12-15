@@ -240,6 +240,8 @@ class WithDynamicSerializerMixin(
         - depends - dict of dependency objects
     """
 
+    SET_REQUEST_ON_SAVE = settings.SET_REQUEST_ON_SAVE
+
     def __new__(cls, *args, **kwargs):
         """
         Custom constructor that sets the ListSerializer to
@@ -1186,6 +1188,11 @@ class WithDynamicSerializerMixin(
                         setattr(instance, attr, value)
 
                 for s in to_save:
+                    if self.SET_REQUEST_ON_SAVE:
+                        attr = self.SET_REQUEST_ON_SAVE if isinstance(
+                            self.SET_REQUEST_ON_SAVE, str
+                        ) else '_request'
+                        setattr(s, attr, self.context.get('request'))
                     s.save()
 
                 for i, a, v in to_set:
@@ -1239,6 +1246,11 @@ class WithDynamicSerializerMixin(
                             raise
 
                 for s in to_save:
+                    if self.SET_REQUEST_ON_SAVE:
+                        attr = self.SET_REQUEST_ON_SAVE if isinstance(
+                            self.SET_REQUEST_ON_SAVE, str
+                        ) else '_request'
+                        setattr(s, attr, self.context.get('request'))
                     s.save()
         except Exception as e:
             if self.debug:

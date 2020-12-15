@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='favorite_pet_type',
-            field=models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True),  # noqa
+            field=models.ForeignKey(blank=True, on_delete=models.SET_NULL, to='contenttypes.ContentType', null=True),  # noqa
             preserve_default=True,
         ),
     ]

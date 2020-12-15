@@ -676,7 +676,7 @@ class TestUsersAPI(APITestCase):
         user = User.objects.create(name='test')
         group_a = Group.objects.create(name='A')
         group_b = Group.objects.create(name='B')
-        user.groups = [group_a, group_b]
+        user.groups.set([group_a, group_b])
         response = self.client.get(
             '/users/?filter{groups.name.in}=A&filter{groups.name.in}=B'
         )

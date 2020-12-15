@@ -209,6 +209,8 @@ def admin_format_value(value):
 
 @register.simple_tag
 def get_sections(serializer, instance=None, check=True):
+    if not serializer:
+        return []
     instance = instance or serializer.instance
     sections = serializer.get_sections(instance)
     if check:

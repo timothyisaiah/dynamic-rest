@@ -91,6 +91,11 @@ DYNAMIC_REST = {
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,
 
+    # SET_REQUEST_ON_SAVE: global setting for whether request should be set
+    # on saved instances.
+    # Can be overridden at the viewset level.
+    'SET_REQUEST_ON_SAVE': True,
+
     # ONE_SERIALIZER_PER_MODEL: setting to True will cause
     # internal serializer/model lookups to defer to the local serializer
     'ONE_SERIALIZER_PER_MODEL': False,

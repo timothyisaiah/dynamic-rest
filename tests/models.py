@@ -11,8 +11,12 @@ class User(models.Model):
     permissions = models.ManyToManyField('Permission', related_name='users')
     date_of_birth = models.DateField(null=True, blank=True)
     # 'related_name' intentionally left unset in location field below:
-    location = models.ForeignKey('Location', null=True, blank=True)
-    favorite_pet_type = models.ForeignKey(ContentType, null=True, blank=True)
+    location = models.ForeignKey(
+        'Location', null=True, blank=True, on_delete=models.SET_NULL
+    )
+    favorite_pet_type = models.ForeignKey(
+        ContentType, null=True, blank=True, on_delete=models.SET_NULL
+    )
     favorite_pet_id = models.TextField(null=True, blank=True)
     favorite_pet = GenericForeignKey(
         'favorite_pet_type',
@@ -25,25 +29,27 @@ class User(models.Model):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     display_name = models.TextField()
     thumbnail_url = models.TextField(null=True, blank=True)
 
 
 class Manager(models.Model):
-    user = models.OneToOneField(auth.User)
+    user = models.OneToOneField(auth.User, on_delete=models.CASCADE)
     display_name = models.TextField()
 
 
 class Officer(models.Model):
-    user = models.OneToOneField(auth.User)
+    user = models.OneToOneField(auth.User, on_delete=models.CASCADE)
     display_name = models.TextField()
 
 
 class Cat(models.Model):
     name = models.TextField()
-    home = models.ForeignKey('Location')
-    backup_home = models.ForeignKey('Location', related_name='friendly_cats')
+    home = models.ForeignKey('Location', on_delete=models.CASCADE)
+    backup_home = models.ForeignKey(
+        'Location', related_name='friendly_cats', on_delete=models.CASCADE
+    )
     hunting_grounds = models.ManyToManyField(
         'Location',
         related_name='annoying_cats',
@@ -53,7 +59,9 @@ class Cat(models.Model):
         'Cat',
         null=True,
         blank=True,
-        related_name='kittens')
+        related_name='kittens',
+        on_delete=models.SET_NULL
+    )
 
 
 class Dog(models.Model):
@@ -98,7 +106,9 @@ class Event(models.Model):
     """
     name = models.TextField()
     status = models.TextField(default="current")
-    location = models.ForeignKey('Location', null=True, blank=True)
+    location = models.ForeignKey(
+        'Location', null=True, blank=True, on_delete=models.SET_NULL
+    )
     users = models.ManyToManyField('User')
 
 
@@ -107,12 +117,12 @@ class A(models.Model):
 
 
 class B(models.Model):
-    a = models.OneToOneField('A', related_name='b')
+    a = models.OneToOneField('A', related_name='b', on_delete=models.CASCADE)
 
 
 class C(models.Model):
-    b = models.ForeignKey('B', related_name='cs')
-    d = models.ForeignKey('D')
+    b = models.ForeignKey('B', related_name='cs', on_delete=models.CASCADE)
+    d = models.ForeignKey('D', on_delete=models.CASCADE)
 
 
 class D(models.Model):
@@ -126,10 +136,10 @@ class Country(models.Model):
 
 class Car(models.Model):
     name = models.CharField(max_length=60)
-    country = models.ForeignKey(Country, null=True)
+    country = models.ForeignKey(Country, null=True, on_delete=models.SET_NULL)
 
 
 class Part(models.Model):
-    car = models.ForeignKey(Car)
+    car = models.ForeignKey(Car, on_delete=models.CASCADE)
     name = models.CharField(max_length=60)
-    country = models.ForeignKey(Country)
+    country = models.ForeignKey(Country, on_delete=models.CASCADE)
