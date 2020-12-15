@@ -94,7 +94,7 @@ DYNAMIC_REST = {
     # SET_REQUEST_ON_SAVE: global setting for whether request should be set
     # on saved instances.
     # Can be overridden at the viewset level.
-    'SET_REQUEST_ON_SAVE': True,
+    'SET_REQUEST_ON_SAVE': False,
 
     # ONE_SERIALIZER_PER_MODEL: setting to True will cause
     # internal serializer/model lookups to defer to the local serializer
