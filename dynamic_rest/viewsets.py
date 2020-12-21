@@ -67,6 +67,7 @@ class WithDynamicViewSetBase(object):
       features: A list of features supported by the viewset.
       meta: Extra data that is added to the response by the DynamicRenderer.
     """
+    SET_REQUEST_ON_SAVE = settings.SET_REQUEST_ON_SAVE
 
     DEBUG = 'debug'
     SIDELOADING = 'sideloading'
@@ -846,3 +847,11 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         return super(DynamicModelViewSet, self).destroy(
             request, *args, **kwargs
         )
+
+    def perform_destroy(self, instance):
+        if self.SET_REQUEST_ON_SAVE:
+            attr = self.SET_REQUEST_ON_SAVE if isinstance(
+                self.SET_REQUEST_ON_SAVE, str
+            ) else '_request'
+            setattr(instance, attr, self.request)
+        instance.delete()
