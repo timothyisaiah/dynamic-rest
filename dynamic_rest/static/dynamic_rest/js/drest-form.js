@@ -1865,6 +1865,13 @@ function DRESTField(config) {
                     this.$input[0].checked = !!value;
                 }
                 this.$input.val(value);
+            } else if (this.type === 'text') {
+                if ((typeof value === 'object' || Array.isArray(value)) && value !== null) {
+                    // stringify objects
+                    this.$input.val(JSON.stringify(value, null, 1));
+                } else {
+                    this.$input.val(value);
+                }
             } else {
                 this.$input.val(value);
             }
@@ -2543,6 +2550,12 @@ function DRESTField(config) {
                     field.$helper.html('No results');
                 }
             });
+        }
+
+        if (this.type === 'text') {
+            if ((typeof value === 'object' || Array.isArray(value)) && value !== null) {
+                this.$input.val(JSON.stringify(value, null, 1));
+            }
         }
 
         if (this.$input.length && this.$input.is('textarea') && autosize) {
