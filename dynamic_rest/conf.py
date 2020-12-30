@@ -78,6 +78,9 @@ DYNAMIC_REST = {
     # path registered, links will default back to being resource-relative urls
     'ENABLE_HOST_RELATIVE_LINKS': True,
 
+    # ENABLE_RELATED_LINKS: adds relationship links onto the response
+    'ENABLE_RELATED_LINKS': True,
+
     # ENABLE_SELF_LINKS: enable/disable links to self
     'ENABLE_SELF_LINKS': True,
 

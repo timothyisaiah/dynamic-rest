@@ -27,20 +27,21 @@ def merge_link_object(serializer, data, instance):
         if settings.ENABLE_SELF_LINKS:
             link_object['self'] = base_url
 
-    link_fields = serializer.get_link_fields()
-    for name, field in six.iteritems(link_fields):
-        # For included fields, omit link if there's no data.
-        if name in data and not data[name]:
-            continue
+    if settings.ENABLE_RELATED_LINKS:
+        link_fields = serializer.get_link_fields()
+        for name, field in six.iteritems(link_fields):
+            # For included fields, omit link if there's no data.
+            if name in data and not data[name]:
+                continue
 
-        link = getattr(field, 'link', None)
-        if link is None:
-            link = '%s%s/' % (base_url, name)
-        # Default to DREST-generated relation endpoints.
-        elif callable(link):
-            link = link(name, field, data, instance)
+            link = getattr(field, 'link', None)
+            if link is None:
+                link = '%s%s/' % (base_url, name)
+            # Default to DREST-generated relation endpoints.
+            elif callable(link):
+                link = link(name, field, data, instance)
 
-        link_object[name] = link
+            link_object[name] = link
 
     if link_object:
         data['links'] = link_object
