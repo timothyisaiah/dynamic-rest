@@ -1,16 +1,19 @@
 from __future__ import absolute_import
 
 import json
+from datetime import datetime
 import pkg_resources
+import os
 import random
 import string
 from collections import defaultdict
 from datetime import datetime
-
 from rest_framework.test import APITestCase
 
 from .models import Group, Permission, User
 
+
+DEBUG = os.environ.get('DEBUG', "0") == "1"
 
 # Python 3 compatibility
 try:
@@ -18,48 +21,53 @@ try:
 except NameError:
     xrange = range
 
-DREST_VERSION = pkg_resources.require('dynamic-rest')[0].version
-DRF_VERSION = pkg_resources.require('djangorestframework')[0].version
-AVERAGE_TYPE = 'median'
+DREST_VERSION = pkg_resources.require("dynamic-rest")[0].version
+DRF_VERSION = pkg_resources.require("djangorestframework")[0].version
+RESOURCE_VERSION = pkg_resources.require("pyresource")[0].version
+AVERAGE_TYPE = "mean"
 
 # BENCHMARKS: configuration for benchmarks
 BENCHMARKS = [
     {
         # name: benchmark name
-        'name': 'linear',
+        "name": "linear",
         # drest: DREST endpoint
-        'drest': '/drest/users/',
+        "drest": "/drest/users/",
         # drf: DRF endpoint
-        'drf': '/drf/users/',
+        "drf": "/drf/users/",
+        # resource: pyresource endpoint
+        "resource": "/resource/users/?take=id,name",
         # min_size: minimum sample size
-        'min_size': 1,
+        "min_size": 1,
         # max_size: maximum sample size
-        'max_size': 16,
+        "max_size": 16,
         # multiplier: number of records in one sample
-        'multiplier': 256,
+        "multiplier": 256,
         # samples: number of samples to take
-        'samples': 12
+        "samples": 5,
     },
     {
-        'name': 'quadratic',
-        'drest': '/drest/users?include[]=groups.',
-        'drf': '/drf/users_with_groups/',
-        'min_size': 1,
-        'max_size': 16,
-        'multiplier': 4,
-        'samples': 12
+        "name": "quadratic",
+        "drest": "/drest/users?include[]=groups.",
+        "drf": "/drf/users_with_groups/",
+        "resource": "/resource/users?take.groups=id,name",
+        "min_size": 1,
+        "max_size": 16,
+        "multiplier": 4,
+        "samples": 5,
     },
+]
+
+CUBIC = [
     {
-        'name': 'cubic',
-        'drest': (
-            '/drest/users/'
-            '?include[]=groups.permissions.'
-        ),
-        'drf': '/drf/users_with_all/',
-        'min_size': 1,
-        'max_size': 16,
-        'multiplier': 1,
-        'samples': 12
+        "name": "cubic",
+        "drest": ("/drest/users/" "?include[]=groups.permissions."),
+        "drf": "/drf/users_with_all/",
+        "resource": "/resource/users?take.groups.permissions=*",
+        "min_size": 1,
+        "max_size": 16,
+        "multiplier": 1,
+        "samples": 12,
     }
 ]
 
@@ -116,41 +124,30 @@ def get_average(values):
     l = len(values)
     if l == 0:
         return 0
-    elif AVERAGE_TYPE == 'mean':
+    elif AVERAGE_TYPE == "mean":
         return sum(values) / l
-    elif AVERAGE_TYPE == 'median':
+    elif AVERAGE_TYPE == "median":
         values = sorted(values)
         if len(values) % 2 == 1:
-            return values[((l + 1) / 2) - 1]
+            return values[int((l + 1) / 2) - 1]
         else:
-            return float(
-                sum(
-                    values[(l / 2) - 1:(l / 2) + 1]
-                )
-            ) / 2.0
+            return float(sum(values[int((l / 2) - 1) : int((l / 2) + 1)])) / 2.0
 
 
 class BenchmarkTest(APITestCase):
-
     @classmethod
     def setUpClass(cls):
         # initialize results: a 4x nested dictionary
-        cls._results = defaultdict(
-            lambda: defaultdict(
-                lambda: defaultdict(
-                    dict
-                )
-            )
-        )
+        cls._results = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
     @classmethod
     def tearDownClass(cls):
         # save results to an HTML file
-        with open('benchmarks.html', 'w') as file:
+        now = datetime.now().strftime("%s")
+        filename = "benchmarks-%s.html" % now
+        with open(filename, "w") as file:
             file.write(CHART_HEAD)
-            for benchmark_name, implementations in sorted(
-                cls._results.items()
-            ):
+            for benchmark_name, implementations in sorted(cls._results.items()):
                 data = []
                 for implementation_name, implementation_data in sorted(
                     implementations.items()
@@ -161,30 +158,35 @@ class BenchmarkTest(APITestCase):
 
                     implementation_data = sorted(implementation_data.items())
 
-                    data.append({
-                        'name': implementation_name,
-                        'data': implementation_data
-                    })
+                    data.append(
+                        {"name": implementation_name, "data": implementation_data}
+                    )
 
                 file.write(
                     CHART_TEMPLATE.format(
-                        benchmark_name=benchmark_name,
-                        data=json.dumps(data)
+                        benchmark_name=benchmark_name, data=json.dumps(data)
                     )
                 )
+        # raise exception to surface this log to the test
+        raise Exception("done, saved data to %s" % filename)
 
-    def bench(
-        self,
-        implementation_name,
-        benchmark_name,
-        url,
-        size,
-        sample
-    ):
+    def bench(self, implementation_name, benchmark_name, url, size, sample):
         start = datetime.now()
         response = self.client.get(url)
+        if DEBUG:
+            print(
+                implementation_name,
+                benchmark_name,
+                url,
+                size,
+                sample,
+                "===\n===",
+                response.content,
+            )
         end = datetime.now()
-        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.status_code, 200, f"Response failed at {url}:\n{response.content}"
+        )
         diff = end - start
         d = diff.total_seconds()
         self._results[benchmark_name][implementation_name][size][sample] = d
@@ -193,24 +195,17 @@ class BenchmarkTest(APITestCase):
         total = 0
         for i in xrange(size):
             total += 1
-            User.objects.create(
-                name=str(i)
-            )
+            User.objects.create(name=str(i))
         return total
 
     def generate_quadratic(self, size):
         total = 0
         for i in xrange(size):
             total += 1
-            user = User.objects.create(
-                name=str(i)
-            )
+            user = User.objects.create(name=str(i))
             for j in xrange(size):
                 total += 1
-                group = Group.objects.create(
-                    name='%d-%d' % (i, j),
-                    max_size=size
-                )
+                group = Group.objects.create(name="%d-%d" % (i, j), max_size=size)
                 user.groups.add(group)
         return total
 
@@ -218,61 +213,49 @@ class BenchmarkTest(APITestCase):
         total = 0
         for i in xrange(size):
             total += 1
-            user = User.objects.create(
-                name=str(i)
-            )
+            user = User.objects.create(name=str(i))
             for j in xrange(size):
                 total += 1
-                group = Group.objects.create(
-                    name='%d-%d' % (i, j),
-                    max_size=size
-                )
+                group = Group.objects.create(name="%d-%d" % (i, j), max_size=size)
                 user.groups.add(group)
                 for k in xrange(size):
                     total += 1
-                    permission = Permission.objects.create(
-                        name='%d-%d-%d' % (i, j, k)
-                    )
+                    permission = Permission.objects.create(name="%d-%d-%d" % (i, j, k))
                     group.permissions.add(permission)
         return total
 
 
-def generate_benchmark(name, title, drest, drf, size, sample):
+def generate_benchmark(name, title, drest, drf, resource, size, sample):
     def bench(self):
-        total_size = getattr(self, 'generate_%s' % name)(size)
+        total_size = getattr(self, "generate_%s" % name)(size)
+        # self.bench("DREST %s" % DREST_VERSION, title, drest, total_size, sample)
+        # self.bench("DRF %s" % DRF_VERSION, title, drf, total_size, sample)
         self.bench(
-            'DREST %s' % DREST_VERSION,
-            title,
-            drest,
-            total_size,
-            sample
+           "Resource %s" % RESOURCE_VERSION, title, resource, total_size, sample
         )
-        self.bench('DRF %s' % DRF_VERSION, title, drf, total_size, sample)
+
     return bench
 
 
 def get_random_string(size):
-    return ''.join(
-        random.choice(string.ascii_uppercase)
-        for _ in xrange(size)
-    )
+    return "".join(random.choice(string.ascii_uppercase) for _ in xrange(size))
+
 
 # generate test methods
 for benchmark in BENCHMARKS:
-    name = benchmark['name']
+    name = benchmark["name"]
     title = name.title()
-    min_size = benchmark['min_size']
-    max_size = benchmark['max_size']
-    drf = benchmark['drf']
-    drest = benchmark['drest']
-    multiplier = benchmark['multiplier']
-    samples = benchmark['samples']
+    min_size = benchmark["min_size"]
+    max_size = benchmark["max_size"]
+    drf = benchmark["drf"]
+    drest = benchmark["drest"]
+    resource = benchmark["resource"]
+    multiplier = benchmark["multiplier"]
+    samples = benchmark["samples"]
 
     for size in range(min_size, max_size + 1):
         size *= multiplier
         for sample in xrange(samples):
-            test_name = 'test_%s_%s_%d_%d' % (
-                get_random_string(4), name, size, sample
-            )
-            test = generate_benchmark(name, title, drest, drf, size, sample)
+            test_name = "test_%s_%s_%d_%d" % (get_random_string(4), name, size, sample)
+            test = generate_benchmark(name, title, drest, drf, resource, size, sample)
             setattr(BenchmarkTest, test_name, test)
