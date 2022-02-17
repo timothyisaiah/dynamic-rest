@@ -1,10 +1,7 @@
 """This module contains custom renderer classes."""
 from django.utils import six
 import copy
-from rest_framework.renderers import (
-    HTMLFormRenderer,
-    ClassLookupDict
-)
+from rest_framework.renderers import HTMLFormRenderer, ClassLookupDict
 from django.utils.html import mark_safe
 from dynamic_rest.compat import reverse, NoReverseMatch
 from rest_framework.renderers import AdminRenderer
@@ -60,12 +57,8 @@ mapping[fields.DynamicField] = {
 def get_user_name(request):
     user = request.user
     if user:
-        username = getattr(
-            user, getattr(user, 'USERNAME_FIELD', 'username'), None
-        )
-        name = getattr(
-            user, getattr(user, 'NAME_FIELD', 'name'), None
-        )
+        username = getattr(user, getattr(user, 'USERNAME_FIELD', 'username'), None)
+        name = getattr(user, getattr(user, 'NAME_FIELD', 'name'), None)
         return name if name else username
     return None
 
@@ -82,14 +75,13 @@ class DynamicHTMLFormRenderer(HTMLFormRenderer):
             style = renderer_context.get('style', {})
             style['template_pack'] = self.template_pack
         return super(DynamicHTMLFormRenderer, self).render(
-            data,
-            accepted_media_type,
-            renderer_context
+            data, accepted_media_type, renderer_context
         )
 
 
 class DynamicAdminRenderer(AdminRenderer):
     """Admin renderer."""
+
     form_renderer_class = DynamicHTMLFormRenderer
     template = settings.ADMIN_TEMPLATE
 
@@ -109,9 +101,7 @@ class DynamicAdminRenderer(AdminRenderer):
             data = serializer.data
 
         context = super(DynamicAdminRenderer, self).get_context(
-            data,
-            media_type,
-            context
+            data, media_type, context
         )
 
         # add context
@@ -163,12 +153,8 @@ class DynamicAdminRenderer(AdminRenderer):
             if related_serializers:
                 related_serializers = related_serializers.items()
             create_related_forms = {
-                name: (
-                    serializer,
-                    self.render_form_for_serializer(serializer)
-                )
-                for name, serializer
-                in related_serializers
+                name: (serializer, self.render_form_for_serializer(serializer))
+                for name, serializer in related_serializers
             }
             filters = serializer.get_filters()
             meta = serializer.get_meta()
@@ -178,8 +164,7 @@ class DynamicAdminRenderer(AdminRenderer):
             icon = serializer.get_icon()
             if icon:
                 nav_icon = '<span class="{0} {0}-{1}"></span>'.format(
-                    settings.ADMIN_ICON_PACK,
-                    icon
+                    settings.ADMIN_ICON_PACK, icon
                 )
             header = serializer.get_plural_name().title().replace('_', ' ')
 
@@ -198,12 +183,11 @@ class DynamicAdminRenderer(AdminRenderer):
 
             if is_list:
                 list_fields = getattr(meta, 'list_fields', None) or meta.fields
-                blacklist = ('id', )
+                blacklist = ('id',)
                 if not isinstance(list_fields, six.string_types):
                     # respect serializer field ordering
                     columns = [
-                        f for f in list_fields
-                        if f in columns and f not in blacklist
+                        f for f in list_fields if f in columns and f not in blacklist
                     ]
 
             fields = serializer.get_all_fields()
@@ -211,27 +195,19 @@ class DynamicAdminRenderer(AdminRenderer):
         # login and logout
         login_url = ''
         try:
-            login_url = settings.ADMIN_LOGIN_URL or reverse(
-                'dynamic_rest:login'
-            )
+            login_url = settings.ADMIN_LOGIN_URL or reverse('dynamic_rest:login')
         except NoReverseMatch:
             try:
-                login_url = (
-                    settings.ADMIN_LOGIN_URL or reverse('rest_framework:login')
-                )
+                login_url = settings.ADMIN_LOGIN_URL or reverse('rest_framework:login')
             except NoReverseMatch:
                 pass
 
         logout_url = ''
         try:
-            logout_url = (
-                settings.ADMIN_LOGOUT_URL or reverse('dynamic_rest:logout')
-            )
+            logout_url = settings.ADMIN_LOGOUT_URL or reverse('dynamic_rest:logout')
         except NoReverseMatch:
             try:
-                logout_url = (
-                    settings.ADMIN_LOGOUT_URL or reverse('dynamic_rest:logout')
-                )
+                logout_url = settings.ADMIN_LOGOUT_URL or reverse('dynamic_rest:logout')
             except NoReverseMatch:
                 pass
 
@@ -240,9 +216,7 @@ class DynamicAdminRenderer(AdminRenderer):
         else:
             permissions = getattr(serializer, 'permissions', None)
 
-        allowed_methods = set(
-            (x.lower() for x in (view.http_method_names or ()))
-        )
+        allowed_methods = set((x.lower() for x in (view.http_method_names or ())))
         allowed = set()
         if 'put' in allowed_methods:
             allowed.add('update')
@@ -258,16 +232,26 @@ class DynamicAdminRenderer(AdminRenderer):
             if not permissions.delete:
                 allowed.discard('delete')
             elif not permissions.delete.no_access:
-                if instance and not instance._meta.model.objects.filter(
-                    permissions.delete.filters
-                ).filter(pk=instance.pk).exists():
+                if (
+                    instance
+                    and not instance._meta.model.objects.filter(
+                        permissions.delete.filters
+                    )
+                    .filter(pk=instance.pk)
+                    .exists()
+                ):
                     allowed.discard('delete')
             if not permissions.update:
                 allowed.discard('update')
             elif not permissions.update.no_access:
-                if instance and not instance._meta.model.objects.filter(
-                    permissions.update.filters
-                ).filter(pk=instance.pk).exists():
+                if (
+                    instance
+                    and not instance._meta.model.objects.filter(
+                        permissions.update.filters
+                    )
+                    .filter(pk=instance.pk)
+                    .exists()
+                ):
                     allowed.discard('update')
 
             if not permissions.create:
@@ -290,32 +274,31 @@ class DynamicAdminRenderer(AdminRenderer):
             title = header = 'Home'
 
         context['name_field'] = name_field
-        context['search_key'] = (
-            serializer.get_search_key() if serializer
-            else None
-        )
+        context['search_key'] = serializer.get_search_key() if serializer else None
         context['user_name'] = get_user_name(request)
         context['actions'] = actions
         context['render_style'] = render_style
         context['directory'] = get_directory(request, icons=True)
         context['home'] = home
         context['filters'] = filters
-        context['num_filters'] = sum([
-            1 if (
-                any([ff is not None for ff in f.value])
-                if isinstance(f.value, list)
-                else f.value is not None
-            ) else 0
-            for f in filters.values()
-        ])
+        context['num_filters'] = sum(
+            [
+                1
+                if (
+                    any([ff is not None for ff in f.value])
+                    if isinstance(f.value, list)
+                    else f.value is not None
+                )
+                else 0
+                for f in filters.values()
+            ]
+        )
         context['columns'] = columns
         context['fields'] = fields
         context['serializer'] = serializer
-        context['sortable_fields'] = set([
-            c for c in columns if (
-                getattr(fields.get(c), 'sort_field', None)
-            )
-        ])
+        context['sortable_fields'] = set(
+            [c for c in columns if (getattr(fields.get(c), 'sort_field', None))]
+        )
         sorted_ascending = None
         if hasattr(view, 'get_request_feature'):
             sorted_field = view.get_request_feature(view.SORT)
@@ -343,40 +326,20 @@ class DynamicAdminRenderer(AdminRenderer):
         context['title'] = title
         context['api_name'] = settings.API_NAME
         context['url'] = request.get_full_path()
-        context['allow_filter'] = (
-            'list' in allowed
-        ) and bool(filters)
-        context['allow_search'] = (
-            'list' in allowed
-        )
-        context['list_url'] = (
-            '/' if serializer is None
-            else serializer.get_url()
-        )
+        context['allow_filter'] = ('list' in allowed) and bool(filters)
+        context['allow_search'] = 'list' in allowed
+        context['list_url'] = '/' if serializer is None else serializer.get_url()
         context['detail_url'] = (
-            None if serializer is None or instance is None
+            None
+            if serializer is None or instance is None
             else serializer.get_url(instance.pk)
         )
-        context['allow_delete'] = (
-            'delete' in allowed and is_detail
-            and bool(instance)
-        )
-        context['allow_edit'] = (
-            'update' in allowed and
-            is_detail and
-            bool(instance)
-        )
-        context['allow_add'] = (
-            'create' in allowed and is_list
-        )
+        context['allow_delete'] = 'delete' in allowed and is_detail and bool(instance)
+        context['allow_edit'] = 'update' in allowed and is_detail and bool(instance)
+        context['allow_add'] = 'create' in allowed and is_list
         context['nav_icon'] = mark_safe(nav_icon)
-        context['show_nav'] = (
-            not is_auth_error and
-            not is_directory
-        )
-        context['show_menu'] = (
-            not is_auth_error
-        )
+        context['show_nav'] = not is_auth_error and not is_directory
+        context['show_menu'] = not is_auth_error
         return context
 
     def get_filter_form(self, *args, **kwargs):
@@ -395,7 +358,7 @@ class DynamicAdminRenderer(AdminRenderer):
         return form_renderer.render(
             serializer.data,
             self.accepted_media_type,
-            {'style': {'template_pack': 'dynamic_rest/form'}}
+            {'style': {'template_pack': 'dynamic_rest/form'}},
         )
 
     def get_raw_data_form(self, *args, **kwargs):

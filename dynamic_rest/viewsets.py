@@ -35,10 +35,7 @@ class QueryParams(QueryDict):
         if hasattr(query_params, 'urlencode'):
             query_string = query_params.urlencode()
         else:
-            assert isinstance(
-                query_params,
-                (six.string_types, six.binary_type)
-            )
+            assert isinstance(query_params, (six.string_types, six.binary_type))
             query_string = query_params
         kwargs['mutable'] = True
         super(QueryParams, self).__init__(query_string, *args, **kwargs)
@@ -67,6 +64,7 @@ class WithDynamicViewSetBase(object):
       features: A list of features supported by the viewset.
       meta: Extra data that is added to the response by the DynamicRenderer.
     """
+
     SET_REQUEST_ON_SAVE = settings.SET_REQUEST_ON_SAVE
 
     DEBUG = 'debug'
@@ -81,16 +79,7 @@ class WithDynamicViewSetBase(object):
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
-    features = (
-        DEBUG,
-        INCLUDE,
-        EXCLUDE,
-        FILTER,
-        PAGE,
-        PER_PAGE,
-        SORT,
-        SIDELOADING
-    )
+    features = (DEBUG, INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
@@ -136,6 +125,7 @@ class WithDynamicViewSetBase(object):
             # using it - thus, were comfortable replacing it with a QueryDict
             # This will allow the data property to have normal dict methods.
             from django.utils.datastructures import MergeDict
+
             if isinstance(request._full_data, MergeDict):
                 data_as_dict = request.data.dicts[0]
                 for d in request.data.dicts[1:]:
@@ -158,19 +148,29 @@ class WithDynamicViewSetBase(object):
                 actions.append(action)
         return actions
 
+    def get_allowed_methods(self):
+        """Returns subset of allowed methods"""
+        allowed_methods = set((x.lower() for x in (self.http_method_names or ())))
+        allowed = []
+        if 'put' in allowed_methods:
+            allowed.append('update')
+        if 'post' in allowed_methods:
+            allowed.append('create')
+        if 'delete' in allowed_methods:
+            allowed.append('delete')
+        if 'get' in allowed_methods:
+            allowed.append('list')
+            allowed.append('read')
+        return allowed
+
     def get_actions(self, instance=None):
         actions = self.actions
         is_list = self.is_list()
         is_detail = self.is_get()
         result = []
         for action in actions:
-            if (
-                (action.on_list and is_list) or
-                (action.on_detail and is_detail)
-            ):
-                if not action.when or (
-                    evaluate(action.when, {'instance': instance})
-                ):
+            if (action.on_list and is_list) or (action.on_detail and is_detail):
+                if not action.when or (evaluate(action.when, {'instance': instance})):
                     result.append(action)
         return result
 
@@ -179,10 +179,7 @@ class WithDynamicViewSetBase(object):
         renderers = super(WithDynamicViewSetBase, self).get_renderers()
         blacklist = set(('admin', 'api'))
         if settings.ENABLE_BROWSABLE_API is False:
-            return [
-                r for r in renderers
-                if r.format not in blacklist
-            ]
+            return [r for r in renderers if r.format not in blacklist]
         else:
             return renderers
 
@@ -192,9 +189,7 @@ class WithDynamicViewSetBase(object):
 
     def get_success_headers(self, data):
         serializer = getattr(data, 'serializer', None)
-        headers = super(WithDynamicViewSetBase, self).get_success_headers(
-            data
-        )
+        headers = super(WithDynamicViewSetBase, self).get_success_headers(data)
         if serializer and serializer.instance:
             headers['Location'] = serializer.get_url(
                 pk=getattr(serializer.instance, 'pk', None)
@@ -217,10 +212,7 @@ class WithDynamicViewSetBase(object):
                     name = serializer.get_name()
         else:
             name = self.__class__.__name__
-            name = (
-                inflection.pluralize(name)
-                if suffix.lower() == 'list' else name
-            )
+            name = inflection.pluralize(name) if suffix.lower() == 'list' else name
         return name.title()
 
     def get_request_feature(self, name):
@@ -234,16 +226,19 @@ class WithDynamicViewSetBase(object):
         """
         if '[]' in name:
             # array-type
-            return self.request.query_params.getlist(
-                name) if name in self.features else None
+            return (
+                self.request.query_params.getlist(name)
+                if name in self.features
+                else None
+            )
         elif '{}' in name:
             # object-type (keys are not consistent)
-            return self._extract_object_params(
-                name) if name in self.features else {}
+            return self._extract_object_params(name) if name in self.features else {}
         else:
             # single-type
-            return self.request.query_params.get(
-                name) if name in self.features else None
+            return (
+                self.request.query_params.get(name) if name in self.features else None
+            )
 
     def _extract_object_params(self, name):
         """
@@ -303,10 +298,7 @@ class WithDynamicViewSetBase(object):
         include_fields = self.get_request_feature(self.INCLUDE)
         exclude_fields = self.get_request_feature(self.EXCLUDE)
         request_fields = {}
-        for fields, include in (
-            (include_fields, True),
-            (exclude_fields, False)
-        ):
+        for fields, include in ((include_fields, True), (exclude_fields, False)):
             if fields is None:
                 continue
             for field in fields:
@@ -325,8 +317,7 @@ class WithDynamicViewSetBase(object):
                     elif not last:
                         # empty segment must be the last segment
                         raise exceptions.ParseError(
-                            '"%s" is not a valid field.' %
-                            field
+                            '"%s" is not a valid field.' % field
                         )
 
         self._request_fields = request_fields
@@ -341,19 +332,13 @@ class WithDynamicViewSetBase(object):
         return is_truthy(sideloading) if sideloading is not None else None
 
     def is_create(self):
-        if (
-            self.request and
-            self.request.method.upper() == 'POST'
-        ):
+        if self.request and self.request.method.upper() == 'POST':
             return True
         else:
             return False
 
     def is_update(self):
-        if (
-            self.request and
-            self.request.method.upper() in UPDATE_REQUEST_METHODS
-        ):
+        if self.request and self.request.method.upper() in UPDATE_REQUEST_METHODS:
             return True
         else:
             return False
@@ -361,36 +346,29 @@ class WithDynamicViewSetBase(object):
     def get_pk(self):
         pk = None
         if self.is_get():
-            pk = self.kwargs.get(
-                self.lookup_url_kwarg or self.lookup_field
-            )
+            pk = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
         return pk
 
     def is_get(self):
         if (
-            self.request and
-            self.request.method.upper() == 'GET' and
-            (self.lookup_url_kwarg or self.lookup_field)
-            in self.kwargs
+            self.request
+            and self.request.method.upper() == 'GET'
+            and (self.lookup_url_kwarg or self.lookup_field) in self.kwargs
         ):
             return True
         return False
 
     def is_list(self):
         if (
-            self.request and
-            self.request.method.upper() == 'GET' and
-            (self.lookup_url_kwarg or self.lookup_field)
-            not in self.kwargs
+            self.request
+            and self.request.method.upper() == 'GET'
+            and (self.lookup_url_kwarg or self.lookup_field) not in self.kwargs
         ):
             return True
         return False
 
     def is_delete(self):
-        if (
-            self.request and
-            self.request.method.upper() == DELETE_REQUEST_METHOD
-        ):
+        if self.request and self.request.method.upper() == DELETE_REQUEST_METHOD:
             return True
         else:
             return False
@@ -403,9 +381,7 @@ class WithDynamicViewSetBase(object):
     def get_serializer(self, *args, **kwargs):
         list_fields = None
         if self.is_list():
-            list_fields = getattr(
-                self.serializer_class.get_meta(), 'list_fields', None
-            )
+            list_fields = getattr(self.serializer_class.get_meta(), 'list_fields', None)
             kwargs['many'] = True
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
@@ -421,11 +397,7 @@ class WithDynamicViewSetBase(object):
         if settings.ALL_FIELDS_ON_UPDATE:
             if self.is_update():
                 kwargs['include_fields'] = '*'
-        serializer = super(
-            WithDynamicViewSetBase, self
-        ).get_serializer(
-            *args, **kwargs
-        )
+        serializer = super(WithDynamicViewSetBase, self).get_serializer(*args, **kwargs)
         if hasattr(serializer, 'initialized'):
             serializer.initialized()
         return serializer
@@ -434,14 +406,12 @@ class WithDynamicViewSetBase(object):
         if self.PAGE in self.features:
             # make sure pagination is enabled
             if (
-                self.PER_PAGE not in self.features and
-                self.PER_PAGE in self.request.query_params
+                self.PER_PAGE not in self.features
+                and self.PER_PAGE in self.request.query_params
             ):
                 # remove per_page if it is disabled
                 self.request.query_params[self.PER_PAGE] = None
-            return super(
-                WithDynamicViewSetBase, self
-            ).paginate_queryset(
+            return super(WithDynamicViewSetBase, self).paginate_queryset(
                 *args, **kwargs
             )
         return None
@@ -451,10 +421,7 @@ class WithDynamicViewSetBase(object):
         if not values:
             return
         del request.query_params[feature]
-        request.query_params.add(
-            feature,
-            [prefix + val for val in values]
-        )
+        request.query_params.add(feature, [prefix + val for val in values])
 
     def _refresh_query_params(self):
         if hasattr(self, '_request_fields'):
@@ -475,9 +442,7 @@ class WithDynamicViewSetBase(object):
         instance = self.get_queryset().get(pk=pk)
         related_field = primary_serializer.fields.get(field_name)
         if not related_field:
-            raise exceptions.ValidationError(
-                '"%s" is not a valid field' % field_name
-            )
+            raise exceptions.ValidationError('"%s" is not a valid field' % field_name)
 
         model_field = getattr(related_field, 'model_field', None)
         if not model_field:
@@ -498,7 +463,7 @@ class WithDynamicViewSetBase(object):
                 request_fields=None,
                 include_fields='*',
                 envelope=True,
-                many=False
+                many=False,
             )
         else:
             # use the full API method (must explicitly define an inverse field)
@@ -506,17 +471,12 @@ class WithDynamicViewSetBase(object):
             inverse_field_name = related_field.get_inverse_field_name()
             if inverse_field_name:
                 # save by setting the inverse field
-                inverse_field = related_serializer.get_field(
-                    inverse_field_name
-                )
+                inverse_field = related_serializer.get_field(inverse_field_name)
                 data = request.data
                 if hasattr(data, '_mutable'):
                     data._mutable = True
 
-                if (
-                    len(data.keys()) == 1 and
-                    data.keys()[0] == related_serializer_name
-                ):
+                if len(data.keys()) == 1 and data.keys()[0] == related_serializer_name:
                     data = data[related_serializer_name]
 
                 # set the current record as the related object
@@ -528,12 +488,10 @@ class WithDynamicViewSetBase(object):
                     request_fields=None,
                     include_fields='*',
                     envelope=True,
-                    many=False
+                    many=False,
                 )
                 # set the inverse field to allow writes
-                inverse_field = related_serializer.fields.get(
-                    inverse_field_name
-                )
+                inverse_field = related_serializer.fields.get(inverse_field_name)
                 inverse_field.read_only = False
 
             else:
@@ -597,14 +555,10 @@ class WithDynamicViewSetBase(object):
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            raise exceptions.ValidationError(
-                'Unknown field: "%s".' % field_name
-            )
+            raise exceptions.ValidationError('Unknown field: "%s".' % field_name)
 
         if not hasattr(field, 'get_serializer'):
-            raise exceptions.ValidationError(
-                'Not a related field: "%s".' % field_name
-            )
+            raise exceptions.ValidationError('Not a related field: "%s".' % field_name)
 
         # Query for root object, with related field prefetched
         queryset = self.get_queryset()
@@ -624,17 +578,11 @@ class WithDynamicViewSetBase(object):
 
         # create an instance of the related serializer
         # and use it to render the data
-        related_serializer = field.get_serializer(
-            instance=related,
-            envelope=True,
-        )
+        related_serializer = field.get_serializer(instance=related, envelope=True,)
         return Response(related_serializer.data)
 
 
-class WithDynamicViewSetMixin(
-    PermissionsViewSetMixin,
-    WithDynamicViewSetBase
-):
+class WithDynamicViewSetMixin(PermissionsViewSetMixin, WithDynamicViewSetBase):
     pass
 
 
@@ -651,18 +599,15 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
     def _is_csv_upload(self, request):
         if is_form_media_type(request.content_type):
-            if (
-                'file' in request.data and
-                request.data['file'].name.lower().endswith('.csv')
+            if 'file' in request.data and request.data['file'].name.lower().endswith(
+                '.csv'
             ):
                 return True
         return False
 
     def _get_bulk_payload_csv(self, request):
         file = request.data['file']
-        reader = csv.DictReader(
-            StringIO(file.read().decode('utf-8'))
-        )
+        reader = csv.DictReader(StringIO(file.read().decode('utf-8')))
         return [r for r in reader]
 
     def _get_bulk_payload_json(self, request):
@@ -679,7 +624,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             self.filter_queryset(self.get_queryset()),
             data=data,
             many=True,
-            partial=partial
+            partial=partial,
         )
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -715,8 +660,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             bulk_payload = self._get_bulk_payload(request)
             if bulk_payload:
                 return self._bulk_update(bulk_payload, partial)
-        return super(DynamicModelViewSet, self).update(request, *args,
-                                                       **kwargs)
+        return super(DynamicModelViewSet, self).update(request, *args, **kwargs)
 
     def _create_many(self, data):
         items = []
@@ -729,35 +673,26 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             try:
                 serializer.is_valid(raise_exception=True)
             except exceptions.ValidationError as e:
-                errors.append({
-                    'detail': e.detail,
-                    'source': entry
-                })
+                errors.append({'detail': e.detail, 'source': entry})
             else:
                 if self.ENABLE_BULK_PARTIAL_CREATION:
                     self.perform_create(serializer)
-                    items.append(
-                        serializer.to_representation(serializer.instance))
+                    items.append(serializer.to_representation(serializer.instance))
                 else:
                     serializers.append(serializer)
         if not self.ENABLE_BULK_PARTIAL_CREATION and not errors:
             for serializer in serializers:
                 self.perform_create(serializer)
-                items.append(
-                    serializer.to_representation(serializer.instance))
+                items.append(serializer.to_representation(serializer.instance))
 
         # Populate serialized data to the result.
-        result = SideloadingProcessor(
-            self.get_serializer(),
-            items
-        ).data
+        result = SideloadingProcessor(self.get_serializer(), items).data
 
         # Include errors if any.
         if errors:
             result['errors'] = errors
 
-        code = (status.HTTP_201_CREATED if not errors else
-                status.HTTP_400_BAD_REQUEST)
+        code = status.HTTP_201_CREATED if not errors else status.HTTP_400_BAD_REQUEST
 
         return Response(result, status=code)
 
@@ -802,8 +737,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         bulk_payload = self._get_bulk_payload(request)
         if bulk_payload:
             return self._create_many(bulk_payload)
-        response = super(DynamicModelViewSet, self).create(
-            request, *args, **kwargs)
+        response = super(DynamicModelViewSet, self).create(request, *args, **kwargs)
         serializer = getattr(response.data, 'serializer')
         if serializer and serializer.instance:
             url = serializer.get_url(pk=serializer.instance.pk)
@@ -811,9 +745,9 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         return response
 
     def _destroy_many(self, data):
-        instances = self.get_queryset().filter(
-            id__in=[d['id'] for d in data]
-        ).distinct()
+        instances = (
+            self.get_queryset().filter(id__in=[d['id'] for d in data]).distinct()
+        )
         for instance in instances:
             self.check_object_permissions(self.request, instance)
             self.perform_destroy(instance)
@@ -844,14 +778,14 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         if lookup_url_kwarg not in kwargs:
             # assume that it is a poorly formatted bulk request
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super(DynamicModelViewSet, self).destroy(
-            request, *args, **kwargs
-        )
+        return super(DynamicModelViewSet, self).destroy(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         if self.SET_REQUEST_ON_SAVE:
-            attr = self.SET_REQUEST_ON_SAVE if isinstance(
-                self.SET_REQUEST_ON_SAVE, str
-            ) else '_request'
+            attr = (
+                self.SET_REQUEST_ON_SAVE
+                if isinstance(self.SET_REQUEST_ON_SAVE, str)
+                else '_request'
+            )
             setattr(instance, attr, self.request)
         instance.delete()

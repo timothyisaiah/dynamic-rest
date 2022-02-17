@@ -99,14 +99,11 @@ class Filter(object):
 
         if isinstance(spec, dict):
             spec = {
-                k: user if isinstance(v, Me) or v is Me else v
-                for k, v in spec.items()
+                k: user if isinstance(v, Me) or v is Me else v for k, v in spec.items()
             }
             return Q(**spec)
 
-        raise Exception(
-            "Not sure how to deal with: %s" % spec
-        )
+        raise Exception("Not sure how to deal with: %s" % spec)
 
     @property
     def no_access(self):
@@ -180,10 +177,7 @@ class Role(object):
         spec = self.spec.get('fields', None)
         if spec is None:
             return Fields.NO_ACCESS
-        return Fields(
-            spec,
-            self.user
-        )
+        return Fields(spec, self.user)
 
     def get(self, name):
         spec = self.spec.get(name, False)
@@ -196,17 +190,17 @@ class Role(object):
         if spec is True:
             return Filter.FULL_ACCESS
 
-        return Filter(
-            spec,
-            self.user,
-        )
+        return Filter(spec, self.user,)
 
 
 class Permissions(object):
+    ALL_METHODS = {'read', 'list', 'create', 'update', 'delete'}
+
     def __repr__(self):
         return str(self.spec)
 
-    def __init__(self, spec, user):
+    def __init__(self, spec, user, allowed=None):
+        self.allowed = self.ALL_METHODS if allowed is None else allowed
         self.spec = spec
         self.user = user
 
@@ -219,11 +213,7 @@ class Permissions(object):
     @cached_property
     def roles(self):
         user = self.user
-        return [
-            Role(v, user)
-            for k, v in self.spec.items()
-            if self.has_role(k)
-        ]
+        return [Role(v, user) for k, v in self.spec.items() if self.has_role(k)]
 
     @cached_property
     def fields(self):
@@ -250,6 +240,10 @@ class Permissions(object):
         return self.get('create')
 
     def get(self, name):
+        if name != 'fields' and name not in self.allowed:
+            # method not allowed at the view level
+            return Filter.NO_ACCESS
+
         roles = self.roles
         f = None
         for role in roles:
@@ -258,15 +252,28 @@ class Permissions(object):
                 f = r
             else:
                 f |= r
-        return f if f is not None else Filter.NO_ACCESS
+
+        result = f if f is not None else Filter.NO_ACCESS
+        if self.user.is_superuser and result.no_access and name != 'fields':
+            # unless blocked by view.http_method_names, superuser has full access
+            return result.FULL_ACCESS
+
+        return result
+
+    def serialize(self):
+        return {
+            "create": bool(self.create),
+            "update": bool(self.update),
+            "delete": bool(self.delete),
+            "list": bool(self.list),
+            "read": bool(self.read),
+            "fields": self.fields.spec,
+        }
 
 
 class PermissionsSerializerMixin(object):
     def initialized(self, **kwargs):
-        super(
-            PermissionsSerializerMixin,
-            self
-        ).initialized(**kwargs)
+        super(PermissionsSerializerMixin, self).initialized(**kwargs)
         if not kwargs.get('nested', False):
             full_permissions = self.full_permissions
 
@@ -277,7 +284,7 @@ class PermissionsSerializerMixin(object):
                     if name in fields:
                         field = fields[name]
                         for key, value in values.items():
-                            if (key == 'choices'):
+                            if key == 'choices':
                                 # special-case
                                 field.grouped_choices = to_choices_dict(value)
                                 field.choices = flatten_choices_dict(
@@ -291,30 +298,32 @@ class PermissionsSerializerMixin(object):
                                 setattr(field, key, value)
 
     @classmethod
-    def get_user_permissions(cls, user, even_if_superuser=False):
+    def get_user_permissions(cls, user, even_if_superuser=False, allowed=None):
         if not user or (not even_if_superuser and user.is_superuser):
             return None
 
-        permissions = getattr(
-            cls.get_meta(), 'permissions', None
-        )
+        permissions = getattr(cls.get_meta(), 'permissions', None)
         if permissions:
-            return Permissions(
-                permissions,
-                user,
-            )
+            return Permissions(permissions, user, allowed=allowed)
 
         return None
 
+    def get_allowed_methods(self):
+        view = self.context.get("view")
+        return view.get_allowed_methods()
+
     @cached_property
     def permissions(self):
-        return self.get_user_permissions(self.get_request_attribute('user'))
+        return self.get_user_permissions(
+            self.get_request_attribute('user'), allowed=self.get_allowed_methods()
+        )
 
     @cached_property
     def full_permissions(self):
         return self.get_user_permissions(
             self.get_request_attribute('user'),
-            True
+            even_if_superuser=True,
+            allowed=self.get_allowed_methods(),
         )
 
     def create(self, data, **kwargs):
@@ -325,9 +334,9 @@ class PermissionsSerializerMixin(object):
             if access.no_access:
                 raise exceptions.PermissionDenied()
             with transaction.atomic():
-                instance = super(
-                    PermissionsSerializerMixin, self
-                ).create(data, **kwargs)
+                instance = super(PermissionsSerializerMixin, self).create(
+                    data, **kwargs
+                )
                 if access.full_access:
                     # grant full create
                     return instance
@@ -335,15 +344,15 @@ class PermissionsSerializerMixin(object):
                     # check filters
                     model = self.get_model()
                     if model:
-                        if not model.objects.filter(access.filters).filter(
-                            pk=str(instance.pk)
-                        ).exists():
+                        if (
+                            not model.objects.filter(access.filters)
+                            .filter(pk=str(instance.pk))
+                            .exists()
+                        ):
                             raise exceptions.PermissionDenied()
                     return instance
         else:
-            return super(
-                PermissionsSerializerMixin, self
-            ).create(data, **kwargs)
+            return super(PermissionsSerializerMixin, self).create(data, **kwargs)
 
 
 class PermissionsViewSetMixin(object):
@@ -352,14 +361,9 @@ class PermissionsViewSetMixin(object):
         if not user or (not even_if_superuser and user.is_superuser):
             return None
 
-        permissions = getattr(
-            cls.serializer_class.get_meta(), 'permissions', None
-        )
+        permissions = getattr(cls.serializer_class.get_meta(), 'permissions', None)
         if permissions:
-            return Permissions(
-                permissions,
-                user,
-            )
+            return Permissions(permissions, user,)
 
         return None
 

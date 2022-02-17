@@ -27,14 +27,21 @@ class Action(object):
         self.on_detail = on_detail
         self.on_list = on_list
 
+    def serialize(self):
+        return {
+            "icon": self.icon,
+            "label": self.label,
+            "url": self.url,
+            "confirm": self.confirm,
+            "name": self.name,
+            "when": self.when,
+        }
+
     def bind(self, view, name):
         """Create an action bound to one request"""
         url = self.url
         if not url:
-            url = os.path.join(
-                view.get_url(view.get_pk()),
-                name
-            )
+            url = os.path.join(view.get_url(view.get_pk() or ":id"), name)
         elif callable(url):
             url = url(view)
         return Action(

@@ -32,9 +32,7 @@ def get_type_for(field):
         return "relation"
     elif isinstance(field, dfields.DynamicListField):
         return "list"
-    elif isinstance(field, (
-        dfields.DynamicFileField, dfields.DynamicImageField
-    )):
+    elif isinstance(field, (dfields.DynamicFileField, dfields.DynamicImageField)):
         return "file"
     else:
         return "text"
@@ -49,14 +47,7 @@ class UIField(object):
     """
 
     def __init__(
-        self,
-        field,
-        value,
-        errors,
-        prefix="",
-        instance=None,
-        id=None,
-        deferred=False
+        self, field, value, errors, prefix="", instance=None, id=None, deferred=False
     ):
         self._field = field
         self._prefix = prefix
@@ -99,9 +90,7 @@ class UIField(object):
     @cached_property
     def rendered_value(self):
         if callable(getattr(self._field, "admin_render", None)):
-            return self._field.admin_render(
-                instance=self.instance, value=self.value
-            )
+            return self._field.admin_render(instance=self.instance, value=self.value)
         else:
             return
 
@@ -136,9 +125,7 @@ class UIField(object):
         return True
 
     def as_form_field(self):
-        value = "" if (
-            self.value is None or self.value is False
-        ) else self.value
+        value = "" if (self.value is None or self.value is False) else self.value
 
         parent_name = self._field.parent.get_name()
         rand = "".join([str(randint(0, 9)) for _ in range(6)])
@@ -171,9 +158,7 @@ class UISection(object):
                     field = all_fields[name]
                     if not field.write_only:
                         # render a deferred field
-                        self.fields.append(
-                            UIField(field, None, None, deferred=True)
-                        )
+                        self.fields.append(UIField(field, None, None, deferred=True))
                 else:
                     raise
             except SkipField:
@@ -187,6 +172,9 @@ class UISection(object):
     @cached_property
     def should_render(self):
         return any([f.should_render for f in self.fields])
+
+    def serialize(self):
+        return {"name": self.name, "fields": [field.name for field in self.fields]}
 
 
 class UIFilter(object):
@@ -269,9 +257,7 @@ class UIFilter(object):
             last = len(parts) - 1
             for i, part in enumerate(parts):
                 field = field.get_field(part)
-                if isinstance(
-                    field, dfields.DynamicRelationField
-                ) and i != last:
+                if isinstance(field, dfields.DynamicRelationField) and i != last:
                     field = field.serializer
 
             self.field = field
