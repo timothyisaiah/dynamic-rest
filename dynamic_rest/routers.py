@@ -11,6 +11,8 @@ from dynamic_rest.meta import get_model_table
 from dynamic_rest.conf import settings
 from dynamic_rest.compat import get_script_prefix, resolve, replace_methodname
 
+from dynamic_rest.metadata import DynamicMetadata
+
 resource_map = {}
 resource_name_map = {}
 
@@ -57,6 +59,9 @@ class DynamicRouter(DefaultRouter):
     def __init__(self, *args, **kwargs):
         optional_trailing_slash = kwargs.pop('optional_trailing_slash', True)
         self._serializer_classes = {}
+        self.name = kwargs.pop('name', settings.API_NAME)
+        self.description = kwargs.pop('description', settings.API_DESCRIPTION)
+        self.base_url = kwargs.pop('base_url', settings.API_ROOT_URL)
         self.get_home = kwargs.pop('get_home', settings.API_GET_HOME)
         super(DynamicRouter, self).__init__(*args, **kwargs)
         if optional_trailing_slash:
@@ -64,22 +69,21 @@ class DynamicRouter(DefaultRouter):
 
     def get_api_root_view(self, **kwargs):
         """Return API root view, using the global directory."""
+
         class API(views.APIView):
             _router = self
+            metadata_class = DynamicMetadata
 
             def get_view_name(self, *args, **kwargs):
-                return settings.API_NAME
+                return self._router.name
+
+            def get_view_description(self, *args, **kwargs):
+                return self._router.description
 
             def get(self, request, *args, **kwargs):
-                if (
-                    settings.API_ROOT_SECURE and
-                    not request.user.is_authenticated
-                ):
+                if settings.API_ROOT_SECURE and not request.user.is_authenticated:
                     return redirect(
-                        '%s?next=%s' % (
-                            settings.ADMIN_LOGIN_URL,
-                            request.path
-                        )
+                        '%s?next=%s' % (settings.ADMIN_LOGIN_URL, request.path)
                     )
                 elif self._router.get_home:
                     home = self._router.get_home(request.user)
@@ -91,6 +95,23 @@ class DynamicRouter(DefaultRouter):
 
         view = API.as_view()
         return view
+
+    def get_viewsets(self, request, *args, **kwargs):
+        viewsets = {}
+        for _, viewset, _ in self.registry:
+            if not hasattr(viewset, "serializer_class"):
+                continue
+            viewset = viewset()
+            # set up local viewset context
+            # e.g. for permissions
+            viewset.request = request
+            viewset.args = args
+            viewset.kwargs = kwargs
+            viewset.format_kwarg = viewset.get_format_suffix(**kwargs)
+            serializer_class = viewset.serializer_class
+            name = serializer_class.get_plural_name()
+            viewsets[name] = viewset
+        return viewsets
 
     def get_directory(self, request, icons=False):
         result = OrderedDict()
@@ -127,14 +148,12 @@ class DynamicRouter(DefaultRouter):
         if namespace is not None:
             base_name = '%s-%s' % (namespace, base_name)
 
-        result = super(DynamicRouter, self).register(
-            prefix, viewset, base_name
-        )
+        result = super(DynamicRouter, self).register(prefix, viewset, base_name)
 
         url_name = self.routes[0].name.format(basename=base_name)
         serializer_class = getattr(viewset, 'serializer_class', None)
 
-        assert(getattr(viewset, '_router', None) in [None, self])
+        assert getattr(viewset, '_router', None) in [None, self]
 
         viewset._router = self
         if serializer_class:
@@ -174,12 +193,11 @@ class DynamicRouter(DefaultRouter):
             path_name = serializer.get_plural_name()
         except Exception:
             import traceback
+
             traceback.print_exc()
             raise Exception(
                 "Failed to extract resource name from viewset: '%s'."
-                " It, or its serializer, may not be DREST-compatible." % (
-                    viewset
-                )
+                " It, or its serializer, may not be DREST-compatible." % (viewset)
             )
 
         # Construct canonical path and register it.
@@ -194,17 +212,11 @@ class DynamicRouter(DefaultRouter):
             raise Exception(
                 "The resource '%s' has already been mapped to '%s'."
                 " Each resource can only be mapped to one canonical"
-                " path. " % (
-                    resource_key,
-                    resource_map[resource_key]['path']
-                )
+                " path. " % (resource_key, resource_map[resource_key]['path'])
             )
 
         # Register resource in reverse map.
-        resource_map[resource_key] = {
-            'path': base_path,
-            'viewset': viewset
-        }
+        resource_map[resource_key] = {'path': base_path, 'viewset': viewset}
 
         # Make sure the resource name isn't registered, either
         # TODO: Think of a better way to clean this up, there's a lot of
@@ -215,10 +227,8 @@ class DynamicRouter(DefaultRouter):
             resource_key = resource_name_map[resource_name]
             raise Exception(
                 "The resource name '%s' has already been mapped to '%s'."
-                " A resource name can only be used once." % (
-                    resource_name,
-                    resource_map[resource_key]['path']
-                )
+                " A resource name can only be used once."
+                % (resource_name, resource_map[resource_key]['path'])
             )
 
         # map the resource name to the resource key for easier lookup
@@ -246,19 +256,13 @@ class DynamicRouter(DefaultRouter):
         else:
             return base_path
 
-    def get_serializer_class(
-        self,
-        model
-    ):
+    def get_serializer_class(self, model):
         key = get_model_table(model)
         return self._serializer_classes.get(key, None)
 
     @staticmethod
     def get_canonical_serializer(
-        resource_key,
-        model=None,
-        instance=None,
-        resource_name=None
+        resource_key, model=None, instance=None, resource_name=None
     ):
         """
         Return canonical serializer for a given resource name.
@@ -335,11 +339,13 @@ class DynamicRouter(DefaultRouter):
             if has_create_related:
                 mapping['post'] = 'create_related'
             if mapping:
-                routes.append(Route(
-                    url=url,
-                    mapping=mapping,
-                    name=replace_methodname(route_name, field_name),
-                    initkwargs={},
-                    detail='post' in mapping
-                ))
+                routes.append(
+                    Route(
+                        url=url,
+                        mapping=mapping,
+                        name=replace_methodname(route_name, field_name),
+                        initkwargs={},
+                        detail='post' in mapping,
+                    )
+                )
         return routes

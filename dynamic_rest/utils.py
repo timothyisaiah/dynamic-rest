@@ -20,9 +20,7 @@ ONE_MILLION = Decimal('1000000.00')
 ONE_BILLION = Decimal('1000000000.00')
 
 
-def money_format(
-    number
-):
+def money_format(number):
     if not number:
         return '0'
     number = Decimal(number)
@@ -111,3 +109,15 @@ def get(path, context):
         # try to resolve it
         context = context()
     return context
+
+
+def urljoin(*args):
+    if not args:
+        return None
+    url = args[0]
+    i = 1
+    while i < len(args):
+        if not url.endswith('/'):
+            url += '/'
+        url += args[i]
+    return url

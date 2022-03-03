@@ -6,6 +6,7 @@ from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
 
 from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.utils import urljoin
 
 
 class DynamicMetadata(SimpleMetadata):
@@ -22,8 +23,9 @@ class DynamicMetadata(SimpleMetadata):
         """Adds `fields` and `features` to the metadata response."""
         metadata = super(DynamicMetadata, self).determine_metadata(request, view)
         metadata['label'] = metadata['name']
-        metadata['features'] = getattr(view, 'features', [])
         if hasattr(view, 'get_serializer'):
+            metadata['type'] = 'resource'
+            metadata['features'] = getattr(view, 'features', [])
             serializer = view.get_serializer(dynamic=False)
             metadata['section'] = serializer.get_section()
             if hasattr(serializer, 'get_name'):
@@ -37,17 +39,29 @@ class DynamicMetadata(SimpleMetadata):
             metadata['sections'] = [
                 section.serialize() for section in serializer.get_sections()
             ]
-            metadata['primary_key'] = serializer.get_pk_field()
+            metadata['id_field'] = serializer.get_pk_field()
             metadata['name_field'] = serializer.get_name_field()
             permissions = view.full_permissions
             metadata['permissions'] = permissions.serialize() if permissions else {}
             metadata['permissions']['fields'] = serializer.get_field_permissions()
             metadata['actions'] = [action.serialize() for action in view.actions]
 
+        elif hasattr(view, '_router'):
+            metadata['type'] = 'namespace'
+            if request.GET.get('all') is not None:
+                metadata['resources'] = {
+                    name: self.determine_metadata(request, view)
+                    for name, view in view._router.get_viewsets(request).items()
+                }
+            else:
+                metadata['resources'] = view._router.get_viewsets(request).keys()
+
+            metadata['url'] = view._router.base_url
+
         return metadata
 
     def get_field_info(self, field):
-        """Adds `related_to` and `nullable` to the metadata response."""
+        """Adds to the metadata response."""
         field_info = OrderedDict()
         for out, internal in (
             ('default', 'default'),
