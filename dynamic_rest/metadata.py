@@ -1,7 +1,6 @@
 """This module contains custom DRF metadata classes."""
 from collections import OrderedDict
 
-from django.utils.encoding import force_text
 from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
@@ -40,7 +39,8 @@ class DynamicMetadata(SimpleMetadata):
             ]
             metadata['primary_key'] = serializer.get_pk_field()
             metadata['name_field'] = serializer.get_name_field()
-            metadata['permissions'] = view.full_permissions.serialize()
+            permissions = view.full_permissions
+            metadata['permissions'] = permissions.serialize() if permissions else {}
             metadata['permissions']['fields'] = serializer.get_field_permissions()
             metadata['actions'] = [action.serialize() for action in view.actions]
 
@@ -57,7 +57,10 @@ class DynamicMetadata(SimpleMetadata):
             ('deferred', 'deferred'),
             ('depends', 'depends'),
         ):
-            field_info[out] = getattr(field, internal)
+            field_info[out] = getattr(field, internal, None)
+
+        if field_info['deferred'] is None:
+            field_info['deferred'] = False
 
         if field_info['default'] is empty:
             field_info['default'] = None
@@ -65,14 +68,14 @@ class DynamicMetadata(SimpleMetadata):
             # stringify callable default
             field_info['default'] = f'.{field_info["default"]}'
         if hasattr(field, 'choices'):
-            field_info['choices'] = {
-                force_text(choice_name, strings_only=True): choice_value
+            field_info['choices'] = [
+                {"id": choice_name, "label": choice_value}
                 for choice_value, choice_name in (
                     field.choices.items()
                     if hasattr(field.choices, 'items')
                     else field.choices
                 )
-            }
+            ]
         many = False
         base_field = field
         if isinstance(field, DynamicRelationField):
@@ -89,5 +92,7 @@ class DynamicMetadata(SimpleMetadata):
 
         field_info['type'] = type
         field_info['filterable'] = base_field.source and base_field.source != '*'
-        field_info['sortable'] = base_field.sort_field is not None
+        field_info['sortable'] = field_info['filterable'] or (
+            getattr(base_field, 'sort_field', None) is not None
+        )
         return field_info
