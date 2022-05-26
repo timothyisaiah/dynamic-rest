@@ -84,7 +84,7 @@ class DynamicMetadata(SimpleMetadata):
         if hasattr(field, 'choices'):
             field_info['choices'] = [
                 {"id": choice_name, "label": choice_value}
-                for choice_value, choice_name in (
+                for choice_name, choice_value in (
                     field.choices.items()
                     if hasattr(field.choices, 'items')
                     else field.choices
