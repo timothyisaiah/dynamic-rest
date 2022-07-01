@@ -54,7 +54,7 @@ display: flex;
          max-width: 800px;
 }
 .drest-grid--2x {
-    column-count: 2;
+    column-count: 1;
 }
 .drest-grid__item {
 padding: 1rem;
@@ -65,20 +65,20 @@ width: 100%;
 /* Masonry on large screens */
 @media only screen and (min-width: 1024px) {
     .drest-grid {
-        column-count: 2;
+        column-count: 1;
     }
     .drest-grid.drest-grid--2x {
-        column-count: 2;
+        column-count: 1;
     }
 }
 
 /* Masonry on medium-sized screens */
 @media only screen and (max-width: 1023px) and (min-width: 768px) {
     .drest-grid {
-        column-count: 2;
+        column-count: 1;
     }
     .drest-grid.drest-grid--2x {
-        column-count: 2;
+        column-count: 1;
     }
 }
 
