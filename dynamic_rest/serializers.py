@@ -154,6 +154,12 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_icon(self):
         return self.child.get_icon()
 
+    def initialized(self, **kwargs):
+        return self.child.initialized(**kwargs)
+
+    def get_style(self):
+        return self.child.get_style()
+
     def get_url(self, pk=None):
         return self.child.get_url(pk=pk)
 
@@ -536,6 +542,11 @@ class WithDynamicSerializerMixin(
         except AttributeError:
             pass
         return 'pk'
+
+    @classmethod
+    def get_style(cls):
+        meta = cls.get_meta()
+        return getattr(meta, 'style', {})
 
     @classmethod
     def get_icon(cls):

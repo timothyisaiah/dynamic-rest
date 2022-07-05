@@ -5,7 +5,7 @@ from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
 
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.fields import DynamicRelationField, DynamicJSONField
 from dynamic_rest.utils import urljoin
 
 
@@ -34,6 +34,7 @@ class DynamicMetadata(SimpleMetadata):
                 metadata['name'] = serializer.get_plural_name()
             metadata['fields'] = self.get_serializer_info(serializer)
             metadata['icon'] = serializer.get_icon()
+            metadata['style'] = serializer.get_style()
             metadata['section'] = serializer.get_section()
             metadata['description'] = serializer.get_description()
             metadata['sections'] = [
@@ -70,6 +71,7 @@ class DynamicMetadata(SimpleMetadata):
             ('null', 'allow_null'),
             ('deferred', 'deferred'),
             ('depends', 'depends'),
+            ('style', 'style')
         ):
             field_info[out] = getattr(field, internal, None)
 
@@ -97,12 +99,18 @@ class DynamicMetadata(SimpleMetadata):
         if isinstance(field, ListSerializer):
             field = field.child
             many = True
+
         if isinstance(field, ModelSerializer):
             type = 'many' if many else 'one'
             field_info['related'] = field.get_plural_name()
             field_info['filter'] = base_field.filter
         else:
-            type = self.label_lookup[field]
+            if getattr(field, 'chart', False):
+                type = 'chart'
+            elif isinstance(field, DynamicJSONField):
+                type = 'object'
+            else:
+                type = self.label_lookup[field]
 
         field_info['type'] = type
         field_info['filterable'] = base_field.source and base_field.source != '*'
