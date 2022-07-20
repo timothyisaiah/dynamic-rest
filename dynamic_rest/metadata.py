@@ -5,7 +5,7 @@ from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
 
-from dynamic_rest.fields import DynamicRelationField, DynamicJSONField
+from dynamic_rest.fields import DynamicRelationField, DynamicJSONField, DynamicLinkField
 from dynamic_rest.utils import urljoin
 
 
@@ -109,6 +109,8 @@ class DynamicMetadata(SimpleMetadata):
                 type = 'chart'
             elif isinstance(field, DynamicJSONField):
                 type = 'object'
+            elif isinstance(field, DynamicLinkField):
+                type = 'iframe' if field.iframe else 'string'
             else:
                 type = self.label_lookup[field]
 
