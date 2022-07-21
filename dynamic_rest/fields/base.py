@@ -164,7 +164,7 @@ class DynamicField(fields.Field, DynamicBase):
             model_field = self.model_field
             generic = isinstance(model_field, GenericForeignKey)
             if not generic:
-                # Infer `required` and `allow_null`
+                # Infer, 'default' `required` and `allow_null`
                 if 'required' not in self.kwargs and (
                         remote or (
                             model_field and (

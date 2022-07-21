@@ -78,6 +78,8 @@ class DynamicMetadata(SimpleMetadata):
         if field_info['deferred'] is None:
             field_info['deferred'] = False
 
+        if not field_info['default'] and getattr(field, 'model_field', None) and field.model_field.default:
+            field_info['default'] = field.model_field.default
         if field_info['default'] is empty:
             field_info['default'] = None
         if callable(field_info['default']):
