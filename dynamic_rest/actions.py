@@ -13,6 +13,7 @@ class Action(object):
         confirm=None,
         name=None,
         view=None,
+        method=None,
         **kwargs
     ):
         self.icon = icon
@@ -20,6 +21,7 @@ class Action(object):
         self.when = when
         self.url = url
         self.confirm = confirm
+        self.method = method or 'get'
         # set during binding
         self.name = name
         self.view = view
@@ -33,6 +35,7 @@ class Action(object):
             "label": self.label,
             "url": self.url,
             "confirm": self.confirm,
+            "method": self.method,
             "name": self.name,
             "when": self.when,
         }
@@ -49,6 +52,7 @@ class Action(object):
             label=self.label,
             confirm=self.confirm,
             when=self.when,
+            method=self.method,
             on_detail=self.on_detail,
             on_list=self.on_list,
             url=url,
