@@ -14,6 +14,7 @@ class Action(object):
         name=None,
         view=None,
         method=None,
+        iframe=False,
         **kwargs
     ):
         self.icon = icon
@@ -22,6 +23,7 @@ class Action(object):
         self.url = url
         self.confirm = confirm
         self.method = method or 'get'
+        self.iframe = iframe
         # set during binding
         self.name = name
         self.view = view
@@ -34,6 +36,7 @@ class Action(object):
             "icon": self.icon,
             "label": self.label,
             "url": self.url,
+            "iframe": self.iframe,
             "confirm": self.confirm,
             "method": self.method,
             "name": self.name,
@@ -53,6 +56,7 @@ class Action(object):
             confirm=self.confirm,
             when=self.when,
             method=self.method,
+            iframe=self.iframe,
             on_detail=self.on_detail,
             on_list=self.on_list,
             url=url,
