@@ -26,8 +26,9 @@ class DynamicMetadata(SimpleMetadata):
         if hasattr(view, 'get_serializer'):
             metadata['type'] = 'resource'
             metadata['features'] = getattr(view, 'features', [])
-            serializer = view.get_serializer(dynamic=False)
-            metadata['section'] = serializer.get_section()
+            serializer = view.get_serializer()
+            if hasattr(serializer, 'get_section'):
+                metadata['section'] = serializer.get_section()
             if hasattr(serializer, 'get_name'):
                 metadata['singular'] = serializer.get_name()
             if hasattr(serializer, 'get_plural_name'):
@@ -69,6 +70,7 @@ class DynamicMetadata(SimpleMetadata):
             ('label', 'label'),
             ('description', 'help_text'),
             ('null', 'allow_null'),
+            ('required', 'required'),
             ('deferred', 'deferred'),
             ('depends', 'depends'),
             ('style', 'style')
