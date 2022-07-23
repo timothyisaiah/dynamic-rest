@@ -284,6 +284,7 @@ class WithDynamicSerializerMixin(
         embed=False,
         envelope=False,
         request_method=None,
+        for_metadata=False,
         **kwargs
     ):
         """
@@ -336,6 +337,7 @@ class WithDynamicSerializerMixin(
             envelope = True
 
         self.parent = None
+        self.for_metadata = for_metadata
 
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
@@ -991,26 +993,28 @@ class WithDynamicSerializerMixin(
 
                 pdb.set_trace()
 
-        request_fields = self.request_fields
-        deferred = self._get_deferred_field_names(serializer_fields)
+        # if the serializer is for metadata, do not remove deferred fields
+        if not self.for_metadata:
+            request_fields = self.request_fields
+            deferred = self._get_deferred_field_names(serializer_fields)
 
-        # apply request overrides
-        if request_fields:
-            if request_fields is True:
-                request_fields = {}
-            for name, include in six.iteritems(request_fields):
-                if name not in serializer_fields and name != 'pk':
-                    raise exceptions.ParseError(
-                        '"%s" is not a valid field name for "%s".'
-                        % (name, self.get_name())
-                    )
-                if include is not False and name in deferred:
-                    deferred.remove(name)
-                elif include is False:
-                    deferred.add(name)
+            # apply request overrides
+            if request_fields:
+                if request_fields is True:
+                    request_fields = {}
+                for name, include in six.iteritems(request_fields):
+                    if name not in serializer_fields and name != 'pk':
+                        raise exceptions.ParseError(
+                            '"%s" is not a valid field name for "%s".'
+                            % (name, self.get_name())
+                        )
+                    if include is not False and name in deferred:
+                        deferred.remove(name)
+                    elif include is False:
+                        deferred.add(name)
 
-        for name in deferred:
-            serializer_fields.pop(name)
+            for name in deferred:
+                serializer_fields.pop(name)
 
         method = self.get_request_method()
 

@@ -26,7 +26,7 @@ class DynamicMetadata(SimpleMetadata):
         if hasattr(view, 'get_serializer'):
             metadata['type'] = 'resource'
             metadata['features'] = getattr(view, 'features', [])
-            serializer = view.get_serializer()
+            serializer = view.get_serializer(for_metadata=True)
             if hasattr(serializer, 'get_section'):
                 metadata['section'] = serializer.get_section()
             if hasattr(serializer, 'get_name'):
