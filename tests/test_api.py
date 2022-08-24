@@ -522,6 +522,14 @@ class TestUsersAPI(APITestCase):
             response.data,
         )
 
+    def test_get_with_filter_or(self):
+        User.objects.create(name='test', date_of_birth=datetime.datetime.utcnow())
+        url = '/users/?filter{date_of_birth.lt}=2999-01-01&filter{date_of_birth.gt}=2999-01-01&filter{date_of_birth}=2999-01-01&filter=or'
+        response = self.client.get(url)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(User.objects.filter(date_of_birth__isnull=False).count(), len(content['users']))
+
+
     def test_get_with_filter_deferred(self):
         # Filtering deferred field should work
         grp = Group.objects.create(name='test group')

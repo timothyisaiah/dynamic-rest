@@ -235,17 +235,30 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
         includes = filters.get('_include')
         excludes = filters.get('_exclude')
-        q = Q()
+        q = None
 
         if not includes and not excludes:
             return None
 
+        op = self.request.query_params.get('filter', 'and') if self.request else 'and'
+        key = op.lower()
+        op = (lambda a, b : a | b) if key in {'or', '|'} else (lambda a, b: a & b)
         if includes:
-            q &= Q(**includes)
+            for k, v in six.iteritems(includes):
+                n = Q(**{k: v})
+                if q is None:
+                    q = n
+                else:
+                    q = op(q, n)
         if excludes:
             for k, v in six.iteritems(excludes):
-                q &= ~Q(**{k: v})
-        return q
+                n = ~Q(**{k: v})
+                if q is None:
+                    q = n
+                else:
+                    q = op(q, n)
+
+        return q if q is not None else Q()
 
     def _build_implicit_prefetches(
         self,
