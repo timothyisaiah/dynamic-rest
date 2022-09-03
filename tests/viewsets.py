@@ -39,7 +39,8 @@ class UserViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
-        DynamicModelViewSet.SIDELOADING, DynamicModelViewSet.DEBUG
+        DynamicModelViewSet.SIDELOADING, DynamicModelViewSet.DEBUG,
+        DynamicModelViewSet.COMBINE
     )
     model = User
     serializer_class = UserSerializer

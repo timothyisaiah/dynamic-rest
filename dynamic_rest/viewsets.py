@@ -1,11 +1,14 @@
 """This module contains custom viewset classes."""
 import csv
+import re
 
 from io import StringIO
 import inflection
 
 from django.http import QueryDict
 from django.utils import six
+from django.db.models import Sum, Min, Max, Avg, Count, F
+from django.db.models.functions import Trunc
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
@@ -16,8 +19,9 @@ from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
-from dynamic_rest.utils import is_truthy
+from dynamic_rest.utils import is_truthy, clean
 from dynamic_rest.condition import evaluate
+from .meta import Meta
 
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
@@ -72,6 +76,7 @@ class WithDynamicViewSetBase(object):
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
+    COMBINE = 'combine.'
     SORT = 'sort[]'
     PAGE = settings.PAGE_QUERY_PARAM
     PER_PAGE = settings.PAGE_SIZE_QUERY_PARAM
@@ -79,7 +84,7 @@ class WithDynamicViewSetBase(object):
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
-    features = (DEBUG, INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
+    features = (DEBUG, INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING, COMBINE)
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
@@ -234,11 +239,33 @@ class WithDynamicViewSetBase(object):
         elif '{}' in name:
             # object-type (keys are not consistent)
             return self._extract_object_params(name) if name in self.features else {}
+        elif '.' in name:
+            return self._extract_dot_params(name) if name in self.features else {}
         else:
             # single-type
             return (
                 self.request.query_params.get(name) if name in self.features else None
             )
+
+    def _extract_dot_params(self, name):
+        params = self.request.query_params.lists()
+        result = {}
+        prefix = name[:-1]
+        for param, value in params:
+            if all([v == '' for v in value]):
+                continue
+            if param.startswith(prefix + '.') or param == prefix:
+                chain = param.split('.')
+                if len(chain) == 1:
+                    result[''] = value
+                elif len(chain) == 2:
+                    result[chain[1]] = value
+                else:
+                    # TODO: support deeply nested like a.b.c=1
+                    raise exceptions.ParseError(
+                        f'"{param}" is not a well-formed combine key'
+                    )
+        return result
 
     def _extract_object_params(self, name):
         """
@@ -517,6 +544,172 @@ class WithDynamicViewSetBase(object):
         headers = self.get_success_headers(related_serializer.data)
         headers['Location'] = primary_serializer.get_url(pk)
         return Response(related_serializer.data, status=201, headers=headers)
+
+    def list(self, request, **kwargs):
+        combine = self.get_request_feature(self.COMBINE)
+        if combine:
+            return self.combine(request, combine, **kwargs)
+        return super(WithDynamicViewSetBase, self).list(request, **kwargs)
+
+    def _parse_combine_expression(self, expression):
+        if not expression:
+            raise exceptions.ValidationError(
+                "No value provided for combine query parameter"
+            )
+        if isinstance(expression, list):
+            if len(expression) > 1:
+                return [self._parse_combine_expression(x) for x in expression]
+            expression = expression[0]
+
+        operator = value = None
+        if '(' in expression:
+            # sum(b.c)
+            match = re.match(r'\s*([a-z]*)\s*\(\s*([a-z_.]+)\s*\)\s*', expression, flags=re.IGNORECASE)
+            if match:
+                operator = match.group(1).lower()
+                value = match.group(2)
+        else:
+            # sum.b.c
+            parts = expression.split('.')
+            if len(parts) < 2:
+                value = expression
+            else:
+                operator = parts[0].lower()
+                value = '.'.join(parts[1:])
+
+        return {
+            'function': operator,
+            'key': expression,
+            'value': value
+        }
+
+    AGGREGATE_FUNCTIONS = {
+        'sum': Sum,
+        'min': Min,
+        'max': Max,
+        'avg': Avg,
+        'count': Count,
+        'average': Avg,
+        'mean': Avg,
+        'distinct': Count
+    }
+    def combine(self, request, combine, **kwargs):
+        serializer = self.get_serializer()
+        expression = combine.get('', None)
+        by = combine.get('by', None)
+        over = combine.get('over', None)
+        expression = self._parse_combine_expression(expression)
+        queryset = self.filter_queryset(self.get_queryset())
+        aggregations = {}
+        if not isinstance(expression, list):
+            expression = [expression]
+        for ex in expression:
+            function = ex['function']
+            value = ex['value']
+            key = ex['key']
+
+            fn = self.AGGREGATE_FUNCTIONS.get(function, None)
+            if not fn:
+                raise exceptions.ValidationError(
+                    f'No such combiner function: "{function}"'
+                )
+            model_fields, _ = serializer.resolve(value)
+            model_field = '__'.join([
+                Meta.get_query_name(f) for f in model_fields
+            ])
+            if function == 'distinct':
+                aggregations[key] = fn(model_field, distinct=True)
+            else:
+                aggregations[key] = fn(model_field)
+
+        data = {}
+        querysets = {}
+        if by:
+            by = by[0]
+            model_fields, _ = serializer.resolve(by)
+            model_field = '__'.join([
+                Meta.get_query_name(f) for f in model_fields
+            ])
+            by_values = list(queryset.values_list(model_field, flat=True).distinct())
+            for value in by_values:
+                querysets[value] = queryset.filter(**{model_field: value})
+
+        if over:
+            # annotation / Y over X
+            over = self._parse_combine_expression(over)
+            if not isinstance(over, list):
+                over = [over]
+            if len(over) == 1:
+                # same "over" for all aggregations
+                over = over[0]
+                value = over['value']
+                function = over['function']
+                model_fields, _ = serializer.resolve(value)
+                model_field = '__'.join([
+                    Meta.get_query_name(f) for f in model_fields
+                ])
+                if function:
+                    over_value = Trunc(model_field, function)
+                else:
+                    over_value = F(model_field)
+
+                if by:
+                    for key, qs in querysets.items():
+                        annotated = list(
+                            qs
+                            .annotate(**{'_over': over_value})
+                            .values('_over')
+                            .annotate(**aggregations)
+                            .order_by(over_value)
+                        )
+                        if key not in data:
+                            data[key] = {}
+
+                        for ex in expression:
+                            ex_key = ex['key']
+                            if ex_key not in data[key]:
+                                data[key][ex_key] = []
+
+                        for item in annotated:
+                            x = item['_over']
+                            for ex in expression:
+                                ex_key = ex['key']
+                                data[key][ex_key].append(
+                                    [x, item[ex_key]]
+                                )
+                else:
+                    annotated = list(
+                        queryset
+                        .annotate(**{'_over': over_value})
+                        .values('_over')
+                        .annotate(**aggregations)
+                        .order_by(over_value)
+                    )
+                    for ex in expression:
+                        key = ex['key']
+                        if key not in data:
+                            data[key] = []
+                    for item in annotated:
+                        x = item['_over']
+                        for ex in expression:
+                            ex_key = ex['key']
+                            data[ex_key].append(
+                                [x, item[ex_key]]
+                            )
+            else:
+                # TODO: support different "over" for each expression
+                raise exceptions.ValidationError(
+                    'combine.over must be a single expression'
+                )
+        else:
+            # aggregation (without "over")
+            if by:
+                for key, value in querysets.items():
+                    data[key] = value.aggregate(**aggregations)
+            else:
+                data = queryset.aggregate(**aggregations)
+        response = {'data': clean(data)}
+        return Response(response, status=200)
 
     def list_related(self, request, pk=None, field_name=None):
         """Fetch related object(s), as if sideloaded (used to support

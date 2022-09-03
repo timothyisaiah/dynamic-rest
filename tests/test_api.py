@@ -1433,6 +1433,74 @@ class TestCatsAPI(APITestCase):
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['cars'][0]['name'], 'Forta')
 
+    def test_combine(self):
+        response = self.client.get(
+            '/cars?combine=count.id'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['data']['count.id'], 3)
+
+    def test_combine_multiple(self):
+        response = self.client.get(
+            '/cars?combine=count.id&combine=max.country_name&combine=min.country_name'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['data']['count.id'], 3)
+        self.assertEqual(data['data']['max.country_name'], 'United States')
+        self.assertEqual(data['data']['min.country_name'], 'China')
+
+    def test_combine_by(self):
+        response = self.client.get(
+            '/cars?combine=count.id&combine.by=country_name'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['data']['United States']['count.id'], 1)
+        self.assertEqual(data['data']['China']['count.id'], 1)
+        self.assertEqual(data['data']['']['count.id'], 1)
+
+    def test_combine_over(self):
+        User.objects.all().delete()
+        for month in range(1, 3):
+            User.objects.create(name=f'test{month}', last_name='Family1', date_of_birth=f'2020-0{month}-05')
+        for month in range(1, 2):
+            User.objects.create(name=f'test{month}', last_name='Family2', date_of_birth=f'2020-0{month}-08')
+
+        response = self.client.get(
+            '/users?combine=count.id&combine.over=month(date_of_birth)'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(
+            data['data']['count.id'],
+            [['2020-01-01', 2], ['2020-02-01', 1]]
+        )
+
+        # over with by
+        response = self.client.get(
+            '/users?combine=count.id&combine=min.name&combine.over=month(date_of_birth)&combine.by=last_name'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(
+            data['data']['Family1']['count.id'],
+            [['2020-01-01', 1], ['2020-02-01', 1]]
+        )
+        self.assertEqual(
+            data['data']['Family1']['min.name'],
+            [['2020-01-01', 'test1'], ['2020-02-01', 'test2']]
+        )
+        self.assertEqual(
+            data['data']['Family2']['count.id'],
+            [['2020-01-01', 1]]
+        )
+        self.assertEqual(
+            data['data']['Family2']['min.name'],
+            [['2020-01-01', 'test1']]
+        )
+
     def test_sort_relationship_rewrite(self):
         response = self.client.get('/cars?sort[]=-country_name&include[]=name')
         self.assertEqual(200, response.status_code, response.content)

@@ -1,4 +1,5 @@
 from functools import wraps
+import datetime
 from decimal import Decimal
 from django.utils.six import string_types
 
@@ -121,3 +122,15 @@ def urljoin(*args):
             url += '/'
         url += args[i]
     return url
+
+
+def clean(data):
+    if isinstance(data, list):
+        return [clean(item) for item in data]
+    if isinstance(data, dict):
+        return {(str(key) if key is not None else ''): clean(value) for key, value in data.items()}
+    if isinstance(data, datetime.datetime):
+        return data.isoformat()
+    if isinstance(data, (datetime.date, datetime.time, Decimal)):
+        return str(data)
+    return data
