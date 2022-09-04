@@ -15,13 +15,58 @@ and you should make sure your authentication settings include `SessionAuthentica
 from __future__ import unicode_literals
 
 from django.conf.urls import url
-from django.contrib.auth import views
+from django.contrib.auth import views, REDIRECT_FIELD_NAME
 from dynamic_rest.conf import settings as drest
 
 template_name = {'template_name': drest.ADMIN_LOGIN_TEMPLATE}
 
 app_name = 'dynamic_rest'
+
+logout = login = None
+if hasattr(views, 'login'):
+    login = views.login
+else:
+    from django.contrib.auth import REDIRECT_FIELD_NAME
+    from django.contrib.auth.forms import AuthenticationForm
+    def login_view(
+        request,
+        template_name='registration/login.html',
+        redirect_field_name=REDIRECT_FIELD_NAME,
+        authentication_form=AuthenticationForm,
+        extra_context=None,
+        redirect_authenticated_user=False
+    ):
+        return views.LoginView.as_view(
+            template_name=template_name,
+            redirect_field_name=redirect_field_name,
+            form_class=authentication_form,
+            extra_context=extra_context,
+            redirect_authenticated_user=redirect_authenticated_user
+        )(request)
+    login = login_view
+
+if hasattr(views, 'logout'):
+    logout = views.logout
+else:
+    from django.contrib.auth import REDIRECT_FIELD_NAME
+    from django.contrib.auth.forms import AuthenticationForm
+    def logout_view(
+        request,
+        next_page=None,
+        template_name='registration/logged_out.html',
+        redirect_field_name=REDIRECT_FIELD_NAME,
+        extra_context=None,
+    ):
+        return views.LogoutView.as_view(
+            next_page=next_page,
+            template_name=template_name,
+            redirect_field_name=redirect_field_name,
+            extra_context=extra_context,
+        )(request)
+    logout = logout_view
+
+
 urlpatterns = [
-    url(r'^login/$', views.login, template_name, name='login'),
-    url(r'^logout/$', views.logout, template_name, name='logout'),
+    url(r'^login/$', login, template_name, name='login'),
+    url(r'^logout/$', logout, template_name, name='logout'),
 ]
