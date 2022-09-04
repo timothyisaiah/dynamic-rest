@@ -9,7 +9,7 @@ from django.http import QueryDict
 from django.utils import six
 from django.db.models import Sum, Min, Max, Avg, Count, F
 from django.db.models.functions import (
-    Trunc, Abs, Ceil, Floor, Round, Length, Lower, Reverse, Trim, Upper
+    Trunc, Length, Lower, Reverse, Trim, Upper
 )
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
@@ -628,10 +628,6 @@ class WithDynamicViewSetBase(object):
             'function': Trunc,
             'args': ['second']
         },
-        'abs': Abs,
-        'ceil': Ceil,
-        'floor': Floor,
-        'round': Round,
         'length': Length,
         'lower': Lower,
         'reverse': Reverse,
