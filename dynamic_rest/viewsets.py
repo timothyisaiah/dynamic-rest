@@ -623,91 +623,94 @@ class WithDynamicViewSetBase(object):
                 aggregations[key] = fn(model_field)
 
         data = {}
-        querysets = {}
+        by_path = over_path = None
         if by:
+            # change this
+            if len(by) > 1:
+                raise Exception("combine.by does not support multiple values")
             by = by[0]
-            model_fields, _ = serializer.resolve(by)
-            model_field = '__'.join([
+            by_ex = self._parse_combine_expression(by)
+            model_fields, _ = serializer.resolve(by_ex['value'])
+            by_path = '__'.join([
                 Meta.get_query_name(f) for f in model_fields
             ])
-            by_values = list(queryset.values_list(model_field, flat=True).distinct())
-            for value in by_values:
-                querysets[value] = queryset.filter(**{model_field: value})
-
+            by_path = F(by_path)
+            # TODO: support by month(...) etc
         if over:
-            # annotation / Y over X
-            over = self._parse_combine_expression(over)
-            if not isinstance(over, list):
-                over = [over]
-            if len(over) == 1:
-                # same "over" for all aggregations
-                over = over[0]
-                value = over['value']
-                function = over['function']
-                model_fields, _ = serializer.resolve(value)
-                model_field = '__'.join([
-                    Meta.get_query_name(f) for f in model_fields
-                ])
-                if function:
-                    over_value = Trunc(model_field, function)
-                else:
-                    over_value = F(model_field)
+            # change this
+            if len(over) > 1:
+                raise Exception("combine.over does not support multiple values")
+            over = over[0]
+            over_ex = self._parse_combine_expression(over)
+            function = over_ex['function']
+            value = over_ex['value']
+            model_fields, _ = serializer.resolve(value)
+            over_path = '__'.join([
+                Meta.get_query_name(f) for f in model_fields
+            ])
+            # only truncation is supported in OVER
+            if function:
+                over_path = Trunc(over_path, function)
+            else:
+                over_path = F(over_path)
 
-                if by:
-                    for key, qs in querysets.items():
-                        annotated = list(
-                            qs
-                            .annotate(**{'_over': over_value})
-                            .values('_over')
-                            .annotate(**aggregations)
-                            .order_by(over_value)
-                        )
-                        if key not in data:
-                            data[key] = {}
+        if by or over:
+            values = []
+            annotations = {}
+            if by:
+                values.append('_by')
+                annotations['_by'] = by_path
+            if over:
+                values.append('_over')
+                annotations['_over'] = over_path
 
-                        for ex in expression:
-                            ex_key = ex['key']
-                            if ex_key not in data[key]:
-                                data[key][ex_key] = []
+            queryset = (
+                queryset
+                .annotate(**annotations)
+                .values(*values)
+                .annotate(**aggregations)
+            )
 
-                        for item in annotated:
-                            x = item['_over']
-                            for ex in expression:
-                                ex_key = ex['key']
-                                data[key][ex_key].append(
-                                    [x, item[ex_key]]
-                                )
-                else:
-                    annotated = list(
-                        queryset
-                        .annotate(**{'_over': over_value})
-                        .values('_over')
-                        .annotate(**aggregations)
-                        .order_by(over_value)
-                    )
-                    for ex in expression:
-                        key = ex['key']
+            if over:
+                queryset = queryset.order_by(over_path)
+
+            if not by:
+                # top-level keys in "data" will be the combine keys
+                # e.g. a field being aggregated together with a function
+                for ex in expression:
+                    key = ex['key']
+                    if key not in data:
+                        data[key] = []
+
+            for item in queryset:
+                split = item.get('_by', None)
+                x = item.get('_over', None)
+                for ex in expression:
+                    key = ex['key']
+                    value = item[key]
+                    if by:
+                        if split not in data:
+                            data[split] = {}
+                        if key not in data[split]:
+                            data[split][key] = []
+                        if over:
+                            # over and by
+                            data[split][key].append(
+                                [x, value]
+                            )
+                        else:
+                            # by without over
+                            data[split][key] = value
+                    else:
+                        # over without by
                         if key not in data:
                             data[key] = []
-                    for item in annotated:
-                        x = item['_over']
-                        for ex in expression:
-                            ex_key = ex['key']
-                            data[ex_key].append(
-                                [x, item[ex_key]]
-                            )
-            else:
-                # TODO: support different "over" for each expression
-                raise exceptions.ValidationError(
-                    'combine.over must be a single expression'
-                )
+                        data[key].append(
+                           [x, value]
+                        )
         else:
-            # aggregation (without "over")
-            if by:
-                for key, value in querysets.items():
-                    data[key] = value.aggregate(**aggregations)
-            else:
-                data = queryset.aggregate(**aggregations)
+            # simple aggregation (without "over" or "by")
+            data = queryset.aggregate(**aggregations)
         response = {'data': clean(data)}
         return Response(response, status=200)
 
