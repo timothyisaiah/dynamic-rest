@@ -8,7 +8,9 @@ import inflection
 from django.http import QueryDict
 from django.utils import six
 from django.db.models import Sum, Min, Max, Avg, Count, F
-from django.db.models.functions import Trunc
+from django.db.models.functions import (
+    Trunc, Abs, Ceil, Floor, Round, Length, Lower, Reverse, Trim, Upper
+)
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
@@ -569,13 +571,8 @@ class WithDynamicViewSetBase(object):
                 operator = match.group(1).lower()
                 value = match.group(2)
         else:
-            # sum.b.c
-            parts = expression.split('.')
-            if len(parts) < 2:
-                value = expression
-            else:
-                operator = parts[0].lower()
-                value = '.'.join(parts[1:])
+            # b.c
+            value = expression
 
         return {
             'function': operator,
@@ -591,7 +588,58 @@ class WithDynamicViewSetBase(object):
         'count': Count,
         'average': Avg,
         'mean': Avg,
-        'distinct': Count
+        'distinct': {
+            'function': Count,
+            'options': {
+                'distinct': True
+            }
+        }
+    }
+    TRANSFORM_FUNCTIONS = {
+        'year': {
+            'function': Trunc,
+            'args': ['year']
+        },
+        'quarter': {
+            'function': Trunc,
+            'args': ['quarter']
+        },
+        'month': {
+            'function': Trunc,
+            'args': ['month']
+        },
+        'week': {
+            'function': Trunc,
+            'args': ['week']
+        },
+        'day': {
+            'function': Trunc,
+            'args': ['day']
+        },
+        'hour': {
+            'function': Trunc,
+            'args': ['hour']
+        },
+        'minute': {
+            'function': Trunc,
+            'args': ['minute']
+        },
+        'second': {
+            'function': Trunc,
+            'args': ['second']
+        },
+        'abs': Abs,
+        'ceil': Ceil,
+        'floor': Floor,
+        'round': Round,
+        'length': Length,
+        'lower': Lower,
+        'reverse': Reverse,
+        # 'md5': MD5,
+        # 'sha256': SHA256,
+        # 'sha512': SHA512,
+        'trim': Trim,
+        'upper': Upper
     }
     def combine(self, request, combine, **kwargs):
         serializer = self.get_serializer()
@@ -617,27 +665,44 @@ class WithDynamicViewSetBase(object):
             model_field = '__'.join([
                 Meta.get_query_name(f) for f in model_fields
             ])
-            if function == 'distinct':
-                aggregations[key] = fn(model_field, distinct=True)
-            else:
-                aggregations[key] = fn(model_field)
+            options = {}
+            args = []
+            if isinstance(fn, dict):
+                options = fn.get('options', options)
+                args = fn.get('args', args)
+                fn = fn['function']
+
+            aggregations[key] = fn(model_field, *args, **options)
 
         data = {}
         by_path = over_path = None
         if by:
-            # change this
             if len(by) > 1:
                 raise Exception("combine.by does not support multiple values")
             by = by[0]
             by_ex = self._parse_combine_expression(by)
-            model_fields, _ = serializer.resolve(by_ex['value'])
+            function = by_ex['function']
+            value = by_ex['value']
+            model_fields, _ = serializer.resolve(value)
             by_path = '__'.join([
                 Meta.get_query_name(f) for f in model_fields
             ])
-            by_path = F(by_path)
-            # TODO: support by month(...) etc
+            if function:
+                fn = self.TRANSFORM_FUNCTIONS.get(function, None)
+                if not fn:
+                    raise exceptions.ValidationError(
+                        f'No such transformer function: "{function}"'
+                    )
+                options = {}
+                args = []
+                if isinstance(fn, dict):
+                    options = fn.get('options', options)
+                    args = fn.get('args', args)
+                    fn = fn['function']
+                by_path = fn(by_path, *args, **options)
+            else:
+                by_path = F(by_path)
         if over:
-            # change this
             if len(over) > 1:
                 raise Exception("combine.over does not support multiple values")
             over = over[0]
@@ -648,9 +713,19 @@ class WithDynamicViewSetBase(object):
             over_path = '__'.join([
                 Meta.get_query_name(f) for f in model_fields
             ])
-            # only truncation is supported in OVER
             if function:
-                over_path = Trunc(over_path, function)
+                fn = self.TRANSFORM_FUNCTIONS.get(function, None)
+                if not fn:
+                    raise exceptions.ValidationError(
+                        f'No such transformer function: "{function}"'
+                    )
+                options = {}
+                args = []
+                if isinstance(fn, dict):
+                    options = fn.get('options', options)
+                    args = fn.get('args', args)
+                    fn = fn['function']
+                over_path = fn(over_path, *args, **options)
             else:
                 over_path = F(over_path)
 
