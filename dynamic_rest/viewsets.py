@@ -747,6 +747,10 @@ class WithDynamicViewSetBase(object):
             )
             if over:
                 queryset = queryset.order_by(over_path)
+            else:
+                # by only without over -> remove default ordering
+                # this improves performance and prevents a grouping bug
+                queryset = queryset.order_by()
 
             for item in queryset:
                 split = item.get('_by', None)
