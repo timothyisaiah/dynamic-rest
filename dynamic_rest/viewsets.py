@@ -778,6 +778,9 @@ class WithDynamicViewSetBase(object):
             # simple aggregation (without "over" or "by")
             data = queryset.aggregate(**aggregations)
         response = {'data': clean(data)}
+        debug = self.get_request_debug()
+        if debug:
+            response['meta'] = {'query': str(queryset.query)}
         return Response(response, status=200)
 
     def list_related(self, request, pk=None, field_name=None):

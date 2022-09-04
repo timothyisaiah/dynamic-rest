@@ -1454,13 +1454,20 @@ class TestCatsAPI(APITestCase):
     def test_combine_by(self):
         Car.objects.create(country=Country.objects.get(name='United States'), name='Tesla')
         response = self.client.get(
-            '/cars?combine=count(name)&combine.by=country_name'
+            '/cars?combine=count(name)&combine.by=country_name&debug=1'
         )
         self.assertEqual(200, response.status_code, response.content)
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['data']['United States']['count(name)'], 2)
         self.assertEqual(data['data']['China']['count(name)'], 1)
         self.assertEqual(data['data']['']['count(name)'], 1)
+        self.assertEqual(
+            data['meta']['query'],
+            'SELECT "tests_country"."name" AS "_by", COUNT("tests_car"."name") AS "count(name)" '
+            'FROM "tests_car" '
+            'LEFT OUTER JOIN "tests_country" ON ("tests_car"."country_id" = "tests_country"."id") '
+            'GROUP BY "tests_country"."name"'
+        )
 
     def test_combine_over(self):
         Car.objects.create(country=Country.objects.get(name='United States'), name='Tesla')
