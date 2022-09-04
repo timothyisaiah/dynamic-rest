@@ -670,43 +670,34 @@ class WithDynamicViewSetBase(object):
                 .values(*values)
                 .annotate(**aggregations)
             )
-
             if over:
                 queryset = queryset.order_by(over_path)
-
-            if not by:
-                # top-level keys in "data" will be the combine keys
-                # e.g. a field being aggregated together with a function
-                for ex in expression:
-                    key = ex['key']
-                    if key not in data:
-                        data[key] = []
 
             for item in queryset:
                 split = item.get('_by', None)
                 x = item.get('_over', None)
                 for ex in expression:
                     key = ex['key']
-                    value = item[key]
+                    y = item[key]
                     if by:
                         if split not in data:
                             data[split] = {}
-                        if key not in data[split]:
-                            data[split][key] = []
                         if over:
                             # over and by
+                            if key not in data[split]:
+                                data[split][key] = []
                             data[split][key].append(
-                                [x, value]
+                                [x, y]
                             )
                         else:
                             # by without over
-                            data[split][key] = value
+                            data[split][key] = y
                     else:
                         # over without by
                         if key not in data:
                             data[key] = []
                         data[key].append(
-                           [x, value]
+                           [x, y]
                         )
         else:
             # simple aggregation (without "over" or "by")
