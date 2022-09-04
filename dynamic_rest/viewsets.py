@@ -9,7 +9,7 @@ from django.http import QueryDict
 from django.utils import six
 from django.db.models import Sum, Min, Max, Avg, Count, F
 from django.db.models.functions import (
-    Trunc, Length, Lower, Reverse, Trim, Upper
+    Trunc, Length, Lower, Upper
 )
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
@@ -630,11 +630,11 @@ class WithDynamicViewSetBase(object):
         },
         'length': Length,
         'lower': Lower,
-        'reverse': Reverse,
+        # 'reverse': Reverse,
         # 'md5': MD5,
         # 'sha256': SHA256,
         # 'sha512': SHA512,
-        'trim': Trim,
+        # 'trim': Trim,
         'upper': Upper
     }
     def combine(self, request, combine, **kwargs):
