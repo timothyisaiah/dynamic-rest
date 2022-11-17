@@ -505,7 +505,8 @@ class WithDynamicViewSetBase(object):
                 if hasattr(data, '_mutable'):
                     data._mutable = True
 
-                if len(data.keys()) == 1 and data.keys()[0] == related_serializer_name:
+                keys = list(data.keys())
+                if len(keys) == 1 and keys[0] == related_serializer_name:
                     data = data[related_serializer_name]
 
                 # set the current record as the related object

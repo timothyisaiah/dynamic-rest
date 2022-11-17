@@ -73,7 +73,8 @@ class DynamicMetadata(SimpleMetadata):
             ('required', 'required'),
             ('deferred', 'deferred'),
             ('depends', 'depends'),
-            ('style', 'style')
+            ('style', 'style'),
+            ('inverse', 'inverse'),
         ):
             field_info[out] = getattr(field, internal, None)
 
