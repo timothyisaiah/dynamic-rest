@@ -91,6 +91,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def create_related_serializers(self):
         return None
 
+    def get_field_permissions(self):
+        return self.child.get_field_permissions()
+
     def get_router(self):
         return self.child.get_router()
 
