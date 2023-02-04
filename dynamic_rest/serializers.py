@@ -125,6 +125,12 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_meta(self):
         return self.child.get_meta()
 
+    def get_section(self):
+        return self.child.get_section()
+
+    def get_sections(self):
+        return self.child.get_sections()
+
     def disable_envelope(self):
         self.child.disable_envelope()
         self._processed_data = None

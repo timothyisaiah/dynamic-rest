@@ -36,7 +36,6 @@ class DynamicMetadata(SimpleMetadata):
             metadata['fields'] = self.get_serializer_info(serializer)
             metadata['icon'] = serializer.get_icon()
             metadata['style'] = serializer.get_style()
-            metadata['section'] = serializer.get_section()
             metadata['description'] = serializer.get_description()
             metadata['sections'] = [
                 section.serialize() for section in serializer.get_sections()
