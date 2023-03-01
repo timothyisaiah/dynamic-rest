@@ -1520,6 +1520,36 @@ class TestCatsAPI(APITestCase):
             [['2020-01-01', 'test1']]
         )
 
+    def test_combine_many_overs(self):
+        User.objects.all().delete()
+        for month in range(1, 3):
+            User.objects.create(name=f'test{month}', last_name='Family1', date_of_birth=f'2020-0{month}-05')
+        for month in range(1, 2):
+            User.objects.create(name=f'test{month}', last_name='Family2', date_of_birth=f'2020-0{month}-08')
+
+        # 2 overs
+        response = self.client.get(
+            '/users?combine=count(name),min(name)&combine.over=month(date_of_birth),last_name'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(
+            data['data']['count(name)'],
+            [
+                ['2020-01-01', 'Family1', 1],
+                ['2020-01-01', 'Family2', 1],
+                ['2020-02-01', 'Family1', 1],
+            ]
+        )
+        self.assertEqual(
+            data['data']['min(name)'],
+            [
+                ['2020-01-01', 'Family1', 'test1'],
+                ['2020-01-01', 'Family2', 'test1'],
+                ['2020-02-01', 'Family1', 'test2'],
+            ]
+        )
+
     def test_sort_relationship_rewrite(self):
         response = self.client.get('/cars?sort[]=-country_name&include[]=name')
         self.assertEqual(200, response.status_code, response.content)

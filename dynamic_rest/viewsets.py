@@ -555,14 +555,19 @@ class WithDynamicViewSetBase(object):
         return super(WithDynamicViewSetBase, self).list(request, **kwargs)
 
     def _parse_combine_expression(self, expression):
+        # TODO: use a real pyparsing expression parser
+        # to support more complex expressions
         if not expression:
             raise exceptions.ValidationError(
                 "No value provided for combine query parameter"
             )
+        if isinstance(expression, str) and ',' in expression:
+            # a, b
+            expression = [x.strip() for x in expression.split(',')]
+
         if isinstance(expression, list):
-            if len(expression) > 1:
-                return [self._parse_combine_expression(x) for x in expression]
-            expression = expression[0]
+            result = [self._parse_combine_expression(x) for x in expression]
+            return result if len(expression) > 1 else result[0]
 
         operator = value = None
         if '(' in expression:
@@ -672,7 +677,8 @@ class WithDynamicViewSetBase(object):
             aggregations[key] = fn(model_field, *args, **options)
 
         data = {}
-        by_path = over_path = None
+        by_path = None
+        over_paths = []
         if by:
             if len(by) > 1:
                 raise Exception("combine.by does not support multiple values")
@@ -700,31 +706,31 @@ class WithDynamicViewSetBase(object):
             else:
                 by_path = F(by_path)
         if over:
-            if len(over) > 1:
-                raise Exception("combine.over does not support multiple values")
-            over = over[0]
-            over_ex = self._parse_combine_expression(over)
-            function = over_ex['function']
-            value = over_ex['value']
-            model_fields, _ = serializer.resolve(value)
-            over_path = '__'.join([
-                Meta.get_query_name(f) for f in model_fields
-            ])
-            if function:
-                fn = self.TRANSFORM_FUNCTIONS.get(function, None)
-                if not fn:
-                    raise exceptions.ValidationError(
-                        f'No such transformer function: "{function}"'
-                    )
-                options = {}
-                args = []
-                if isinstance(fn, dict):
-                    options = fn.get('options', options)
-                    args = fn.get('args', args)
-                    fn = fn['function']
-                over_path = fn(over_path, *args, **options)
-            else:
-                over_path = F(over_path)
+            over_exs = self._parse_combine_expression(over)
+            if not isinstance(over_exs, list):
+                over_exs = [over_exs]
+            for over_ex in over_exs:
+                function = over_ex['function']
+                value = over_ex['value']
+                model_fields, _ = serializer.resolve(value)
+                over_path = '__'.join([
+                    Meta.get_query_name(f) for f in model_fields
+                ])
+                if function:
+                    fn = self.TRANSFORM_FUNCTIONS.get(function, None)
+                    if not fn:
+                        raise exceptions.ValidationError(
+                            f'No such transformer function: "{function}"'
+                        )
+                    options = {}
+                    args = []
+                    if isinstance(fn, dict):
+                        options = fn.get('options', options)
+                        args = fn.get('args', args)
+                        fn = fn['function']
+                    over_paths.append(fn(over_path, *args, **options))
+                else:
+                    over_paths.append(F(over_path))
 
         if by or over:
             values = []
@@ -733,8 +739,10 @@ class WithDynamicViewSetBase(object):
                 values.append('_by')
                 annotations['_by'] = by_path
             if over:
-                values.append('_over')
-                annotations['_over'] = over_path
+                for i, path in enumerate(over_paths):
+                    over_key = f'_over{i}'
+                    values.append(over_key)
+                    annotations[over_key] = path
 
             queryset = (
                 queryset
@@ -743,7 +751,7 @@ class WithDynamicViewSetBase(object):
                 .annotate(**aggregations)
             )
             if over:
-                queryset = queryset.order_by(over_path)
+                queryset = queryset.order_by(*over_paths)
             else:
                 # by only without over -> remove default ordering
                 # this improves performance and prevents a grouping bug
@@ -751,7 +759,10 @@ class WithDynamicViewSetBase(object):
 
             for item in queryset:
                 split = item.get('_by', None)
-                x = item.get('_over', None)
+                x = []
+                for i, path in enumerate(over_paths):
+                    x.append(item.get(f'_over{i}'))
+
                 for ex in expression:
                     key = ex['key']
                     y = item[key]
@@ -763,7 +774,7 @@ class WithDynamicViewSetBase(object):
                             if key not in data[split]:
                                 data[split][key] = []
                             data[split][key].append(
-                                [x, y]
+                                [*x, y]
                             )
                         else:
                             # by without over
@@ -773,7 +784,7 @@ class WithDynamicViewSetBase(object):
                         if key not in data:
                             data[key] = []
                         data[key].append(
-                           [x, y]
+                           [*x, y]
                         )
         else:
             # simple aggregation (without "over" or "by")
