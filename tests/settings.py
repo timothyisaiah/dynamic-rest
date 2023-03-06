@@ -13,12 +13,14 @@ ENABLE_INTEGRATION_TESTS = os.environ.get('ENABLE_INTEGRATION_TESTS', False)
 DEBUG = True
 
 DATABASES = {}
+SQLITE = False
 if os.environ.get('DATABASE_URL'):
     # remote database
     import dj_database_url
     DATABASES['default'] = dj_database_url.config()
 else:
     # local sqlite database file
+    SQLITE = True
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),

@@ -9,7 +9,7 @@ from django.http import QueryDict
 from django.utils import six
 from django.db.models import Sum, Min, Max, Avg, Count, F
 from django.db.models.functions import (
-    Trunc, Length, Lower, Upper
+    Trunc, Length, Lower, Upper, TruncDate as _TruncDate
 )
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
@@ -23,9 +23,12 @@ from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.utils import is_truthy, clean
 from dynamic_rest.condition import evaluate
+from django.conf import settings as django_settings
 from .meta import Meta
 
 
+# TruncDate is broken on sqlite
+TruncDate = Trunc if getattr(django_settings, 'SQLITE', False) else _TruncDate
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
 
@@ -603,24 +606,28 @@ class WithDynamicViewSetBase(object):
     }
     TRANSFORM_FUNCTIONS = {
         'year': {
-            'function': Trunc,
-            'args': ['year']
+            'function': TruncDate,
+            'options': {'kind': 'year'}
         },
         'quarter': {
-            'function': Trunc,
-            'args': ['quarter']
+            'function': TruncDate,
+            'options': {'kind': 'quarter'}
         },
         'month': {
-            'function': Trunc,
-            'args': ['month']
+            'function': TruncDate,
+            'options': {'kind': 'month'}
         },
         'week': {
-            'function': Trunc,
-            'args': ['week']
+            'function': TruncDate,
+            'options': {'kind': 'week'}
         },
         'day': {
-            'function': Trunc,
-            'args': ['day']
+            'function': TruncDate,
+            'options': {'kind': 'day'}
+        },
+        'date': {
+            'function': TruncDate,
+            'options': {'kind': 'day'}
         },
         'hour': {
             'function': Trunc,
@@ -648,6 +655,7 @@ class WithDynamicViewSetBase(object):
         expression = combine.get('', None)
         by = combine.get('by', None)
         over = combine.get('over', None)
+        flat = combine.get('format', []) == ['flat']
         expression = self._parse_combine_expression(expression)
         queryset = self.filter_queryset(self.get_queryset())
         aggregations = {}
@@ -676,9 +684,10 @@ class WithDynamicViewSetBase(object):
 
             aggregations[key] = fn(model_field, *args, **options)
 
-        data = {}
         by_path = None
         over_paths = []
+        by_ex = None
+        over_exs = None
         if by:
             if len(by) > 1:
                 raise Exception("combine.by does not support multiple values")
@@ -733,6 +742,7 @@ class WithDynamicViewSetBase(object):
                     over_paths.append(F(over_path))
 
         if by or over:
+            data = [] if flat else {}
             values = []
             annotations = {}
             if by:
@@ -763,29 +773,42 @@ class WithDynamicViewSetBase(object):
                 for i, path in enumerate(over_paths):
                     x.append(item.get(f'_over{i}'))
 
-                for ex in expression:
-                    key = ex['key']
-                    y = item[key]
-                    if by:
-                        if split not in data:
-                            data[split] = {}
-                        if over:
-                            # over and by
-                            if key not in data[split]:
-                                data[split][key] = []
-                            data[split][key].append(
-                                [*x, y]
-                            )
+                if flat:
+                    row = {}
+                    for key in item.keys():
+                        if by_ex and key.startswith('_by'):
+                            remapped_key = by_ex['key']
+                        elif over_exs and key.startswith('_over'):
+                            i = int(key[-1])
+                            remapped_key = over_exs[i]['key']
                         else:
-                            # by without over
-                            data[split][key] = y
-                    else:
-                        # over without by
-                        if key not in data:
-                            data[key] = []
-                        data[key].append(
-                           [*x, y]
-                        )
+                            remapped_key = key
+                        row[remapped_key] = item[key]
+                    data.append(row)
+                else:
+                    for ex in expression:
+                        key = ex['key']
+                        y = item[key]
+                        if by:
+                            if split not in data:
+                                data[split] = {}
+                            if over:
+                                # over and by
+                                if key not in data[split]:
+                                    data[split][key] = []
+                                data[split][key].append(
+                                    [*x, y]
+                                )
+                            else:
+                                # by without over
+                                data[split][key] = y
+                        else:
+                            # over without by
+                            if key not in data:
+                                data[key] = []
+                            data[key].append(
+                               [*x, y]
+                            )
         else:
             # simple aggregation (without "over" or "by")
             data = queryset.aggregate(**aggregations)

@@ -1549,6 +1549,20 @@ class TestCatsAPI(APITestCase):
                 ['2020-02-01', 'Family1', 'test2'],
             ]
         )
+        response = self.client.get(
+            '/users?combine=count(name),min(name)&combine.over=month(date_of_birth),last_name&combine.format=flat'
+        )
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(
+            data['data'],
+            [
+                {'count(name)': 1, 'last_name': 'Family1', 'month(date_of_birth)': '2020-01-01', 'min(name)': 'test1'},
+                {'count(name)': 1, 'last_name': 'Family2', 'month(date_of_birth)': '2020-01-01', 'min(name)': 'test1'},
+                {'count(name)': 1, 'last_name': 'Family1', 'month(date_of_birth)': '2020-02-01', 'min(name)': 'test2'},
+            ],
+            data['data']
+        )
+
 
     def test_sort_relationship_rewrite(self):
         response = self.client.get('/cars?sort[]=-country_name&include[]=name')
