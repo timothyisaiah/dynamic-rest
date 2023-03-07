@@ -9,8 +9,9 @@ from django.http import QueryDict
 from django.utils import six
 from django.db.models import Sum, Min, Max, Avg, Count, F
 from django.db.models.functions import (
-    Trunc, Length, Lower, Upper, TruncDate as _TruncDate
+    Trunc, Length, Lower, Upper, Cast
 )
+from django.db import models
 from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
@@ -23,12 +24,9 @@ from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.utils import is_truthy, clean
 from dynamic_rest.condition import evaluate
-from django.conf import settings as django_settings
 from .meta import Meta
 
 
-# TruncDate is broken on sqlite
-TruncDate = Trunc if getattr(django_settings, 'SQLITE', False) else _TruncDate
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
 
@@ -606,27 +604,33 @@ class WithDynamicViewSetBase(object):
     }
     TRANSFORM_FUNCTIONS = {
         'year': {
-            'function': TruncDate,
+            'function': Trunc,
+            'cast': models.DateField(),
             'options': {'kind': 'year'}
         },
         'quarter': {
-            'function': TruncDate,
+            'function': Trunc,
+            'cast': models.DateField(),
             'options': {'kind': 'quarter'}
         },
         'month': {
-            'function': TruncDate,
+            'function': Trunc,
+            'cast': models.DateField(),
             'options': {'kind': 'month'}
         },
         'week': {
-            'function': TruncDate,
+            'function': Trunc,
+            'cast': models.DateField(),
             'options': {'kind': 'week'}
         },
         'day': {
-            'function': TruncDate,
+            'function': Trunc,
+            'cast': models.DateField(),
             'options': {'kind': 'day'}
         },
         'date': {
-            'function': TruncDate,
+            'function': Trunc,
+            'cast': models.DateField(),
             'options': {'kind': 'day'}
         },
         'hour': {
@@ -655,7 +659,7 @@ class WithDynamicViewSetBase(object):
         expression = combine.get('', None)
         by = combine.get('by', None)
         over = combine.get('over', None)
-        flat = combine.get('format', []) == ['flat']
+        flat = 'flat' in combine.get('format', [])
         expression = self._parse_combine_expression(expression)
         queryset = self.filter_queryset(self.get_queryset())
         aggregations = {}
@@ -707,11 +711,15 @@ class WithDynamicViewSetBase(object):
                     )
                 options = {}
                 args = []
+                cast = None
                 if isinstance(fn, dict):
                     options = fn.get('options', options)
                     args = fn.get('args', args)
+                    cast = fn.get('cast', None)
                     fn = fn['function']
                 by_path = fn(by_path, *args, **options)
+                if cast:
+                    by_path = Cast(by_path, output_field=cast)
             else:
                 by_path = F(by_path)
         if over:
@@ -733,11 +741,16 @@ class WithDynamicViewSetBase(object):
                         )
                     options = {}
                     args = []
+                    cast = None
                     if isinstance(fn, dict):
                         options = fn.get('options', options)
                         args = fn.get('args', args)
+                        cast = fn.get('cast', None)
                         fn = fn['function']
-                    over_paths.append(fn(over_path, *args, **options))
+                    over_path = fn(over_path, *args, **options)
+                    if cast:
+                        over_path = Cast(over_path, output_field=cast)
+                    over_paths.append(over_path)
                 else:
                     over_paths.append(F(over_path))
 
