@@ -1,6 +1,8 @@
 """This module contains custom viewset classes."""
 import csv
 import re
+import json
+import operator as op
 
 from io import StringIO
 import inflection
@@ -30,6 +32,19 @@ from .meta import Meta
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
 
+class REGEX:
+    arithmetic_operator = '[/*+-]'
+    identifier = '[a-z][ a-z0-9_.]*'
+    literal = '(?:[0-9][0-9.]*|[-][0-9][0-9.]*)'
+    basic = f'(?:{identifier}|{literal})'
+    function_expression = fr'\s*({basic})\s*\(\s*({basic})\s*\)(?:\s+as\s*({basic})\s*)?'
+    identifier_expression = fr'\s*({basic})(?:\s+as\s*({basic})\s*)'
+
+def literalize(x):
+    try:
+        return json.loads(x)
+    except:
+        return x
 
 class QueryParams(QueryDict):
     """
@@ -555,9 +570,8 @@ class WithDynamicViewSetBase(object):
             return self.combine(request, combine, **kwargs)
         return super(WithDynamicViewSetBase, self).list(request, **kwargs)
 
-    def _parse_combine_expression(self, expression):
-        # TODO: use a real pyparsing expression parser
-        # to support more complex expressions
+    def _parse_combine_expression(self, expression, serializer=None):
+        serializer = serializer or self.get_serializer()
         if not expression:
             raise exceptions.ValidationError(
                 "No value provided for combine query parameter"
@@ -570,24 +584,84 @@ class WithDynamicViewSetBase(object):
             result = [self._parse_combine_expression(x) for x in expression]
             return result if len(expression) > 1 else result[0]
 
+        key = expression
+
+        arithmetic = re.search(REGEX.arithmetic_operator, expression)
+        if arithmetic:
+            arithmetic = arithmetic.group(0)
+            splits = re.split(REGEX.arithmetic_operator, expression)
+            if len(splits) > 2:
+                raise Exception('3+ clause expressions are not supported yet')
+            values = [self._parse_combine_expression(split, serializer=serializer) for split in splits]
+            fn = self.ARITHMETIC_FUNCTIONS[arithmetic]
+            if ' as ' in expression.lower():
+                # get alias from last value
+                key = values[-1]['key']
+            result = {'key': key, 'value': fn(*[v['value'] for v in values])}
+            return result
+
         operator = value = None
-        if '(' in expression:
+        match = re.match(REGEX.function_expression, expression, flags=re.IGNORECASE)
+        if match:
             # sum(b.c)
-            match = re.match(r'\s*([a-z]*)\s*\(\s*([a-z_.]+)\s*\)\s*', expression, flags=re.IGNORECASE)
-            if match:
-                operator = match.group(1).lower()
-                value = match.group(2)
+            operator = match.group(1).lower()
+            value = match.group(2).lower()
+            if match.group(3):
+                key = match.group(3)
         else:
-            # b.c
-            value = expression
+            match = re.match(REGEX.identifier_expression, expression, flags=re.IGNORECASE)
+            if match:
+                # b.c as x
+                value = match.group(1)
+                key = match.group(2)
+            else:
+                # b.c
+                value = expression
 
-        return {
-            'function': operator,
-            'key': expression,
-            'value': value
-        }
+        model_field = target = None
+        if re.match(REGEX.identifier, value):
+            model_fields, _ = serializer.resolve(value)
+            target = model_field = '__'.join([
+                Meta.get_query_name(f) for f in model_fields
+            ])
+        else:
+            target = value
 
-    AGGREGATE_FUNCTIONS = {
+        options = {}
+        args = []
+        fn = cast = None
+        if not operator:
+            if model_field:
+                fn = F
+                # F(field)
+            else:
+                # literal value
+                fn = lambda x, *_, **__: literalize(x)
+        else:
+            fn = self.COMBINE_FUNCTIONS.get(operator, None)
+            if not fn:
+                raise exceptions.ValidationError(
+                    f'No such function: "{operator}"'
+                )
+
+        if isinstance(fn, dict):
+            options = fn.get('options', options)
+            args = fn.get('args', args)
+            cast = fn.get('cast')
+            fn = fn['function']
+
+        value = fn(target, *args, **options)
+        if cast:
+            value = Cast(value, output_field=cast)
+        return {'key': key, 'value': value}
+
+    ARITHMETIC_FUNCTIONS = {
+        '/': op.truediv,
+        '*': op.mul,
+        '+': op.add,
+        '-': op.sub
+    }
+    COMBINE_FUNCTIONS = {
         'sum': Sum,
         'min': Min,
         'max': Max,
@@ -600,9 +674,7 @@ class WithDynamicViewSetBase(object):
             'options': {
                 'distinct': True
             }
-        }
-    }
-    TRANSFORM_FUNCTIONS = {
+        },
         'year': {
             'function': Trunc,
             'cast': models.DateField(),
@@ -660,107 +732,40 @@ class WithDynamicViewSetBase(object):
         by = combine.get('by', None)
         over = combine.get('over', None)
         flat = 'flat' in combine.get('format', [])
-        expression = self._parse_combine_expression(expression)
+        expression = self._parse_combine_expression(expression, serializer)
         queryset = self.filter_queryset(self.get_queryset())
         aggregations = {}
         if not isinstance(expression, list):
             expression = [expression]
         for ex in expression:
-            function = ex['function']
-            value = ex['value']
-            key = ex['key']
+            aggregations[ex['key']] = ex['value']
 
-            fn = self.AGGREGATE_FUNCTIONS.get(function, None)
-            if not fn:
-                raise exceptions.ValidationError(
-                    f'No such combiner function: "{function}"'
-                )
-            model_fields, _ = serializer.resolve(value)
-            model_field = '__'.join([
-                Meta.get_query_name(f) for f in model_fields
-            ])
-            options = {}
-            args = []
-            if isinstance(fn, dict):
-                options = fn.get('options', options)
-                args = fn.get('args', args)
-                fn = fn['function']
-
-            aggregations[key] = fn(model_field, *args, **options)
-
-        by_path = None
+        by_paths = []
+        by_exs = None
         over_paths = []
-        by_ex = None
         over_exs = None
         if by:
-            if len(by) > 1:
-                raise Exception("combine.by does not support multiple values")
-            by = by[0]
-            by_ex = self._parse_combine_expression(by)
-            function = by_ex['function']
-            value = by_ex['value']
-            model_fields, _ = serializer.resolve(value)
-            by_path = '__'.join([
-                Meta.get_query_name(f) for f in model_fields
-            ])
-            if function:
-                fn = self.TRANSFORM_FUNCTIONS.get(function, None)
-                if not fn:
-                    raise exceptions.ValidationError(
-                        f'No such transformer function: "{function}"'
-                    )
-                options = {}
-                args = []
-                cast = None
-                if isinstance(fn, dict):
-                    options = fn.get('options', options)
-                    args = fn.get('args', args)
-                    cast = fn.get('cast', None)
-                    fn = fn['function']
-                by_path = fn(by_path, *args, **options)
-                if cast:
-                    by_path = Cast(by_path, output_field=cast)
-            else:
-                by_path = F(by_path)
+            by_exs = self._parse_combine_expression(by, serializer)
+            if not isinstance(by_exs, list):
+                by_exs = [by_exs]
+            for by_ex in by_exs:
+                by_paths.append(by_ex['value'])
         if over:
-            over_exs = self._parse_combine_expression(over)
+            over_exs = self._parse_combine_expression(over, serializer)
             if not isinstance(over_exs, list):
                 over_exs = [over_exs]
             for over_ex in over_exs:
-                function = over_ex['function']
-                value = over_ex['value']
-                model_fields, _ = serializer.resolve(value)
-                over_path = '__'.join([
-                    Meta.get_query_name(f) for f in model_fields
-                ])
-                if function:
-                    fn = self.TRANSFORM_FUNCTIONS.get(function, None)
-                    if not fn:
-                        raise exceptions.ValidationError(
-                            f'No such transformer function: "{function}"'
-                        )
-                    options = {}
-                    args = []
-                    cast = None
-                    if isinstance(fn, dict):
-                        options = fn.get('options', options)
-                        args = fn.get('args', args)
-                        cast = fn.get('cast', None)
-                        fn = fn['function']
-                    over_path = fn(over_path, *args, **options)
-                    if cast:
-                        over_path = Cast(over_path, output_field=cast)
-                    over_paths.append(over_path)
-                else:
-                    over_paths.append(F(over_path))
+                over_paths.append(over_ex['value'])
 
         if by or over:
             data = [] if flat else {}
             values = []
             annotations = {}
             if by:
-                values.append('_by')
-                annotations['_by'] = by_path
+                for i, path in enumerate(by_paths):
+                    by_key = f'_by{i}'
+                    values.append(by_key)
+                    annotations[by_key] = path
             if over:
                 for i, path in enumerate(over_paths):
                     over_key = f'_over{i}'
@@ -781,16 +786,21 @@ class WithDynamicViewSetBase(object):
                 queryset = queryset.order_by()
 
             for item in queryset:
-                split = item.get('_by', None)
+                split = []
                 x = []
-                for i, path in enumerate(over_paths):
-                    x.append(item.get(f'_over{i}'))
+                if by:
+                    for i, path in enumerate(by_paths):
+                        split.append(item.get(f'_by{i}'))
+                if over:
+                    for i, path in enumerate(over_paths):
+                        x.append(item.get(f'_over{i}'))
 
                 if flat:
                     row = {}
                     for key in item.keys():
-                        if by_ex and key.startswith('_by'):
-                            remapped_key = by_ex['key']
+                        if by_exs and key.startswith('_by'):
+                            i = int(key[-1])
+                            remapped_key = by_exs[i]['key']
                         elif over_exs and key.startswith('_over'):
                             i = int(key[-1])
                             remapped_key = over_exs[i]['key']
@@ -803,18 +813,21 @@ class WithDynamicViewSetBase(object):
                         key = ex['key']
                         y = item[key]
                         if by:
-                            if split not in data:
-                                data[split] = {}
+                            d = data
+                            for s in split:
+                                if s not in d:
+                                    d[s] = {}
+                                d = d[s]
                             if over:
                                 # over and by
-                                if key not in data[split]:
-                                    data[split][key] = []
-                                data[split][key].append(
+                                if key not in d:
+                                    d[key] = []
+                                d[key].append(
                                     [*x, y]
                                 )
                             else:
                                 # by without over
-                                data[split][key] = y
+                                d[key] = y
                         else:
                             # over without by
                             if key not in data:

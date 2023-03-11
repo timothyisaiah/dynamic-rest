@@ -2,6 +2,7 @@ import datetime
 import json
 
 from django.db import connection
+from urllib.parse import quote
 from django.test import override_settings
 from django.utils import six
 from rest_framework.test import APITestCase
@@ -1458,16 +1459,28 @@ class TestCatsAPI(APITestCase):
         )
         self.assertEqual(200, response.status_code, response.content)
         data = json.loads(response.content.decode('utf-8'))
+        self.assertTrue('United States' in data['data'], data['data'])
         self.assertEqual(data['data']['United States']['count(name)'], 2)
         self.assertEqual(data['data']['China']['count(name)'], 1)
         self.assertEqual(data['data']['']['count(name)'], 1)
         self.assertEqual(
             data['meta']['query'],
-            'SELECT "tests_country"."name" AS "_by", COUNT("tests_car"."name") AS "count(name)" '
+            'SELECT "tests_country"."name" AS "_by0", COUNT("tests_car"."name") AS "count(name)" '
             'FROM "tests_car" '
             'LEFT OUTER JOIN "tests_country" ON ("tests_car"."country_id" = "tests_country"."id") '
             'GROUP BY "tests_country"."name"'
         )
+
+    def test_combine_many_by(self):
+        Car.objects.create(country=Country.objects.get(name='United States'), name='Tesla')
+        response = self.client.get(
+            '/cars?combine=count(id) as count&combine.by=country_name,name&debug=1'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['data']['United States']['Tesla']['count'], 1)
+        self.assertEqual(data['data']['China']['Forta']['count'], 1)
+        self.assertEqual(data['data']['']['BMW']['count'], 1)
 
     def test_combine_over(self):
         Car.objects.create(country=Country.objects.get(name='United States'), name='Tesla')
@@ -1520,12 +1533,15 @@ class TestCatsAPI(APITestCase):
             [['2020-01-01', 'test1']]
         )
 
-    def test_combine_many_overs(self):
+    def setup_users(self):
         User.objects.all().delete()
         for month in range(1, 3):
             User.objects.create(name=f'test{month}', last_name='Family1', date_of_birth=f'2020-0{month}-05')
         for month in range(1, 2):
             User.objects.create(name=f'test{month}', last_name='Family2', date_of_birth=f'2020-0{month}-08')
+
+    def test_combine_many_overs(self):
+        self.setup_users()
 
         # 2 overs
         response = self.client.get(
@@ -1549,6 +1565,9 @@ class TestCatsAPI(APITestCase):
                 ['2020-02-01', 'Family1', 'test2'],
             ]
         )
+
+    def test_combine_flat(self):
+        self.setup_users()
         response = self.client.get(
             '/users?combine=count(name),min(name)&combine.over=month(date_of_birth),last_name&combine.format=flat'
         )
@@ -1562,7 +1581,29 @@ class TestCatsAPI(APITestCase):
             ],
             data['data']
         )
+    def test_combine_expression(self):
+        # weird aggregation, but test data doesn't have many integer fields..
+        response = self.client.get(
+            f'/cars?combine={quote("count(id) + count(name) as doubleCats")}'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['data']['doubleCats'], 6)
 
+        response = self.client.get(
+            f'/cars?combine={quote("count(id) * 3 as doubleCats")}'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['data']['doubleCats'], 9)
+
+    def test_combine_as(self):
+        response = self.client.get(
+            '/cars?combine=count(name) as numCats'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['data']['numCats'], 3)
 
     def test_sort_relationship_rewrite(self):
         response = self.client.get('/cars?sort[]=-country_name&include[]=name')
