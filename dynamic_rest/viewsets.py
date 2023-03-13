@@ -3,6 +3,8 @@ import csv
 import re
 import json
 import operator as op
+from decimal import Decimal
+import statistics
 
 from io import StringIO
 import inflection
@@ -34,11 +36,12 @@ DELETE_REQUEST_METHOD = 'DELETE'
 
 class REGEX:
     arithmetic_operator = '[/*+-]'
-    identifier = '[a-z][ a-z0-9_.]*'
+    identifier = '[a-z][ A-Za-z0-9_.]*'
+    word_number = r'^([a-zA-Z]+)([0-9]+)$'
     literal = '(?:[0-9][0-9.]*|[-][0-9][0-9.]*)'
     basic = f'(?:{identifier}|{literal})'
-    function_expression = fr'\s*({basic})\s*\(\s*({basic})\s*\)(?:\s+as\s*({basic})\s*)?'
-    identifier_expression = fr'\s*({basic})(?:\s+as\s*({basic})\s*)'
+    function_expression = fr'\s*({basic})\s*\(\s*({basic})\s*\)(?: as \s*({basic})\s*)?'
+    identifier_expression = fr'\s*({basic})\s*(?: as \s*({basic})\s*)'
 
 def literalize(x):
     try:
@@ -591,13 +594,13 @@ class WithDynamicViewSetBase(object):
             arithmetic = arithmetic.group(0)
             splits = re.split(REGEX.arithmetic_operator, expression)
             if len(splits) > 2:
-                raise Exception('3+ clause expressions are not supported yet')
+                raise exceptions.ValidationError('3+ clause expressions are not supported yet')
             values = [self._parse_combine_expression(split, serializer=serializer) for split in splits]
             fn = self.ARITHMETIC_FUNCTIONS[arithmetic]
             if ' as ' in expression.lower():
                 # get alias from last value
                 key = values[-1]['key']
-            result = {'key': key, 'value': fn(*[v['value'] for v in values])}
+            result = {'key': key, 'value': fn(*[v['value'] for v in values]), 'expression': expression}
             return result
 
         operator = value = None
@@ -607,6 +610,7 @@ class WithDynamicViewSetBase(object):
             operator = match.group(1).lower()
             value = match.group(2).lower()
             if match.group(3):
+                # sum(b.c) as x
                 key = match.group(3)
         else:
             match = re.match(REGEX.identifier_expression, expression, flags=re.IGNORECASE)
@@ -620,10 +624,14 @@ class WithDynamicViewSetBase(object):
 
         model_field = target = None
         if re.match(REGEX.identifier, value):
-            model_fields, _ = serializer.resolve(value)
-            target = model_field = '__'.join([
-                Meta.get_query_name(f) for f in model_fields
-            ])
+            try:
+                model_fields, _ = serializer.resolve(value)
+            except Exception:
+                target = value
+            else:
+                target = model_field = '__'.join([
+                    Meta.get_query_name(f) for f in model_fields
+                ])
         else:
             target = value
 
@@ -640,8 +648,20 @@ class WithDynamicViewSetBase(object):
         else:
             fn = self.COMBINE_FUNCTIONS.get(operator, None)
             if not fn:
+                match = re.match(REGEX.word_number, operator)
+                if match:
+                    word = match.group(1)
+                    number = int(match.group(2))
+                    if word in self.COMBINE_FUNCTIONS:
+                        if not isinstance(self.COMBINE_FUNCTIONS[word], dict) or 'python' not in self.COMBINE_FUNCTIONS[word]:
+                            raise exceptions.ValidationError(
+                                f'Cannot post-aggregate using {operator}'
+                            )
+                        # sum0/sum1 = sum given field by dimension 0 / 1
+                        return {'value': None, 'key': key, 'then': [word, number, target], 'expression': expression}
+
                 raise exceptions.ValidationError(
-                    f'No such function: "{operator}"'
+                    f'Unknown function: "{operator}"'
                 )
 
         if isinstance(fn, dict):
@@ -653,7 +673,7 @@ class WithDynamicViewSetBase(object):
         value = fn(target, *args, **options)
         if cast:
             value = Cast(value, output_field=cast)
-        return {'key': key, 'value': value}
+        return {'key': key, 'value': value, 'expression': expression}
 
     ARITHMETIC_FUNCTIONS = {
         '/': op.truediv,
@@ -662,18 +682,35 @@ class WithDynamicViewSetBase(object):
         '-': op.sub
     }
     COMBINE_FUNCTIONS = {
-        'sum': Sum,
-        'min': Min,
-        'max': Max,
-        'avg': Avg,
-        'count': Count,
-        'average': Avg,
-        'mean': Avg,
+        'sum': {
+            'function': Sum,
+            'python': sum
+        },
+        'min': {
+            'function': Min,
+            'python': min
+        },
+        'max': {
+            'function': Max,
+            'python': max
+        },
+        'avg': {
+            'function': Avg,
+            'python': statistics.mean
+        },
+        'count': {
+            'function': Count,
+            'python': len
+        },
         'distinct': {
             'function': Count,
+            'python': lambda l: len(set(l)),
             'options': {
                 'distinct': True
             }
+        },
+        'percent': {
+            'python': lambda l, this=None: Decimal('100.0') * (this if this is not None else 0)/ sum(l)
         },
         'year': {
             'function': Trunc,
@@ -735,10 +772,16 @@ class WithDynamicViewSetBase(object):
         expression = self._parse_combine_expression(expression, serializer)
         queryset = self.filter_queryset(self.get_queryset())
         aggregations = {}
+        thens = []
         if not isinstance(expression, list):
             expression = [expression]
         for ex in expression:
-            aggregations[ex['key']] = ex['value']
+            value = ex.get('value')
+            then = ex.get('then')
+            if value is not None:
+                aggregations[ex['key']] = value
+            if then is not None:
+                thens.append((ex['key'], *then))
 
         by_paths = []
         by_exs = None
@@ -749,16 +792,21 @@ class WithDynamicViewSetBase(object):
             if not isinstance(by_exs, list):
                 by_exs = [by_exs]
             for by_ex in by_exs:
+                if not by_ex['value']:
+                    raise exceptions.ValidationError(f'Expression invalid for "by": {by_ex["expression"]}')
                 by_paths.append(by_ex['value'])
         if over:
             over_exs = self._parse_combine_expression(over, serializer)
             if not isinstance(over_exs, list):
                 over_exs = [over_exs]
             for over_ex in over_exs:
+                if not over_ex['value']:
+                    raise exceptions.ValidationError(f'Expression invalid for "over": {over_ex["expression"]}')
                 over_paths.append(over_ex['value'])
 
+        flat_data = []
         if by or over:
-            data = [] if flat else {}
+            data = {}
             values = []
             annotations = {}
             if by:
@@ -795,21 +843,22 @@ class WithDynamicViewSetBase(object):
                     for i, path in enumerate(over_paths):
                         x.append(item.get(f'_over{i}'))
 
-                if flat:
-                    row = {}
-                    for key in item.keys():
-                        if by_exs and key.startswith('_by'):
-                            i = int(key[-1])
-                            remapped_key = by_exs[i]['key']
-                        elif over_exs and key.startswith('_over'):
-                            i = int(key[-1])
-                            remapped_key = over_exs[i]['key']
-                        else:
-                            remapped_key = key
-                        row[remapped_key] = item[key]
-                    data.append(row)
-                else:
+                row = {}
+                for key in item.keys():
+                    if by_exs and key.startswith('_by'):
+                        i = int(key[-1])
+                        remapped_key = by_exs[i]['key']
+                    elif over_exs and key.startswith('_over'):
+                        i = int(key[-1])
+                        remapped_key = over_exs[i]['key']
+                    else:
+                        remapped_key = key
+                    row[remapped_key] = item[key]
+                flat_data.append(row)
+                if not flat:
                     for ex in expression:
+                        if not ex['value']:
+                            continue
                         key = ex['key']
                         y = item[key]
                         if by:
@@ -838,6 +887,57 @@ class WithDynamicViewSetBase(object):
         else:
             # simple aggregation (without "over" or "by")
             data = queryset.aggregate(**aggregations)
+
+        dimensions = [x['key'] for x in (by_exs or []) + (over_exs or [])]
+        if thens:
+            for then in thens:
+                # post-aggregates
+                key, function, dimension, ref = then
+                cache_level = 'values' if function == 'percent' else 'data'
+                if dimension > len(dimensions):
+                    dimension = len(dimensions)
+                fn = self.COMBINE_FUNCTIONS[function]['python']
+                cache = {}
+
+                def get_cache_key(row):
+                    if dimension == 0:
+                        return '1'
+                    return tuple(row.get(dimensions[i]) for i in range(dimension))
+
+                def is_grouped(row, other):
+                    return row == other or get_cache_key(row) == get_cache_key(other)
+
+                def get_values(row, cache_key):
+                    if cache_level == 'values' and cache_key in cache:
+                        return cache[cache_key]
+
+                    base = [x.get(ref) for x in flat_data if is_grouped(row, x)]
+                    # None usually throws off statistic functions
+                    result = [x for x in base if x is not None]
+                    if cache_level == 'values':
+                        cache[cache_key] = result
+                    return result
+
+                def get_data(row):
+                    cache_key = get_cache_key(row)
+                    if cache_level == 'data' and cache_key in cache:
+                        return cache[cache_key]
+
+                    values = get_values(row, cache_key)
+                    if cache_level == 'data':
+                        result = fn(values)
+                    else:
+                        result = fn(values, this=row.get(ref))
+                    if cache_level == 'data':
+                        cache[cache_key] = result
+                    print(cache_key, values, result)
+                    return result
+
+                for row in flat_data:
+                    row[key] = get_data(row)
+
+        if flat:
+            data = flat_data
         response = {'data': clean(data)}
         debug = self.get_request_debug()
         if debug:

@@ -1,6 +1,6 @@
 import datetime
 import json
-
+from decimal import Decimal
 from django.db import connection
 from urllib.parse import quote
 from django.test import override_settings
@@ -1569,17 +1569,20 @@ class TestCatsAPI(APITestCase):
     def test_combine_flat(self):
         self.setup_users()
         response = self.client.get(
-            '/users?combine=count(name),min(name)&combine.over=month(date_of_birth),last_name&combine.format=flat'
+            '/users?combine=count(name) as count,count0(count) as count0,count1(count) as count1,count2(count) as count2,min(name),percent0(count) as p0&combine.over=month(date_of_birth),last_name&combine.format=flat'
         )
         data = json.loads(response.content.decode('utf-8'))
+        self.assertTrue('data' in data, data)
+        self.maxDiff = None
+        third = str(Decimal('100.0') * 1 / 3)
         self.assertEqual(
             data['data'],
             [
-                {'count(name)': 1, 'last_name': 'Family1', 'month(date_of_birth)': '2020-01-01', 'min(name)': 'test1'},
-                {'count(name)': 1, 'last_name': 'Family2', 'month(date_of_birth)': '2020-01-01', 'min(name)': 'test1'},
-                {'count(name)': 1, 'last_name': 'Family1', 'month(date_of_birth)': '2020-02-01', 'min(name)': 'test2'},
+                {'count': 1, 'last_name': 'Family1', 'month(date_of_birth)': '2020-01-01', 'min(name)': 'test1', 'count0': 3, 'count1': 2, 'count2': 1, 'p0': third},
+                {'count': 1, 'last_name': 'Family2', 'month(date_of_birth)': '2020-01-01', 'min(name)': 'test1', 'count0': 3, 'count1': 2, 'count2': 1, 'p0': third},
+                {'count': 1, 'last_name': 'Family1', 'month(date_of_birth)': '2020-02-01', 'min(name)': 'test2', 'count0': 3, 'count1': 1, 'count2': 1, 'p0': third},
             ],
-            data['data']
+            data['data'],
         )
     def test_combine_expression(self):
         # weird aggregation, but test data doesn't have many integer fields..
