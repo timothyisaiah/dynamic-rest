@@ -43,6 +43,10 @@ class REGEX:
     function_expression = fr'\s*({basic})\s*\(\s*({basic})\s*\)(?: as \s*({basic})\s*)?'
     identifier_expression = fr'\s*({basic})\s*(?: as \s*({basic})\s*)'
 
+def percent(l, this=None):
+    s = sum(l)
+    return Decimal('100.0') * (this if this is not None else 0)/ s if s else None
+
 def remove_underscore(key):
     return key.replace('_', '', 1)
 
@@ -716,7 +720,7 @@ class WithDynamicViewSetBase(object):
             }
         },
         'percent': {
-            'python': lambda l, this=None: Decimal('100.0') * (this if this is not None else 0)/ sum(l)
+            'python': percent
         },
         'year': {
             'function': Trunc,
@@ -924,9 +928,6 @@ class WithDynamicViewSetBase(object):
                     x.append(item.get(ex['key']))
 
                 for ex in expression:
-                    if not ex['value']:
-                        continue
-
                     key = ex['key']
                     y = item[key]
                     if by:
