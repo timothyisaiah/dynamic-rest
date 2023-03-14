@@ -43,6 +43,12 @@ class REGEX:
     function_expression = fr'\s*({basic})\s*\(\s*({basic})\s*\)(?: as \s*({basic})\s*)?'
     identifier_expression = fr'\s*({basic})\s*(?: as \s*({basic})\s*)'
 
+def remove_underscore(key):
+    return key.replace('_', '', 1)
+
+def remove_underscores(items):
+    return [{remove_underscore(key): value for key, value in item.items()} for item in items]
+
 def literalize(x):
     try:
         return json.loads(x)
@@ -775,50 +781,49 @@ class WithDynamicViewSetBase(object):
         thens = []
         if not isinstance(expression, list):
             expression = [expression]
-        for ex in expression:
-            value = ex.get('value')
-            then = ex.get('then')
-            if value is not None:
-                aggregations[ex['key']] = value
-            if then is not None:
-                thens.append((ex['key'], *then))
 
-        by_paths = []
-        by_exs = None
+        by_exs = []
         over_paths = []
-        over_exs = None
+        over_exs = []
         if by:
             by_exs = self._parse_combine_expression(by, serializer)
             if not isinstance(by_exs, list):
                 by_exs = [by_exs]
-            for by_ex in by_exs:
-                if not by_ex['value']:
-                    raise exceptions.ValidationError(f'Expression invalid for "by": {by_ex["expression"]}')
-                by_paths.append(by_ex['value'])
+            for ex in by_exs:
+                if not ex['value']:
+                    raise exceptions.ValidationError(f'Expression invalid for "by": {ex["expression"]}')
         if over:
             over_exs = self._parse_combine_expression(over, serializer)
             if not isinstance(over_exs, list):
                 over_exs = [over_exs]
-            for over_ex in over_exs:
-                if not over_ex['value']:
-                    raise exceptions.ValidationError(f'Expression invalid for "over": {over_ex["expression"]}')
-                over_paths.append(over_ex['value'])
+            for ex in over_exs:
+                if not ex['value']:
+                    raise exceptions.ValidationError(f'Expression invalid for "over": {ex["expression"]}')
+                over_paths.append(ex['value'])
+
+        for ex in expression:
+            value = ex.get('value')
+            then = ex.get('then')
+            if value is not None:
+                aggregations['_' + ex['key']] = value
+            if then is not None:
+                thens.append((ex['key'], *then))
 
         flat_data = []
+        data = [] if flat else {}
+        simple = True
         if by or over:
             data = {}
             values = []
             annotations = {}
-            if by:
-                for i, path in enumerate(by_paths):
-                    by_key = f'_by{i}'
-                    values.append(by_key)
-                    annotations[by_key] = path
-            if over:
-                for i, path in enumerate(over_paths):
-                    over_key = f'_over{i}'
-                    values.append(over_key)
-                    annotations[over_key] = path
+            for ex in by_exs:
+                by_key = '_' + ex['key']
+                values.append(by_key)
+                annotations[by_key] = ex['value']
+            for ex in over_exs:
+                over_key = '_' + ex['key']
+                values.append(over_key)
+                annotations[over_key] = ex['value']
 
             queryset = (
                 queryset
@@ -833,63 +838,14 @@ class WithDynamicViewSetBase(object):
                 # this improves performance and prevents a grouping bug
                 queryset = queryset.order_by()
 
-            for item in queryset:
-                split = []
-                x = []
-                if by:
-                    for i, path in enumerate(by_paths):
-                        split.append(item.get(f'_by{i}'))
-                if over:
-                    for i, path in enumerate(over_paths):
-                        x.append(item.get(f'_over{i}'))
-
-                row = {}
-                for key in item.keys():
-                    if by_exs and key.startswith('_by'):
-                        i = int(key[-1])
-                        remapped_key = by_exs[i]['key']
-                    elif over_exs and key.startswith('_over'):
-                        i = int(key[-1])
-                        remapped_key = over_exs[i]['key']
-                    else:
-                        remapped_key = key
-                    row[remapped_key] = item[key]
-                flat_data.append(row)
-                if not flat:
-                    for ex in expression:
-                        if not ex['value']:
-                            continue
-                        key = ex['key']
-                        y = item[key]
-                        if by:
-                            d = data
-                            for s in split:
-                                if s not in d:
-                                    d[s] = {}
-                                d = d[s]
-                            if over:
-                                # over and by
-                                if key not in d:
-                                    d[key] = []
-                                d[key].append(
-                                    [*x, y]
-                                )
-                            else:
-                                # by without over
-                                d[key] = y
-                        else:
-                            # over without by
-                            if key not in data:
-                                data[key] = []
-                            data[key].append(
-                               [*x, y]
-                            )
+            flat_data = remove_underscores(list(queryset))
+            simple = False
         else:
             # simple aggregation (without "over" or "by")
-            data = queryset.aggregate(**aggregations)
+            data = remove_underscores([queryset.aggregate(**aggregations)])[0]
 
-        dimensions = [x['key'] for x in (by_exs or []) + (over_exs or [])]
-        if thens:
+        if not simple and thens:
+            dimensions = [x['key'] for x in by_exs + over_exs]
             for then in thens:
                 # post-aggregates
                 key, function, dimension, ref = then
@@ -923,14 +879,13 @@ class WithDynamicViewSetBase(object):
                     if cache_level == 'data' and cache_key in cache:
                         return cache[cache_key]
 
-                    values = get_values(row, cache_key)
+                    vals = get_values(row, cache_key)
                     if cache_level == 'data':
-                        result = fn(values)
+                        result = fn(vals)
                     else:
-                        result = fn(values, this=row.get(ref))
+                        result = fn(vals, this=row.get(ref))
                     if cache_level == 'data':
                         cache[cache_key] = result
-                    print(cache_key, values, result)
                     return result
 
                 for row in flat_data:
@@ -938,6 +893,65 @@ class WithDynamicViewSetBase(object):
 
         if flat:
             data = flat_data
+        elif not simple:
+            # return a nested view on the data:
+            #
+            # simple, with no by/over:
+            #
+            # ex0: value
+            # ex1: value
+            # ...
+            #
+            # with 2 bys and 2 overs:
+            #
+            # by0:
+            #    by1:
+            #       ex0:
+            #           [over0_0, over0_1, value0]
+            #       ex1:
+            #           [over1_0, over1_1, value1]
+            #
+
+            data = {}
+            x = None
+            bys = None
+            for item in flat_data:
+                bys = []
+                x = []
+                for ex in by_exs:
+                    bys.append(item.get(ex['key']))
+                for ex in over_exs:
+                    x.append(item.get(ex['key']))
+
+                for ex in expression:
+                    if not ex['value']:
+                        continue
+
+                    key = ex['key']
+                    y = item[key]
+                    if by:
+                        d = data
+                        for b in bys:
+                            if b not in d:
+                                d[b] = {}
+                            d = d[b]
+                        if over:
+                            # over and by
+                            if key not in d:
+                                d[key] = []
+                            d[key].append(
+                                [*x, y]
+                            )
+                        else:
+                            # by without over
+                            d[key] = y
+                    else:
+                        # over without by
+                        if key not in data:
+                            data[key] = []
+                        data[key].append(
+                           [*x, y]
+                        )
         response = {'data': clean(data)}
         debug = self.get_request_debug()
         if debug:

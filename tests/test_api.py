@@ -1465,7 +1465,7 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(data['data']['']['count(name)'], 1)
         self.assertEqual(
             data['meta']['query'],
-            'SELECT "tests_country"."name" AS "_by0", COUNT("tests_car"."name") AS "count(name)" '
+            'SELECT "tests_country"."name" AS "_country_name", COUNT("tests_car"."name") AS "_count(name)" '
             'FROM "tests_car" '
             'LEFT OUTER JOIN "tests_country" ON ("tests_car"."country_id" = "tests_country"."id") '
             'GROUP BY "tests_country"."name"'
@@ -1606,7 +1606,7 @@ class TestCatsAPI(APITestCase):
         )
         self.assertEqual(200, response.status_code, response.content)
         data = json.loads(response.content.decode('utf-8'))
-        self.assertEqual(data['data']['numCats'], 3)
+        self.assertEqual(data['data'].get('numCats'), 3, data['data'])
 
     def test_sort_relationship_rewrite(self):
         response = self.client.get('/cars?sort[]=-country_name&include[]=name')
