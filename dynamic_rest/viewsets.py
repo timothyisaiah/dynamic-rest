@@ -583,7 +583,53 @@ class WithDynamicViewSetBase(object):
             return self.combine(request, combine, **kwargs)
         return super(WithDynamicViewSetBase, self).list(request, **kwargs)
 
-    def _parse_combine_expression(self, expression, serializer=None):
+    def _compute_bucket_function(self, model_field, queryset=None):
+        if model_field is None:
+            return None
+        if queryset is None:
+            queryset = self.filter_queryset(self.get_queryset())
+        aggs = queryset.aggregate(_min=Min(model_field), _max=Max(model_field))
+        min_value = aggs['_min']
+        max_value = aggs['_max']
+        delta = max_value - min_value
+        try:
+            seconds = delta.total_seconds()
+        except Exception:
+            return None
+        else:
+            limit = 60 * 2
+            if seconds < limit:
+                # 119 seconds or less
+                return 'second'
+            limit *= 60
+            if seconds < limit:
+                # 2 minutes - 120 minutes
+                return 'minute'
+            limit *= 24
+            if seconds < limit:
+                # 2 hours - 48 hours
+                return 'hour'
+            limit *= 7
+            if seconds < limit:
+                # 2 days - 14 days
+                return 'day'
+            limit *= 4
+            if seconds < limit:
+                # 2 weeks - 8 weeks
+                return 'week'
+            limit *= 6
+            if seconds < limit:
+                # 2 months - 12 months
+                return 'month'
+            limit *= 4
+            if seconds < limit:
+                # 1 year - 4 years
+                return 'quarter'
+            # 4+ years
+            return 'year'
+
+
+    def _parse_combine_expression(self, expression, serializer=None, queryset=None):
         serializer = serializer or self.get_serializer()
         if not expression:
             raise exceptions.ValidationError(
@@ -656,7 +702,13 @@ class WithDynamicViewSetBase(object):
                 # literal value
                 fn = lambda x, *_, **__: literalize(x)
         else:
-            fn = self.COMBINE_FUNCTIONS.get(operator, None)
+            if operator == 'auto':
+                # automatic buckets (date/time only)
+                fn = self._compute_bucket_function(model_field, queryset=queryset) or 'month'
+                fn = self.COMBINE_FUNCTIONS.get(fn, None)
+            else:
+                fn = self.COMBINE_FUNCTIONS.get(operator, None)
+
             if not fn:
                 match = re.match(REGEX.word_number, operator)
                 if match:
@@ -779,8 +831,8 @@ class WithDynamicViewSetBase(object):
         by = combine.get('by', None)
         over = combine.get('over', None)
         flat = 'flat' in combine.get('format', [])
-        expression = self._parse_combine_expression(expression, serializer)
         queryset = self.filter_queryset(self.get_queryset())
+        expression = self._parse_combine_expression(expression, serializer, queryset)
         aggregations = {}
         thens = []
         if not isinstance(expression, list):
@@ -790,14 +842,14 @@ class WithDynamicViewSetBase(object):
         over_paths = []
         over_exs = []
         if by:
-            by_exs = self._parse_combine_expression(by, serializer)
+            by_exs = self._parse_combine_expression(by, serializer, queryset=queryset)
             if not isinstance(by_exs, list):
                 by_exs = [by_exs]
             for ex in by_exs:
                 if not ex['value']:
                     raise exceptions.ValidationError(f'Expression invalid for "by": {ex["expression"]}')
         if over:
-            over_exs = self._parse_combine_expression(over, serializer)
+            over_exs = self._parse_combine_expression(over, serializer, queryset=queryset)
             if not isinstance(over_exs, list):
                 over_exs = [over_exs]
             for ex in over_exs:

@@ -1500,6 +1500,7 @@ class TestCatsAPI(APITestCase):
         for month in range(1, 2):
             User.objects.create(name=f'test{month}', last_name='Family2', date_of_birth=f'2020-0{month}-08')
 
+        # over alone
         response = self.client.get(
             '/users?combine=count(name)&combine.over=month(date_of_birth)'
         )
@@ -1508,6 +1509,19 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(
             data['data']['count(name)'],
             [['2020-01-01', 2], ['2020-02-01', 1]]
+        )
+        # over (auto-field)
+        response = self.client.get(
+            '/users?combine=count(name)&combine.over=auto(date_of_birth)'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(
+            data['data']['count(name)'],
+            [['2019-12-30', 1],
+             ['2020-01-06', 1],
+             ['2020-02-03', 1]
+            ]
         )
 
         # over with by
