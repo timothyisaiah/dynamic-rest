@@ -591,7 +591,12 @@ class WithDynamicViewSetBase(object):
         aggs = queryset.aggregate(_min=Min(model_field), _max=Max(model_field))
         min_value = aggs['_min']
         max_value = aggs['_max']
-        delta = max_value - min_value
+        try:
+            delta = max_value - min_value
+        except Exception:
+            # cannot be subtracted or null values
+            return None
+
         try:
             seconds = delta.total_seconds()
         except Exception:
