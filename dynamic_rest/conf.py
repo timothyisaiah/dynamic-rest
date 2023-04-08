@@ -90,6 +90,10 @@ DYNAMIC_REST = {
     # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
     'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
 
+    # EXCLUDE_COUNT_QUERY_PARAM: global setting for the query parameter
+    # that disables counting during PageNumber pagination
+    'EXCLUDE_COUNT_QUERY_PARAM': 'exclude_count',
+
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,
