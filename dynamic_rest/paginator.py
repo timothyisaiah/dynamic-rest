@@ -6,13 +6,23 @@ from math import ceil
 import inspect
 from django.utils.functional import cached_property
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
-from django.utils.inspect import method_has_no_args
 
 try:
     from django.utils.translation import gettext_lazy as _
 except ImportError:
     def _(x):
         return x
+
+try:
+    from django.utils.inspect import method_has_no_args
+except ImportError:
+    def method_has_no_args(meth):
+        """Return True if a method only accepts 'self'."""
+        count = len([
+            p for p in inspect.signature(meth).parameters.values()
+            if p.kind == p.POSITIONAL_OR_KEYWORD
+        ])
+        return count == 0 if inspect.ismethod(meth) else count == 1
 
 
 class DynamicPaginator(Paginator):
