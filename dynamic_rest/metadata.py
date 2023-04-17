@@ -35,6 +35,7 @@ class DynamicMetadata(SimpleMetadata):
                 metadata['name'] = serializer.get_plural_name()
             metadata['fields'] = self.get_serializer_info(serializer)
             metadata['icon'] = serializer.get_icon()
+            metadata['search_key'] = serializer.get_search_key()
             metadata['style'] = serializer.get_style()
             metadata['description'] = serializer.get_description()
             metadata['sections'] = [
