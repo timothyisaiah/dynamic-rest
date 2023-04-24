@@ -14,7 +14,7 @@
             {% endblock %}
             {% block title %}
                 <title>
-                    {{ title }}
+                    {{ title | default_if_none:'Untitled' }}
                 </title>
             {% endblock %}
             {% block css %}
@@ -113,7 +113,9 @@
        </head>
     {% endblock %} <!-- /head -->
     {% block body %}
-        <body>
+        {% block body__element %}
+            <body>
+        {% endblock %}
             {% block header %}
                 <header
                     id="drest-header"
