@@ -1,7 +1,6 @@
 """This module contains custom router classes."""
 from collections import OrderedDict
 
-from django.utils import six
 from django.shortcuts import redirect
 from rest_framework import views
 from rest_framework.response import Response
@@ -322,11 +321,11 @@ class DynamicRouter(DefaultRouter):
             return routes
 
         serializer = viewset.serializer_class()
-        fields = getattr(serializer, 'get_link_fields', lambda: [])()
+        fields = getattr(serializer, 'get_link_fields', lambda: {})()
 
         route_name = '{basename}-{methodnamehyphen}'
 
-        for field_name, field in six.iteritems(fields):
+        for field_name, field in fields.items():
             has_list_related = hasattr(viewset, 'list_related')
             has_create_related = hasattr(viewset, 'create_related')
             url = (

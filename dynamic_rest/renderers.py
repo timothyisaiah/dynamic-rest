@@ -1,5 +1,4 @@
 """This module contains custom renderer classes."""
-from django.utils import six
 import copy
 from rest_framework.renderers import HTMLFormRenderer, ClassLookupDict
 from django.utils.html import mark_safe
@@ -184,7 +183,7 @@ class DynamicAdminRenderer(AdminRenderer):
             if is_list:
                 list_fields = getattr(meta, 'list_fields', None) or meta.fields
                 blacklist = ('id',)
-                if not isinstance(list_fields, six.string_types):
+                if not isinstance(list_fields, str):
                     # respect serializer field ordering
                     columns = [
                         f for f in list_fields if f in columns and f not in blacklist

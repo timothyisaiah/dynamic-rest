@@ -5,7 +5,6 @@ import inspect
 from collections import OrderedDict
 import inflection
 from django.db import models, transaction
-from django.utils import six
 from django.db.models.fields.files import FieldFile
 from django.utils.functional import cached_property
 from rest_framework import exceptions, serializers
@@ -50,7 +49,7 @@ def nested_update(instance, key, value, objects=None):
             setattr(instance, key, nested)
     else:
         # object exists, perform a nested update
-        for k, v in six.iteritems(value):
+        for k, v in value.items():
             if isinstance(v, dict):
                 nested_update(nested, k, v, objects)
             else:
@@ -328,7 +327,7 @@ class WithDynamicSerializerMixin(
             # passes null as a value, remove the field from the data
             # this addresses the frontends that send
             # undefined resource fields as null on POST/PUT
-            for field_name, field in six.iteritems(self.get_all_fields()):
+            for field_name, field in self.get_all_fields().items():
                 if (
                     field.allow_null is False
                     and field.required is False
@@ -463,7 +462,7 @@ class WithDynamicSerializerMixin(
                 list(include_fields)
                 + [
                     field
-                    for field, val in six.iteritems(self.request_fields)
+                    for field, val in self.request_fields.items()
                     if val or val == {}
                 ]
             )
@@ -596,7 +595,7 @@ class WithDynamicSerializerMixin(
         Note that the lists do not necessarily contain the
         same number of elements because API fields can reference nested model fields.
         """  # noqa
-        if not isinstance(query, six.string_types):
+        if not isinstance(query, str):
             parts = query
             query = '.'.join(query)
         else:
@@ -898,7 +897,7 @@ class WithDynamicSerializerMixin(
         """
         if not hasattr(self, '_all_fields'):
             self._all_fields = super(WithDynamicSerializerMixin, self).get_fields()
-            for k, field in six.iteritems(self._all_fields):
+            for k, field in self._all_fields.items():
                 self.setup_field(k, field)
 
         return self._all_fields
@@ -937,7 +936,7 @@ class WithDynamicSerializerMixin(
         meta_list = set(getattr(meta, meta_attr, []))
         return {
             name
-            for name, field in six.iteritems(fields)
+            for name, field in fields.items()
             if getattr(field, attr, None) is True or name in meta_list
         }
 
@@ -1011,7 +1010,7 @@ class WithDynamicSerializerMixin(
             if request_fields:
                 if request_fields is True:
                     request_fields = {}
-                for name, include in six.iteritems(request_fields):
+                for name, include in request_fields.items():
                     if name not in serializer_fields and name != 'pk':
                         raise exceptions.ParseError(
                             '"%s" is not a valid field name for "%s".'
@@ -1078,7 +1077,7 @@ class WithDynamicSerializerMixin(
                 all_fields = self.get_all_fields()
                 self._link_fields = {
                     name: field
-                    for name, field in six.iteritems(all_fields)
+                    for name, field in all_fields.items()
                     if isinstance(field, _fields.DynamicRelationField)
                     and getattr(field, 'link', True)
                     and not (

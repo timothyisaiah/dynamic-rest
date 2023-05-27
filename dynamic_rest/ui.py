@@ -1,10 +1,8 @@
 from random import randint
 
 from django.utils.functional import cached_property
-from django.utils import six
 from decimal import Decimal
 from django.template import loader
-from rest_framework.compat import unicode_to_repr
 
 from rest_framework.fields import SkipField
 from dynamic_rest.utils import is_truthy
@@ -70,7 +68,7 @@ class UIField(object):
         return self._field.__class__
 
     def __repr__(self):
-        return unicode_to_repr(
+        return (
             "<%s %s value=%s errors=%s instance=%s>"
             % (
                 self.__class__.__name__,
@@ -239,7 +237,7 @@ class UIFilter(object):
     def resolve(self):
         self.id = "filter-" + self.name
 
-        if isinstance(self.options, six.string_types):
+        if isinstance(self.options, str):
             self.options = {"field": self.options}
         name = self.name
         field_name = self.options.get("field", None)

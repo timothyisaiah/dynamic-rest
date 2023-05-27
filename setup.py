@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 NAME = 'dynamic-rest'
 DESCRIPTION = 'Adds Dynamic API support to Django REST Framework.'
 URL = 'http://github.com/AltSchool/dynamic-rest'
-VERSION = '4.3.3'
+VERSION = '4.3.4'
 SCRIPTS = ['manage.py']
 
 setup(

@@ -4,14 +4,13 @@ from decimal import Decimal
 from django.db import connection
 from urllib.parse import quote
 from django.test import override_settings
-from django.utils import six
 from rest_framework.test import APITestCase
 
 from tests.models import Cat, Group, Location, Permission, Profile, User, Car, Country
 from tests.serializers import NestedEphemeralSerializer, PermissionSerializer
 from tests.setup import create_fixture
 
-UNICODE_STRING = six.unichr(9629)  # unicode heart
+UNICODE_STRING = chr(9629)  # unicode heart
 # UNICODE_URL_STRING = urllib.quote(UNICODE_STRING.encode('utf-8'))
 UNICODE_URL_STRING = '%E2%96%9D'
 
@@ -260,7 +259,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals({'users': []}, json.loads(response.content.decode('utf-8')))
         with self.assertNumQueries(1):
             response = self.client.get(
-                six.u('/users/?filter{name}[]=%s') % UNICODE_STRING
+                ('/users/?filter{name}[]=%s') % UNICODE_STRING
             )
         self.assertEquals(200, response.status_code)
         self.assertEquals({'users': []}, json.loads(response.content.decode('utf-8')))
@@ -273,7 +272,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(1, len(json.loads(response.content.decode('utf-8'))['users']))
         with self.assertNumQueries(1):
             response = self.client.get(
-                six.u('/users/?filter{name}[]=%s') % UNICODE_STRING
+                ('/users/?filter{name}[]=%s') % UNICODE_STRING
             )
         self.assertEquals(200, response.status_code)
         self.assertEquals(1, len(json.loads(response.content.decode('utf-8'))['users']))
@@ -515,12 +514,13 @@ class TestUsersAPI(APITestCase):
         url = '/users/?filter{date_of_birth.gt}=0&filter{date_of_birth.lt}=0'
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            [
-                "'0' value has an invalid date format. "
+        content = response.content.decode('utf-8')
+        self.assertTrue(
+            (
+                "value has an invalid date format. "
                 "It must be in YYYY-MM-DD format."
-            ],
-            response.data,
+            ) in content,
+            content
         )
 
     def test_get_with_filter_or(self):

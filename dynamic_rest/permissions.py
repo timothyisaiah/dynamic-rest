@@ -1,6 +1,5 @@
 from django.db.models import Q
 from django.db import transaction
-from django.utils import six
 from rest_framework import exceptions
 from rest_framework.fields import flatten_choices_dict, to_choices_dict
 from django.utils.functional import cached_property
@@ -291,7 +290,7 @@ class PermissionsSerializerMixin(object):
                                     field.grouped_choices
                                 )
                                 field.choice_strings_to_values = {
-                                    six.text_type(key): key
+                                    str(key): key
                                     for key in field.choices.keys()
                                 }
                             else:

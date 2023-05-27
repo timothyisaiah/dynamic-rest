@@ -1,6 +1,5 @@
 from rest_framework import fields
 from uuid import UUID
-from django.utils import six
 from django.db.models import QuerySet
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -268,7 +267,7 @@ class DynamicField(fields.Field, DynamicBase):
     def admin_render(self, instance, value=None):
         value = self.admin_render_value(value or self.prepare_value(instance))
         if isinstance(value, list) and not isinstance(
-            value, six.string_types
+            value, str
         ) and not isinstance(value, UUID) and not isinstance(
             instance, list
         ):

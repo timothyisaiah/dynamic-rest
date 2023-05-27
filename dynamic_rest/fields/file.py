@@ -4,7 +4,6 @@ from .base import DynamicField
 from rest_framework.serializers import FileField, ImageField
 from rest_framework import exceptions
 from django.core.files.base import ContentFile
-from django.utils import six
 
 IMAGE_TYPES = {
     'jpeg',
@@ -82,7 +81,7 @@ class DynamicFileFieldBase(
         ).to_internal_value(data)
 
     def to_internal_value(self, data):
-        if isinstance(data, six.string_types):
+        if isinstance(data, str):
             if self.allow_base64 and 'data:' in data and ';base64,' in data:
                 return self.to_internal_value_base64(data)
             elif self.allow_remote:

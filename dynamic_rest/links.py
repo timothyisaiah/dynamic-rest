@@ -1,6 +1,4 @@
 """This module contains utilities to support API links."""
-from django.utils import six
-
 from dynamic_rest.conf import settings
 
 
@@ -29,7 +27,7 @@ def merge_link_object(serializer, data, instance):
 
     if settings.ENABLE_RELATED_LINKS:
         link_fields = serializer.get_link_fields()
-        for name, field in six.iteritems(link_fields):
+        for name, field in link_fields.items():
             # For included fields, omit link if there's no data.
             if name in data and not data[name]:
                 continue

@@ -1,7 +1,6 @@
 from functools import wraps
 import datetime
 from decimal import Decimal
-from django.utils.six import string_types
 
 FALSEY_STRINGS = (
     '0',
@@ -11,7 +10,7 @@ FALSEY_STRINGS = (
 
 
 def is_truthy(x):
-    if isinstance(x, string_types):
+    if isinstance(x, str):
         return x.lower() not in FALSEY_STRINGS
     return bool(x)
 
@@ -44,7 +43,7 @@ def money_format(number):
 
 def memoize(getter, by):
     store = {}
-    if isinstance(by, string_types):
+    if isinstance(by, str):
         key_fn = lambda x: getattr(x, by)
     else:
         key_fn = by

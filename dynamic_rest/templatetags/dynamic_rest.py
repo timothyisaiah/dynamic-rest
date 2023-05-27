@@ -17,7 +17,6 @@ except ImportError:
 from uuid import UUID
 from django import template
 from django.utils.safestring import mark_safe
-from django.utils import six
 from dynamic_rest.conf import settings
 from dynamic_rest.renderers import DynamicHTMLFormRenderer
 from rest_framework.fields import get_attribute
@@ -105,7 +104,7 @@ def _relation_to_json(field, value=None, many=None):
 
     if not (
         isinstance(value, list)
-        and not isinstance(value, six.string_types)
+        and not isinstance(value, str)
         and not isinstance(value, UUID)
     ):
         value = [value]

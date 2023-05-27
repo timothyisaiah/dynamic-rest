@@ -1,6 +1,5 @@
 from django.conf import settings as django_settings
 from django.test.signals import setting_changed
-from django.utils import six
 from django.utils.module_loading import import_string
 
 
@@ -150,7 +149,7 @@ class Settings(object):
             else:
                 val = self.defaults[attr]
 
-            if attr in IMPORT_STRINGS and isinstance(val, six.string_types):
+            if attr in IMPORT_STRINGS and isinstance(val, str):
                 val = import_string(val)
 
             # Cache the result

@@ -10,7 +10,6 @@ from io import StringIO
 import inflection
 
 from django.http import QueryDict
-from django.utils import six
 from django.db.models import Sum, Min, Max, Avg, Count, F
 from django.db.models.functions import (
     Trunc, Length, Lower, Upper, Cast
@@ -70,7 +69,7 @@ class QueryParams(QueryDict):
         if hasattr(query_params, 'urlencode'):
             query_string = query_params.urlencode()
         else:
-            assert isinstance(query_params, (six.string_types, six.binary_type))
+            assert isinstance(query_params, (str, bytes))
             query_string = query_params
         kwargs['mutable'] = True
         super(QueryParams, self).__init__(query_string, *args, **kwargs)

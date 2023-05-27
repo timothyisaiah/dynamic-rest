@@ -1,4 +1,3 @@
-from django.utils import six
 from .utils import get, is_truthy
 
 
@@ -50,7 +49,7 @@ class Condition(object):
         return all(
             [
                 self._evaluate(key, value, **context)
-                for key, value in six.iteritems(self.condition)
+                for key, value in self.condition.items()
             ]
         )
 
