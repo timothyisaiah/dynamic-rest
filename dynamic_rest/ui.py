@@ -219,7 +219,7 @@ class UIFilter(object):
             return choices
         else:
             field = field.model_field
-            if field and hasattr(field, "choices"):
+            if field and getattr(field, "choices", None):
                 return dict(field.choices)
             return {}
 
