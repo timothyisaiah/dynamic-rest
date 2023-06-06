@@ -7,6 +7,7 @@ import json
 
 from decimal import Decimal
 from django.db.models.fields.files import FieldFile
+from django.core.serializers.json import DjangoJSONEncoder
 from django.http.request import QueryDict
 from dynamic_rest.version import version
 try:
@@ -134,7 +135,7 @@ def _relation_to_json(field, value=None, many=None):
     if not many:
         # single value result
         results = results[0] if len(results) else None
-    return mark_safe(json.dumps(results))
+    return mark_safe(dumps(results))
 
 
 @register.simple_tag
@@ -154,7 +155,7 @@ def drest_settings(key):
 
 @register.filter
 def to_json(value):
-    return mark_safe(json.dumps(value))
+    return mark_safe(dumps(value))
 
 
 @register.filter
@@ -273,3 +274,11 @@ def get_related_url(serializer, related_name):
 @register.simple_tag
 def drest_version():
     return version
+
+
+
+def dumps(value):
+    return json.dumps(
+        value,
+        cls=DjangoJSONEncoder,
+    )
