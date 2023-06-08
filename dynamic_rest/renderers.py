@@ -339,6 +339,10 @@ class DynamicAdminRenderer(AdminRenderer):
         context['nav_icon'] = mark_safe(nav_icon)
         context['show_nav'] = not is_auth_error and not is_directory
         context['show_menu'] = not is_auth_error
+        next_ = request.GET.get('next', None)
+        if next_:
+            context['next'] = next_
+
         return context
 
     def get_filter_form(self, *args, **kwargs):
