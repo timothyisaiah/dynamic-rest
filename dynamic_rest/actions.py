@@ -14,6 +14,7 @@ class Action(object):
         name=None,
         view=None,
         method=None,
+        parameters=None,
         iframe=False,
         **kwargs
     ):
@@ -24,6 +25,7 @@ class Action(object):
         self.confirm = confirm
         self.method = method or 'get'
         self.iframe = iframe
+        self.parameters = parameters
         # set during binding
         self.name = name
         self.view = view
@@ -41,6 +43,7 @@ class Action(object):
             "method": self.method,
             "name": self.name,
             "when": self.when,
+            "parameters": self.parameters
         }
 
     def bind(self, view, name):
