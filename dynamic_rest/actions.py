@@ -62,6 +62,7 @@ class Action(object):
             iframe=self.iframe,
             on_detail=self.on_detail,
             on_list=self.on_list,
+            parameters=self.parameters,
             url=url,
             view=view,
             name=name,
