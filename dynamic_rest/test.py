@@ -56,6 +56,7 @@ class ViewSetTestCase(TestCase):
                 }
 
     """
+    formats = None
     viewset = None
 
     def setUp(self):
@@ -159,6 +160,12 @@ class ViewSetTestCase(TestCase):
         instance.save()
         return instance
 
+    def get_renderers(self, view):
+        if self.formats is None:
+            return view.get_renderers()
+        else:
+            return [renderer for renderer in view.get_renderers() if renderer.format in self.formats]
+
     def test_get_list(self):
         view = self.view
         if view is None:
@@ -175,7 +182,7 @@ class ViewSetTestCase(TestCase):
             if case == NON_EMPTY:
                 self.create_instance()
 
-            for renderer in view.get_renderers():
+            for renderer in self.get_renderers(view):
                 url = '%s?format=%s' % (url, renderer.format)
                 response = self.api_client.get(url)
                 self.assertEquals(
@@ -212,7 +219,7 @@ class ViewSetTestCase(TestCase):
             (invalid_pk, 404)
         ):
             url = self.get_url(pk)
-            for renderer in view.get_renderers():
+            for renderer in self.get_renderers(view):
                 url = '%s?format=%s' % (url, renderer.format)
                 response = self.api_client.get(url)
                 self.assertEquals(
@@ -234,7 +241,7 @@ class ViewSetTestCase(TestCase):
             return
 
         model = self.get_model()
-        for renderer in view.get_renderers():
+        for renderer in self.get_renderers(view):
 
             format = renderer.format
             url = '%s?format=%s' % (
@@ -286,7 +293,7 @@ class ViewSetTestCase(TestCase):
             return
 
         instance = self.create_instance()
-        for renderer in view.get_renderers():
+        for renderer in self.get_renderers(view):
             data = self.get_put_params(instance)
             url = '%s?format=%s' % (
                 self.get_url(instance.pk),
@@ -315,7 +322,7 @@ class ViewSetTestCase(TestCase):
         if 'delete' not in view.http_method_names:
             return
 
-        for renderer in view.get_renderers():
+        for renderer in self.get_renderers(view):
             instance = self.create_instance()
             url = '%s?format=%s' % (
                 self.get_url(instance.pk),
