@@ -97,6 +97,9 @@ class DynamicMetadata(SimpleMetadata):
                     else field.choices
                 )
             ]
+        if hasattr(field, 'location'):
+            field_info['location'] = field.location
+
         many = False
         base_field = field
         if isinstance(field, DynamicRelationField):

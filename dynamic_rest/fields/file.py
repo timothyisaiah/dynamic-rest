@@ -24,7 +24,18 @@ class DynamicFileFieldBase(
     def __init__(self, **kwargs):
         self.allow_remote = kwargs.pop('allow_remote', True)
         self.allow_base64 = kwargs.pop('allow_base64', True)
+        self.location = kwargs.pop('location', None)
         super(DynamicFileFieldBase, self).__init__(**kwargs)
+
+    def bind(self, *args, **kwargs):
+        if self.bound:
+            return
+
+        super(DynamicFileFieldBase, self).bind(*args, **kwargs)
+
+        model_field = self.model_field
+        if self.location is None and model_field and model_field.storage and model_field.storage.location:
+            self.location = model_field.storage.location
 
     def get_extension(self, name):
         if not name or '.' not in name:
