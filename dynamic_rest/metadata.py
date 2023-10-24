@@ -99,6 +99,9 @@ class DynamicMetadata(SimpleMetadata):
             ]
         if hasattr(field, 'location'):
             field_info['location'] = field.location
+        if hasattr(field, 'hide'):
+            # should the field be hidden if empty
+            field_info['hide'] = field.hide
 
         many = False
         base_field = field
