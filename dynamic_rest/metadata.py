@@ -125,6 +125,23 @@ class DynamicMetadata(SimpleMetadata):
             else:
                 type = self.label_lookup[field]
 
+        if type == 'field':
+            # assume "string" type if unspecified
+            type = 'string'
+
+        if getattr(base_field, 'api_type', None):
+            # allow for custom API types, e.g:
+            # "resource": the name of an API type
+            # "resources": multiple resources
+            # "path": a dot-separated path to an API field
+            # "paths": multiple paths
+            # "filters": a list of JSON-encoded API filters
+            # "template": a string with replacements
+            type = field.api_type
+
+        if getattr(base_field, 'resource_field', None):
+            field_info['resource_field'] = base_field.resource_field
+
         field_info['type'] = type
         field_info['filterable'] = base_field.source and base_field.source != '*'
         field_info['sortable'] = field_info['filterable'] or (

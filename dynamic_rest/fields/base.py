@@ -92,6 +92,8 @@ class DynamicField(fields.Field, DynamicBase):
                 saving related objects.
                 If source is '*', this will default to 'set_$FIELD_NAME'.
         """
+        self.resource_field = kwargs.pop('resource_field', None)
+        self.api_type = kwargs.pop('api_type', None)
         self.num_digits = kwargs.pop('num_digits', 0)
         self.icon = kwargs.pop('icon', None)
         self.requires = kwargs.pop('requires', None)
