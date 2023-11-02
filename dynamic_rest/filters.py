@@ -2,7 +2,7 @@
 
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, F
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
@@ -146,35 +146,49 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
             terms = key.split('.')
             # Last part could be operator, e.g. "events.capacity.gte"
-            if len(terms) > 1 and terms[-1] in self.VALID_FILTER_OPERATORS:
+            last = terms[-1]
+            field_reference = False
+            if last.endswith('*'):
+                field_reference = True
+                last = last[:-1]
+                terms[-1] = last
+            if len(terms) > 1 and last in self.VALID_FILTER_OPERATORS:
                 operator = terms.pop()
             else:
                 operator = None
 
-            # All operators except 'range' and 'in' should have one value
-            if operator == 'range':
-                value = value[:2]
-                if value[0] == '':
-                    operator = 'lte'
-                    value = value[1]
-                elif value[1] == '':
-                    operator = 'gte'
-                    value = value[0]
-            elif operator == 'in':
-                # no-op: i.e. accept `value` as an arbitrarily long list
-                pass
-            elif operator in self.VALID_FILTER_OPERATORS:
+            if field_reference:
+                # only one value
                 value = value[0]
-                if (
-                    operator == 'isnull' and
-                    isinstance(value, str)
-                ):
-                    value = is_truthy(value)
-                elif operator == 'eq':
-                    operator = None
+            else:
+                # All operators except 'range' and 'in' should have one value
+                if operator == 'range':
+                    value = value[:2]
+                    if value[0] == '':
+                        operator = 'lte'
+                        value = value[1]
+                    elif value[1] == '':
+                        operator = 'gte'
+                        value = value[0]
+                elif operator == 'in':
+                    # no-op: i.e. accept `value` as an arbitrarily long list
+                    pass
+                elif operator in self.VALID_FILTER_OPERATORS:
+                    value = value[0]
+                    if (
+                        operator == 'isnull' and
+                        isinstance(value, str)
+                    ):
+                        value = is_truthy(value)
+                    elif operator == 'eq':
+                        operator = None
 
             if serializer:
                 s = serializer
+
+                if field_reference:
+                    model_fields, _ = s.resolve(value)
+                    value = F("__".join([f.name for f in model_fields]))
 
                 if rel:
                     # get related serializer
@@ -203,6 +217,10 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 )
 
             else:
+                if field_reference and value:
+                    # assume that it is a model reference
+                    value = F("__".join(value.split('.')))
+
                 key = '__'.join(terms)
 
             if operator:

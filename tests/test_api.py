@@ -1729,6 +1729,40 @@ class TestFilters(APITestCase):
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
 
+    def test_filter_with_reference(self):
+        data = {
+            'username': 'name',
+            'last_name': 'name',
+            'display_name': 'display match',
+        }
+        response = self.client.post(
+            '/officers/', json.dumps(data), content_type='application/json'
+        )
+        self.assertEqual(201, response.status_code, response.content)
+        data = {
+            'username': 'name2',
+            'last_name': 'last name',
+            'display_name': 'display mismatch',
+        }
+        response = self.client.post(
+            '/officers/', json.dumps(data), content_type='application/json'
+        )
+        self.assertEqual(201, response.status_code, response.content)
+        url = '/officers/?filter{username*}=last_name'
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(content['officers']), 1)
+        self.assertEqual(content['officers'][0]['display_name'], 'display match')
+
+        url = '/officers/?filter{-username*}=last_name'
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(len(content['officers']), 1)
+        self.assertEqual(content['officers'][0]['display_name'], 'display mismatch')
+
+
 
 class TestNestedWrites(APITestCase):
     def test_nested_writes(self):
