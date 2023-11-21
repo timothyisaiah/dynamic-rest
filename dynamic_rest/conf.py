@@ -52,6 +52,10 @@ DYNAMIC_REST = {
     # ADMIN_ICON_PACK: the admin icon pack, either fa or mdi
     'ADMIN_ICON_PACK': 'mdi',
 
+    'CURSOR_QUERY_PARAM': 'cursor',
+
+    'CURSOR_ORDER_QUERY_PARAM': 'cursor.order',
+
     # DEBUG: enable/disable internal debugging
     'DEBUG': False,
 

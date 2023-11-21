@@ -68,6 +68,7 @@ class Dog(models.Model):
     name = models.TextField()
     fur_color = models.TextField()
     origin = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
 
 
 class Horse(models.Model):
