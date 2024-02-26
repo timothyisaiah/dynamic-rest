@@ -256,6 +256,7 @@ class WithDynamicSerializerMixin(
         - depends - dict of dependency objects
     """
 
+    _ALL_FIELDS_CACHE = {}
     SET_REQUEST_ON_SAVE = settings.SET_REQUEST_ON_SAVE
 
     def __new__(cls, *args, **kwargs):
@@ -890,15 +891,26 @@ class WithDynamicSerializerMixin(
         else:
             return self.get_request_attribute('method', '').upper()
 
+    @classmethod
+    def _cached_get_all_fields(cls, serializer):
+        name = serializer.__class__.__module__ + '.' + serializer.__class__.__qualname__
+        if name in cls._ALL_FIELDS_CACHE and settings.ENABLE_ALL_FIELDS_CACHE:
+            return cls._ALL_FIELDS_CACHE[name]
+
+        serializer._all_fields = fields = super(WithDynamicSerializerMixin, serializer).get_fields()
+        for k, field in serializer._all_fields.items():
+            serializer.setup_field(k, field)
+
+        cls._ALL_FIELDS_CACHE[name] = fields
+        return fields
+
     def get_all_fields(self):
         """Returns the entire serializer field set.
 
         Does not respect dynamic field inclusions/exclusions.
         """
         if not hasattr(self, '_all_fields'):
-            self._all_fields = super(WithDynamicSerializerMixin, self).get_fields()
-            for k, field in self._all_fields.items():
-                self.setup_field(k, field)
+            self._all_fields = self._cached_get_all_fields(self)
 
         return self._all_fields
 
@@ -993,13 +1005,6 @@ class WithDynamicSerializerMixin(
             return {}
 
         serializer_fields = copy.deepcopy(all_fields)
-        if 'name' in serializer_fields and getattr(
-            self.get_meta(), 'untrimmed_fields', None
-        ) == ('name',):
-            if serializer_fields['name'].trim_whitespace is not False:
-                import pdb
-
-                pdb.set_trace()
 
         # if the serializer is for metadata, do not remove deferred fields
         if not self.for_metadata:

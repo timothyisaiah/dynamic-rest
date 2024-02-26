@@ -1218,7 +1218,7 @@ class TestDogsAPI(APITestCase):
         self.assertEqual(expected_meta, actual_meta)
 
         # there should be 3 pages
-        url = '/dogs/?sort[]=name&exclude_count=1&exclude_links=1&per_page=2'
+        url = '/dogs/?sort[]=name&exclude_links=1&per_page=2'
 
         url = f'{url}&cursor=1'
         response = self.client.get(url)
@@ -1226,6 +1226,8 @@ class TestDogsAPI(APITestCase):
         meta = response.get('meta', {})
         self.assertTrue('cursor' in meta)
         cursor = meta['cursor']
+        self.assertIsNotNone(meta['total_results'])
+        self.assertIsNotNone(meta['total_pages'])
         self.assertIsNotNone(cursor)
 
         url = f'{url}&cursor={cursor}'

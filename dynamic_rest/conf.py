@@ -93,6 +93,9 @@ DYNAMIC_REST = {
     # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
     'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
 
+    # ENABLE_ALL_FIELDS_CACHE: serializer optimization
+    'ENABLE_ALL_FIELDS_CACHE': True,
+
     # EXCLUDE_COUNT_QUERY_PARAM: global setting for the query parameter
     # that disables counting during PageNumber pagination
     'EXCLUDE_COUNT_QUERY_PARAM': 'exclude_count',
