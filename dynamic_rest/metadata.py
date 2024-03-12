@@ -9,6 +9,21 @@ from dynamic_rest.fields import DynamicRelationField, DynamicJSONField, DynamicL
 from dynamic_rest.utils import urljoin
 
 
+def _get_label(x):
+    if isinstance(x, (tuple, list)) and len(x) > 0:
+        return x[0]
+    if isinstance(x, dict) and 'label' in x:
+        return x.get('label')
+    return x
+
+
+def _get_description(x):
+    if isinstance(x, (tuple, list)) and len(x) > 1:
+        return x[1]
+    if isinstance(x, dict) and 'description' in x:
+        return x.get('description')
+    return None
+
 class DynamicMetadata(SimpleMetadata):
     """A subclass of SimpleMetadata.
 
@@ -88,9 +103,10 @@ class DynamicMetadata(SimpleMetadata):
         if callable(field_info['default']):
             # stringify callable default
             field_info['default'] = f'.{field_info["default"]}'
+
         if hasattr(field, 'choices'):
             field_info['choices'] = [
-                {"id": choice_name, "label": choice_value}
+                {"id": choice_name, "label": _get_label(choice_value), "description": _get_description(choice_value)}
                 for choice_name, choice_value in (
                     field.choices.items()
                     if hasattr(field.choices, 'items')
