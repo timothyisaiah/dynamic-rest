@@ -35,6 +35,7 @@ DELETE_REQUEST_METHOD = 'DELETE'
 
 class REGEX:
     arithmetic_operator = '[/*+-]'
+    arithmetic_operator_capture = '([/*+-])'
     identifier = '[a-z][ A-Za-z0-9_.]*'
     word_number = r'^([a-zA-Z]+)([0-9]+)$'
     literal = '(?:[0-9][0-9.]*|[-][0-9][0-9.]*)'
@@ -633,15 +634,18 @@ class WithDynamicViewSetBase(object):
             return 'year'
 
 
-    def _parse_combine_expression(self, expression, serializer=None, queryset=None):
+    def _parse_combine_expression(self, expression, serializer=None, queryset=None, cast=None):
         serializer = serializer or self.get_serializer()
         if not expression:
             raise exceptions.ValidationError(
                 "No value provided for combine query parameter"
             )
-        if isinstance(expression, str) and ',' in expression:
-            # a, b
-            expression = [x.strip() for x in expression.split(',')]
+        if isinstance(expression, str):
+            # strip whitespace
+            expression = expression.strip()
+            if ',' in expression:
+                # a, b
+                expression = [x.strip() for x in expression.split(',')]
 
         if isinstance(expression, list):
             result = [self._parse_combine_expression(x) for x in expression]
@@ -649,18 +653,45 @@ class WithDynamicViewSetBase(object):
 
         key = expression
 
+        if ' as ' in expression.lower():
+            try:
+                expression, key = re.split(' as ', expression, flags=re.IGNORECASE)
+            except ValueError:
+                raise exceptions.ValidationError(f"Invalid expression: '{expression}'")
+
         arithmetic = re.search(REGEX.arithmetic_operator, expression)
         if arithmetic:
             arithmetic = arithmetic.group(0)
-            splits = re.split(REGEX.arithmetic_operator, expression)
-            if len(splits) > 2:
-                raise exceptions.ValidationError('3+ clause expressions are not supported yet')
-            values = [self._parse_combine_expression(split, serializer=serializer) for split in splits]
-            fn = self.ARITHMETIC_FUNCTIONS[arithmetic]
-            if ' as ' in expression.lower():
-                # get alias from last value
-                key = values[-1]['key']
-            result = {'key': key, 'value': fn(*[v['value'] for v in values]), 'expression': expression}
+            splits = re.split(REGEX.arithmetic_operator_capture, expression)
+            variables = []
+            operators = []
+            if len(splits) < 3:
+                raise exceptions.ValidationError(f"Arithmetic exception: invalid expression: '{expression}'")
+            for i, split in enumerate(splits):
+                split = split.strip()
+                if i % 2 == 0:
+                    if split in self.ARITHMETIC_FUNCTIONS:
+                        raise exceptions.ValidationError(f"Arithmetic exception: expecting a variable at position {i}, saw: '{split}'")
+                    cast = None
+                    if (i < len(splits) - 1 and splits[i+1] == '/') or (i > 0 and splits[i-1] == '/'):
+                        # treat as float
+                        cast = models.FloatField()
+                    variables.append(self._parse_combine_expression(split, serializer=serializer, cast=cast))
+                else:
+                    if split not in self.ARITHMETIC_FUNCTIONS:
+                        raise exceptions.ValidationError(f"Arithmetic exception: Expecting an operator at position {i}, saw: '{split}'")
+                    operators.append(split)
+
+            combined = None
+            for i, operator in enumerate(operators):
+                # TODO: handle MDAS order
+                # for now, the order is left-to-right :)
+                lhs = variables[i]['value'] if combined is None else combined
+                rhs = variables[i+1]['value']
+                fn = self.ARITHMETIC_FUNCTIONS[operator]
+                combined = fn(lhs, rhs)
+
+            result = {'key': key, 'value': combined, 'expression': expression}
             return result
 
         operator = value = None
@@ -697,7 +728,7 @@ class WithDynamicViewSetBase(object):
 
         options = {}
         args = []
-        fn = cast = None
+        fn = fn_cast = None
         if not operator:
             if model_field:
                 fn = F
@@ -733,12 +764,14 @@ class WithDynamicViewSetBase(object):
         if isinstance(fn, dict):
             options = fn.get('options', options)
             args = fn.get('args', args)
-            cast = fn.get('cast')
+            fn_cast = fn.get('cast')
             fn = fn['function']
 
         value = fn(target, *args, **options)
         if cast:
-            value = Cast(value, output_field=cast)
+            value = Cast(value, cast)
+        elif fn_cast:
+            value = Cast(value, cast)
         return {'key': key, 'value': value, 'expression': expression}
 
     ARITHMETIC_FUNCTIONS = {

@@ -1537,6 +1537,14 @@ class TestCatsAPI(APITestCase):
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['data']['count(name)'], 3)
 
+        # 3 operands, with extra whitespace
+        response = self.client.get(
+            '/cars?combine= count( country_id) / count(id) %2B 0.1 as c '
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertTrue(abs(data['data']['c'] - (0.6666 + 0.1)) < 0.001)
+
     def test_combine_multiple(self):
         response = self.client.get(
             '/cars?combine=count(name)&combine=max(country_name)&combine=min(country_name)'
