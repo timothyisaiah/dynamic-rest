@@ -7,7 +7,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
-from dynamic_rest.utils import is_truthy
+from dynamic_rest.utils import is_truthy, has_joins
 from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest import fields as dfields
@@ -15,18 +15,6 @@ from dynamic_rest.meta import (
     Meta,
     get_related_model
 )
-
-
-def has_joins(queryset):
-    """Return True iff. a queryset includes joins.
-
-    If this is the case, it is possible for the queryset
-    to return duplicate results.
-    """
-    for join in queryset.query.alias_map.values():
-        if join.join_type:
-            return True
-    return False
 
 
 class WithGetSerializerClass(object):

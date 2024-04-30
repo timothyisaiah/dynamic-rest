@@ -133,3 +133,15 @@ def clean(data):
     if isinstance(data, (datetime.date, datetime.time, Decimal)):
         return str(data)
     return data
+
+
+def has_joins(queryset):
+    """Return True iff. a queryset includes joins.
+
+    If this is the case, it is possible for the queryset
+    to return duplicate results.
+    """
+    for join in queryset.query.alias_map.values():
+        if join.join_type:
+            return True
+    return False

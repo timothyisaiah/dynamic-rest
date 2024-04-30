@@ -25,7 +25,7 @@ from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
-from dynamic_rest.utils import is_truthy, clean
+from dynamic_rest.utils import is_truthy, clean, has_joins
 from dynamic_rest.condition import evaluate
 from .meta import Meta
 
@@ -868,7 +868,15 @@ class WithDynamicViewSetBase(object):
         by = combine.get('by', None)
         over = combine.get('over', None)
         flat = 'flat' in combine.get('format', [])
-        queryset = self.filter_queryset(self.get_queryset())
+        base_queryset = self.filter_queryset(self.get_queryset())
+        if has_joins(base_queryset):
+            # if the base queryset has joins, we may produce inaccurate results if we aggregate
+            # within the same queryset (if the joins can yield multiple output rows for each row
+            # from the base table) -- instead, we replace the base queryset using a subquery approach
+            queryset = base_queryset.model.objects.filter(pk__in=base_queryset.only('pk'))
+        else:
+            queryset = base_queryset
+
         expression = self._parse_combine_expression(expression, serializer, queryset)
         aggregations = {}
         thens = []
