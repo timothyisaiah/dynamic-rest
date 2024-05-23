@@ -19,10 +19,22 @@ class DynamicMoneyField(
 
         currency = kwargs.pop('currency', None)
         self.currency = currency
+        self.display_currency = kwargs.pop('display_currency', False)
         return super(
             DynamicMoneyField,
             self,
         ).__init__(*args, **kwargs)
+
+    def to_representation(self, data):
+        currency = None
+        if hasattr(data, 'amount') and hasattr(data, 'currency'):
+            data = data.amount
+            currency = data.currency
+        else:
+            currency = self.currency
+
+        base = super(DynamicMoneyField, self).to_representation(data)
+        return f'{base} {currency}' if self.display_currency else base
 
 
 class DynamicMoneyIntegerField(
