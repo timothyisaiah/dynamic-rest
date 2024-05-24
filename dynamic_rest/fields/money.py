@@ -27,18 +27,42 @@ class DynamicMoneyField(
 
     def to_representation(self, data):
         currency = None
-        if hasattr(data, 'amount') and hasattr(data, 'currency'):
+        if hasattr(data, 'amount'):
+            if hasattr(data, 'currency'):
+                currency = data.currency
+            else:
+                currency = self.currency
             data = data.amount
-            currency = data.currency
         else:
             currency = self.currency
 
         base = super(DynamicMoneyField, self).to_representation(data)
-        return f'{base} {currency}' if self.display_currency else base
+        return f'{base} {currency}' if (self.display_currency and currency) else base
 
 
 class DynamicMoneyIntegerField(
     DynamicIntegerField,
     WithMoney
 ):
-    pass
+    def __init__(self, *args, **kwargs):
+        currency = kwargs.pop('currency', None)
+        self.currency = currency
+        self.display_currency = kwargs.pop('display_currency', False)
+        return super(
+            DynamicMoneyIntegerField,
+            self,
+        ).__init__(*args, **kwargs)
+
+    def to_representation(self, data):
+        currency = None
+        if hasattr(data, 'amount'):
+            if hasattr(data, 'currency'):
+                currency = data.currency
+            else:
+                currency = self.currency
+            data = data.amount
+        else:
+            currency = self.currency
+
+        base = super(DynamicMoneyIntegerField, self).to_representation(data)
+        return f'{base} {currency}' if (self.display_currency and currency) else base
