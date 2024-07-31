@@ -943,7 +943,8 @@ class WithDynamicViewSetBase(object):
             simple = False
         else:
             # simple aggregation (without "over" or "by")
-            data = remove_underscores([queryset.aggregate(**aggregations)])[0]
+            flat_data = remove_underscores([queryset.aggregate(**aggregations)])
+            data = flat_data[0]
 
         if not simple and thens:
             dimensions = [x['key'] for x in by_exs + over_exs]
