@@ -91,6 +91,7 @@ class DynamicField(fields.Field, DynamicBase):
             setter: name of a method to call on the parent serializer for
                 saving related objects.
                 If source is '*', this will default to 'set_$FIELD_NAME'.
+            ui: should this field appear in user interfaces?
         """
         self.resource_field = kwargs.pop('resource_field', None)
         self.api_type = kwargs.pop('api_type', None)
@@ -110,6 +111,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.long = kwargs.pop('long', False)
         self.sort_by = kwargs.pop('sort_by', None)
         self.bound = False
+        self.ui = kwargs.pop('ui', True)
         choices = kwargs.get('choices', None)
         if choices:
             self.choices = choices

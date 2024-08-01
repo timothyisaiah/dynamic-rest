@@ -90,6 +90,7 @@ class DynamicMetadata(SimpleMetadata):
             ('depends', 'depends'),
             ('style', 'style'),
             ('inverse', 'inverse'),
+            ('ui', 'ui')
         ):
             field_info[out] = getattr(field, internal, None)
 
