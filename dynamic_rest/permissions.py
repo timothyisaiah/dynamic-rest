@@ -7,7 +7,7 @@ from django.utils.functional import cached_property
 
 class Me(object):
     def __repr__(self):
-        return '<the current user>'
+        return "<the current user>"
 
 
 class Filter(object):
@@ -154,26 +154,26 @@ class Role(object):
 
     @cached_property
     def list(self):
-        return self.get('list')
+        return self.get("list")
 
     @cached_property
     def read(self):
-        return self.get('read')
+        return self.get("read")
 
     @cached_property
     def delete(self):
-        return self.get('delete')
+        return self.get("delete")
 
     @cached_property
     def create(self):
-        return self.get('create')
+        return self.get("create")
 
     @cached_property
     def update(self):
-        return self.get('update')
+        return self.get("update")
 
     def get_fields(self):
-        spec = self.spec.get('fields', None)
+        spec = self.spec.get("fields", None)
         if spec is None:
             return Fields.NO_ACCESS
         return Fields(spec, self.user)
@@ -189,11 +189,14 @@ class Role(object):
         if spec is True:
             return Filter.FULL_ACCESS
 
-        return Filter(spec, self.user,)
+        return Filter(
+            spec,
+            self.user,
+        )
 
 
 class Permissions(object):
-    ALL_METHODS = {'read', 'list', 'create', 'update', 'delete'}
+    ALL_METHODS = {"read", "list", "create", "update", "delete"}
 
     def __repr__(self):
         return str(self.spec)
@@ -204,7 +207,7 @@ class Permissions(object):
         self.user = user
 
     def has_role(self, role):
-        if role == '*':
+        if role == "*":
             return True
         role = getattr(self.user, role, None)
         return bool(role)
@@ -216,30 +219,30 @@ class Permissions(object):
 
     @cached_property
     def fields(self):
-        return self.get('fields')
+        return self.get("fields")
 
     @cached_property
     def list(self):
-        return self.get('list')
+        return self.get("list")
 
     @cached_property
     def read(self):
-        return self.get('read')
+        return self.get("read")
 
     @cached_property
     def delete(self):
-        return self.get('delete')
+        return self.get("delete")
 
     @cached_property
     def update(self):
-        return self.get('update')
+        return self.get("update")
 
     @cached_property
     def create(self):
-        return self.get('create')
+        return self.get("create")
 
     def get(self, name):
-        if name != 'fields' and name not in self.allowed:
+        if name != "fields" and name not in self.allowed:
             # method not allowed at the view level
             return Filter.NO_ACCESS
 
@@ -253,9 +256,10 @@ class Permissions(object):
                 f |= r
 
         result = f if f is not None else Filter.NO_ACCESS
-        if self.user.is_superuser and result.no_access and name != 'fields':
-            # unless blocked by view.http_method_names, superuser has full access
-            return result.FULL_ACCESS
+
+        # if self.user.is_superuser and result.no_access and name != 'fields':
+        #    # unless blocked by view.http_method_names, superuser has full access
+        #    return result.FULL_ACCESS
 
         return result
 
@@ -273,7 +277,7 @@ class Permissions(object):
 class PermissionsSerializerMixin(object):
     def initialized(self, **kwargs):
         super(PermissionsSerializerMixin, self).initialized(**kwargs)
-        if not kwargs.get('nested', False):
+        if not kwargs.get("nested", False):
             full_permissions = self.full_permissions
 
             if full_permissions and full_permissions.fields:
@@ -283,15 +287,14 @@ class PermissionsSerializerMixin(object):
                     if name in fields:
                         field = fields[name]
                         for key, value in values.items():
-                            if key == 'choices':
+                            if key == "choices":
                                 # special-case
                                 field.grouped_choices = to_choices_dict(value)
                                 field.choices = flatten_choices_dict(
                                     field.grouped_choices
                                 )
                                 field.choice_strings_to_values = {
-                                    str(key): key
-                                    for key in field.choices.keys()
+                                    str(key): key for key in field.choices.keys()
                                 }
                             else:
                                 setattr(field, key, value)
@@ -301,7 +304,7 @@ class PermissionsSerializerMixin(object):
         if not user or (not even_if_superuser and user.is_superuser):
             return None
 
-        permissions = getattr(cls.get_meta(), 'permissions', None)
+        permissions = getattr(cls.get_meta(), "permissions", None)
         if permissions:
             return Permissions(permissions, user, allowed=allowed)
 
@@ -314,13 +317,13 @@ class PermissionsSerializerMixin(object):
     @cached_property
     def permissions(self):
         return self.get_user_permissions(
-            self.get_request_attribute('user'), allowed=self.get_allowed_methods()
+            self.get_request_attribute("user"), allowed=self.get_allowed_methods()
         )
 
     @cached_property
     def full_permissions(self):
         return self.get_user_permissions(
-            self.get_request_attribute('user'),
+            self.get_request_attribute("user"),
             even_if_superuser=True,
             allowed=self.get_allowed_methods(),
         )
@@ -360,9 +363,12 @@ class PermissionsViewSetMixin(object):
         if not user or (not even_if_superuser and user.is_superuser):
             return None
 
-        permissions = getattr(cls.serializer_class.get_meta(), 'permissions', None)
+        permissions = getattr(cls.serializer_class.get_meta(), "permissions", None)
         if permissions:
-            return Permissions(permissions, user,)
+            return Permissions(
+                permissions,
+                user,
+            )
 
         return None
 
