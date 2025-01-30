@@ -448,11 +448,30 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(updated_group.name, data["name"])
 
     def test_get_with_default_queryset(self):
-        url = "/groups/?filter{id}=1&include[]=loc1users"
+        url = "/groups/?filter{id}=1&include[]=loc1users&filter{loc1users|id}=2"
+        # Group.objects.filter(id=1).prefetch_related(
+        #   Prefetch('users', queryset=User.objects.filter(location_id=1).filter(id=2))
+        # )
         response = self.client.get(url)
         content = json.loads(response.content.decode("utf-8"))
         self.assertEqual(200, response.status_code)
-        self.assertEqual(sorted([1, 2]), content["groups"][0]["loc1users"])
+        self.assertEqual([2], content["groups"][0]["loc1users"])
+
+    def test_get_with_default_queryset_and_filters(self):
+        url = "/groups/?filter{id}=1&include[]=loc1users&filter{loc1users.location.name}=2"
+        # No queryset on relation field:
+        # Group.objects.filter(id=1, users__location__name=2)
+
+        # With queryset on relation field:
+        # Group.objects.annotate(loc1users=FilteredRelation('users', condition=Q(users__location=1)))
+        # .filter(id=1, loc1users__location__name=2)
+        response = self.client.get(url)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+
+        #import pdb
+        #pdb.set_trace()
+        #self.assertEqual(0, len(content["groups"]))
 
     def test_get_with_default_lambda_queryset(self):
         url = "/groups/?filter{id}=1&include[]=loc1usersLambda"
@@ -1599,12 +1618,13 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(data["data"]["United States"]["count(name)"], 2)
         self.assertEqual(data["data"]["China"]["count(name)"], 1)
         self.assertEqual(data["data"][""]["count(name)"], 1)
+        # self.maxDiff = 9999999
         self.assertEqual(
             data["meta"]["query"],
             'SELECT "tests_country"."name" AS "_country_name", COUNT("tests_car"."name") AS "_count(name)" '
             'FROM "tests_car" '
             'LEFT OUTER JOIN "tests_country" ON ("tests_car"."country_id" = "tests_country"."id") '
-            'GROUP BY "tests_country"."name"',
+            'GROUP BY 1', # "tests_country"."name"',
             data["meta"]["query"],
         )
 

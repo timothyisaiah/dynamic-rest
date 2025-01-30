@@ -803,7 +803,7 @@ class WithDynamicViewSetBase(object):
         },
         'distinct': {
             'function': Count,
-            'python': lambda l: len(set(l)),
+            'python': lambda data: len(set(data)),
             'options': {
                 'distinct': True
             }

@@ -32,6 +32,8 @@ for cls_name in (
     )
     setattr(sys.modules[__name__], new_name, new_cls)
 
+if not hasattr(sys.modules[__name__], 'DynamicNullBooleanField'):
+    setattr(sys.modules[__name__], 'DynamicNullBooleanField', sys.modules[__name__].DynamicBooleanField)
 
 class DynamicMethodField(
     DynamicField,

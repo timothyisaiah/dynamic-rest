@@ -14,7 +14,7 @@ and you should make sure your authentication settings include `SessionAuthentica
 """  # noqa
 from __future__ import unicode_literals
 
-from django.conf.urls import url
+from .compat import url
 from django.contrib.auth import views, REDIRECT_FIELD_NAME
 from dynamic_rest.conf import settings as drest
 

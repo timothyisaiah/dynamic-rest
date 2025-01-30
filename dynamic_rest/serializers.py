@@ -1457,8 +1457,9 @@ for field in (
         serializer_field = "Dynamic%s" % (
             field if "IntegerField" not in field else "IntegerField"
         )
-        serializer_field = getattr(_fields, serializer_field)
-        DynamicModelSerializer.serializer_field_mapping[model_field] = serializer_field
+        serializer_field = getattr(_fields, serializer_field, None)
+        if serializer_field:
+            DynamicModelSerializer.serializer_field_mapping[model_field] = serializer_field
 
 DynamicModelSerializer.serializer_field_mapping[models.TextField] = (
     _fields.DynamicTextField
@@ -1475,6 +1476,12 @@ try:
     )
 except ImportError:
     pass
+
+
+if hasattr(models, 'JSONField'):
+    DynamicModelSerializer.serializer_field_mapping[models.JSONField] = (
+        _fields.DynamicJSONField
+    )
 
 
 class EphemeralObject(object):

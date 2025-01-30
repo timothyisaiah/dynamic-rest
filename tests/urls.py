@@ -1,4 +1,5 @@
-from django.conf.urls import include, url
+
+from dynamic_rest.compat import url, include
 from dynamic_rest.views import login, logout
 from dynamic_rest.routers import DynamicRouter
 from dynamic_rest.urls import *  # noqa
