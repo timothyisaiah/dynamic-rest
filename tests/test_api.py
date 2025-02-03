@@ -250,6 +250,25 @@ class TestUsersAPI(APITestCase):
             json.loads(response.content.decode("utf-8")),
         )
 
+    def test_get_filter_by_count(self):
+        # ensure it works for normal relationship fields like $group
+        response = self.client.get("/users/?filter{groups.$count.gt}=5")
+        self.assertEquals(200, response.status_code)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEquals(len(content["users"]), 0)
+
+        response = self.client.get("/users/?filter{groups.$count.gte}=2")
+        self.assertEquals(200, response.status_code)
+        content = json.loads(response.content.decode("utf-8"))
+        # 4 users
+        self.assertEquals(len(content["users"]), 4)
+
+        # ensure it works with filtered relationship fields like loc1users
+        url = "/groups/?filter{id}=1&filter{loc1users.$count.gt}=1"
+        response = self.client.get(url)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+
     def test_get_with_filter_no_match(self):
         with self.assertNumQueries(1):
             response = self.client.get("/users/?filter{name}[]=foo")
@@ -458,20 +477,33 @@ class TestUsersAPI(APITestCase):
         self.assertEqual([2], content["groups"][0]["loc1users"])
 
     def test_get_with_default_queryset_and_filters(self):
-        url = "/groups/?filter{id}=1&include[]=loc1users&filter{loc1users.location.name}=2"
-        # No queryset on relation field:
-        # Group.objects.filter(id=1, users__location__name=2)
-
-        # With queryset on relation field:
-        # Group.objects.annotate(loc1users=FilteredRelation('users', condition=Q(users__location=1)))
-        # .filter(id=1, loc1users__location__name=2)
+        url = "/groups/?filter{id}=1&include[]=loc1users&filter{loc1users.location.name}=0&filter{loc1users|id}=2"
         response = self.client.get(url)
         content = json.loads(response.content.decode("utf-8"))
         self.assertEqual(200, response.status_code)
+        # location 1 does have name "0" -> group is returned
+        self.assertEqual(1, len(content["groups"]))
 
-        #import pdb
-        #pdb.set_trace()
-        #self.assertEqual(0, len(content["groups"]))
+        url = "/groups/?filter{id}=1&include[]=loc1users&filter{loc1users.location.name}=1&filter{loc1users|id}=2"
+        response = self.client.get(url)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        # location 1 does not have name "1" -> no group is returned
+        self.assertEqual(0, len(content["groups"]))
+
+        # now try the same queries but starting from users, such that the filtered relation
+        # loc1users is in the middle of the filter
+        url = "/users/?filter{id}=1&filter{groups.loc1users.location.name}=1"
+        response = self.client.get(url)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(0, len(content["users"]))
+
+        url = "/users/?filter{id}=1&filter{groups.loc1users.location.name}=0"
+        response = self.client.get(url)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(content["users"]))
 
     def test_get_with_default_lambda_queryset(self):
         url = "/groups/?filter{id}=1&include[]=loc1usersLambda"
@@ -1624,7 +1656,7 @@ class TestCatsAPI(APITestCase):
             'SELECT "tests_country"."name" AS "_country_name", COUNT("tests_car"."name") AS "_count(name)" '
             'FROM "tests_car" '
             'LEFT OUTER JOIN "tests_country" ON ("tests_car"."country_id" = "tests_country"."id") '
-            'GROUP BY 1', # "tests_country"."name"',
+            "GROUP BY 1",  # "tests_country"."name"',
             data["meta"]["query"],
         )
 

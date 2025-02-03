@@ -2,7 +2,7 @@
 
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q, Prefetch, F
+from django.db.models import Q, Prefetch, F, FilteredRelation, Count
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
@@ -12,6 +12,8 @@ from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest import fields as dfields
 from dynamic_rest.meta import Meta, get_related_model
+
+from dynamic_rest.django_utils import get_filter_kwargs
 
 
 class WithGetSerializerClass(object):
@@ -50,6 +52,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         VALID_FILTER_OPERATORS: A list of filter operators.
     """
 
+    COUNT_OPERATOR = '$count'
     VALID_FILTER_OPERATORS = (
         "in",
         "any",
@@ -97,6 +100,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             result = self._get_requested_filters()
             q = Q(**result['_include'] & ~Q(**result['_exclude'])
 
+        Return dict will also include '_annotations' which should be passed
+        to queryset.annotate() if non-empty
         """
 
         filters_map = kwargs.get("filters_map")
@@ -110,6 +115,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         else:
             serializer = None
 
+        num_annotations = 0
         out = TreeMap()
 
         for key, value in filters_map.items():
@@ -129,7 +135,15 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
             terms = key.split(".")
             # Last part could be operator, e.g. "events.capacity.gte"
+            # 2nd to last term could be $count e.g. "events.$count.gte"
+            penultimate = terms[-2] if len(terms) > 2 else None
+            is_count = penultimate == self.COUNT_OPERATOR
             last = terms[-1]
+            if is_count:
+                # remove the count from the terms, handle it separately
+                key = key.replace(f'.{self.COUNT_OPERATOR}', '')
+                terms = key.split('.')
+
             field_reference = False
             if last.endswith("*"):
                 field_reference = True
@@ -163,6 +177,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     elif operator == "eq":
                         operator = None
 
+            annotation_name = None
             if serializer:
                 s = serializer
 
@@ -180,24 +195,79 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # perform model-field resolution
                 model_fields, serializer_fields = s.resolve(terms)
                 field = serializer_fields[-1] if serializer_fields else None
-                # if the field is a boolean,
-                # coerce the value
-                if field and isinstance(
-                    field,
-                    (
-                        serializers.BooleanField,
-                        # serializers.NullBooleanField
-                    ),
+                if (
+                    not field_reference
+                    and field
+                    and isinstance(
+                        field,
+                        (
+                            serializers.BooleanField,
+                            # serializers.NullBooleanField
+                        ),
+                    )
                 ):
+                    # if the field is a boolean and it is a simple reference,
+                    # coerce the value
                     value = is_truthy(value)
-                key = "__".join([Meta.get_query_name(f) for f in model_fields])
 
+                # look for relationship fields that have queryset= argument
+                # and transform those filters into annotations based on FilteredRelation
+                out_key = None
+                for i, serializer_field in enumerate(serializer_fields):
+                    qs = getattr(serializer_field, "queryset", None)
+                    if qs:
+                        annotation_name = f"_f{num_annotations}"
+                        num_annotations += 1
+                        rel_key = "__".join([
+                            Meta.get_query_name(f) for f in model_fields[0 : i + 1]
+                        ])
+                        out_key = "__".join(
+                            [annotation_name]
+                            + [Meta.get_query_name(f) for f in model_fields[i + 1 :]]
+                        )
+                        q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
+                        condition = Q(**q_kwargs)
+                        out.insert(
+                            (rel or []) + ["_annotations", annotation_name],
+                            FilteredRelation(rel_key, condition=condition),
+                        )
+                        # if there are multiple relationship fields in the path that have querysets
+                        # this approach breaks down because FilteredRelation cannot be nested :(
+                        # for now, transform the first filtered relation in the path and stop
+                        break
+
+                if not out_key:
+                    out_key = "__".join([Meta.get_query_name(f) for f in model_fields])
+
+                key = out_key
             else:
                 if field_reference and value:
                     # assume that it is a model reference
                     value = F("__".join(value.split(".")))
-
                 key = "__".join(terms)
+
+            if is_count:
+                # instead of filtering based on the relationship, filter based on a count
+                # to do this, create an annotation of the count
+                # e.g. User.objects.annotate(_c0=Count(path0)).filter(_c0__gte=1)
+                ref = None
+                if annotation_name:
+                    # count an annotation e.g. _f0 as Count("_f0")
+                    ref = annotation_name
+                else:
+                    # count a path e.g. groups__location
+                    ref = "__".join(
+                        Meta.get_query_name(f) for f in model_fields
+                    )
+
+                annotation_name = f"_c{num_annotations}"
+                out.insert(
+                    (rel or []) + ["_annotations", annotation_name],
+                    Count(ref, distinct=True)
+                )
+                num_annotations += 1
+                # out_key = count annotation name, e.g. _c0
+                key = annotation_name
 
             if operator:
                 key += "__%s" % operator
@@ -206,6 +276,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             path = rel if rel else []
             path += [category, key]
             out.insert(path, value)
+
         return out
 
     def _filters_to_query(self, filters):
@@ -414,6 +485,10 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
         if filters is None:
             filters = self._get_requested_filters()
+
+        filter_annotations = filters.get('_annotations')
+        if filter_annotations:
+            queryset = queryset.annotate(**filter_annotations)
 
         # build nested Prefetch queryset
         self._build_requested_prefetches(
