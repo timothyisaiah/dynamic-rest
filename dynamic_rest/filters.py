@@ -136,9 +136,14 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             terms = key.split(".")
             # Last part could be operator, e.g. "events.capacity.gte"
             # 2nd to last term could be $count e.g. "events.$count.gte"
+            last = terms[-1]
+            if last == self.COUNT_OPERATOR:
+                key = f'{key}.eq'
+                terms = key.split(".")
+                last = terms[-1]
+
             penultimate = terms[-2] if len(terms) > 2 else None
             is_count = penultimate == self.COUNT_OPERATOR
-            last = terms[-1]
             if is_count:
                 # remove the count from the terms, handle it separately
                 key = key.replace(f'.{self.COUNT_OPERATOR}', '')
@@ -213,28 +218,29 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # look for relationship fields that have queryset= argument
                 # and transform those filters into annotations based on FilteredRelation
                 out_key = None
-                for i, serializer_field in enumerate(serializer_fields):
-                    qs = getattr(serializer_field, "queryset", None)
-                    if qs:
-                        annotation_name = f"_f{num_annotations}"
-                        num_annotations += 1
-                        rel_key = "__".join([
-                            Meta.get_query_name(f) for f in model_fields[0 : i + 1]
-                        ])
-                        out_key = "__".join(
-                            [annotation_name]
-                            + [Meta.get_query_name(f) for f in model_fields[i + 1 :]]
-                        )
-                        q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
-                        condition = Q(**q_kwargs)
-                        out.insert(
-                            (rel or []) + ["_annotations", annotation_name],
-                            FilteredRelation(rel_key, condition=condition),
-                        )
-                        # if there are multiple relationship fields in the path that have querysets
-                        # this approach breaks down because FilteredRelation cannot be nested :(
-                        # for now, transform the first filtered relation in the path and stop
-                        break
+                if settings.ENABLE_FILTERED_RELATION:
+                    for i, serializer_field in enumerate(serializer_fields):
+                        qs = getattr(serializer_field, "queryset", None)
+                        if qs:
+                            annotation_name = f"_f{num_annotations}"
+                            num_annotations += 1
+                            rel_key = "__".join([
+                                Meta.get_query_name(f) for f in model_fields[0 : i + 1]
+                            ])
+                            out_key = "__".join(
+                                [annotation_name]
+                                + [Meta.get_query_name(f) for f in model_fields[i + 1 :]]
+                            )
+                            q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
+                            condition = Q(**q_kwargs)
+                            out.insert(
+                                (rel or []) + ["_annotations", annotation_name],
+                                FilteredRelation(rel_key, condition=condition),
+                            )
+                            # if there are multiple relationship fields in the path that have querysets
+                            # this approach breaks down because FilteredRelation cannot be nested :(
+                            # for now, transform the first filtered relation in the path and stop
+                            break
 
                 if not out_key:
                     out_key = "__".join([Meta.get_query_name(f) for f in model_fields])

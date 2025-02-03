@@ -63,6 +63,11 @@ DYNAMIC_REST = {
     # `deferred=False` is explicitly set on the field.
     'DEFER_MANY_RELATIONS': False,
 
+    # ENABLE_FILTERED_RELATION: should FilteredRelation be used for more accurate filtering
+    # through related fields
+    # downside it has some bugs in Django < 5
+    'ENABLE_FILTERED_RELATION': True,
+
     # ENABLE_BROWSABLE_API: enable/disable the browsable API.
     # It can be useful to disable it in production.
     'ENABLE_BROWSABLE_API': True,

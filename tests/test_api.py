@@ -264,7 +264,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(len(content["users"]), 4)
 
         # ensure it works with filtered relationship fields like loc1users
-        url = "/groups/?filter{id}=1&filter{loc1users.$count.gt}=1"
+        url = "/groups/?filter{id}=1&filter{loc1users.$count}=1"
         response = self.client.get(url)
         content = json.loads(response.content.decode("utf-8"))
         self.assertEqual(200, response.status_code)
