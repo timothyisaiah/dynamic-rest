@@ -2,6 +2,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth import models as auth
 from django.db import models
+from django.contrib.postgres.fields import JSONField
 
 
 class User(models.Model):
@@ -23,6 +24,7 @@ class User(models.Model):
         'favorite_pet_id',
     )
     is_dead = models.NullBooleanField(default=False)
+    data = JSONField(default=dict, blank=True)
 
     def __unicode__(self):
         return str(self.pk)

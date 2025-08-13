@@ -2,6 +2,7 @@
 
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
+from django.db import models
 from django.db.models import Q, Prefetch, F, FilteredRelation, Count
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -14,6 +15,7 @@ from dynamic_rest import fields as dfields
 from dynamic_rest.meta import Meta, get_related_model
 
 from dynamic_rest.django_utils import get_filter_kwargs
+from dynamic_rest import lookups
 
 
 class WithGetSerializerClass(object):
@@ -75,8 +77,51 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         "lte",
         "isnull",
         "eq",
+        "has_key",
+        "has_keys",
+        "has_any_keys",
+        "length",
+        "length_gt",
+        "length_gte",
+        "length_lt",
+        "length_lte",
+        "is_empty",
+        "path_exists",
+        "path_eq",
+        "path_gt",
+        "path_gte",
+        "path_lt",
+        "path_lte",
+        "path_contains",
+        "path_icontains",
+        "path_in",
+        "array_contains",
+        "array_length",
         None,
     )
+    
+    JSON_OPERATORS = {
+        'has_key': 'has_key',
+        'has_keys': 'has_keys', 
+        'has_any_keys': 'has_any_keys',
+        'length': 'length',
+        'length_gt': 'length__gt',
+        'length_gte': 'length__gte',
+        'length_lt': 'length__lt',
+        'length_lte': 'length__lte',
+        'is_empty': 'is_empty',
+        'path_exists': 'path_exists',
+        'path_eq': 'path_eq',
+        'path_gt': 'path_gt',
+        'path_gte': 'path_gte',
+        'path_lt': 'path_lt',
+        'path_lte': 'path_lte',
+        'path_contains': 'path_contains',
+        'path_icontains': 'path_icontains',
+        'path_in': 'path_in',
+        'array_contains': 'array_contains',
+        'array_length': 'array_length',
+    }
 
     def filter_queryset(self, request, queryset, view):
         """Filter the queryset.
@@ -133,8 +178,15 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             else:
                 rel = None
 
-            terms = key.split(".")
-            # Last part could be operator, e.g. "events.capacity.gte"
+            # Handle both dot notation (data.has_key) and underscore notation (data__has_key)
+            if "__" in key:
+                # Use underscore notation
+                terms = key.split("__")
+            else:
+                # Use dot notation
+                terms = key.split(".")
+            
+            # Last part could be operator, e.g. "events.capacity.gte" or "data__has_key"
             # 2nd to last term could be $count e.g. "events.$count.gte"
             last = terms[-1]
             if last == self.COUNT_OPERATOR:
@@ -149,6 +201,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 key = key.replace(f'.{self.COUNT_OPERATOR}', '')
                 terms = key.split('.')
 
+            # Initialize field_reference at the beginning of each loop iteration
             field_reference = False
             if last.endswith("*"):
                 field_reference = True
@@ -183,6 +236,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                         operator = None
 
             annotation_name = None
+            model_fields = None
+            serializer_fields = None
             if serializer:
                 s = serializer
 
@@ -197,56 +252,71 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     s = getattr(s, "serializer", s)
                     rel = [Meta.get_query_name(f) for f in model_fields]
 
-                # perform model-field resolution
-                model_fields, serializer_fields = s.resolve(terms)
-                field = serializer_fields[-1] if serializer_fields else None
-                if (
-                    not field_reference
-                    and field
-                    and isinstance(
-                        field,
-                        (
-                            serializers.BooleanField,
-                            # serializers.NullBooleanField
-                        ),
-                    )
-                ):
-                    # if the field is a boolean and it is a simple reference,
-                    # coerce the value
-                    value = is_truthy(value)
+                # Check if this is a JSON operator before doing field resolution
+                is_json_operator = operator in self.JSON_OPERATORS if operator else False  
+                if is_json_operator:
+                    field_terms = terms
+                    if field_terms:
+                        try:
+                            model_fields, serializer_fields = s.resolve(field_terms)
+                            out_key = "__".join([Meta.get_query_name(f) for f in model_fields])
+                        except ValidationError:
+                            # If field resolution fails, try to use the original field path
+                            out_key = "__".join(field_terms)
+                    else:
+                        out_key = ""
+                else:
+                    # perform model-field resolution for non-JSON operators
+                    model_fields, serializer_fields = s.resolve(terms)
+                    field = serializer_fields[-1] if serializer_fields else None
+                    if (
+                        not field_reference
+                        and field
+                        and isinstance(
+                            field,
+                            (
+                                serializers.BooleanField,
+                                # serializers.NullBooleanField
+                            ),
+                        )
+                    ):
+                        # if the field is a boolean and it is a simple reference,
+                        # coerce the value
+                        value = is_truthy(value)
 
-                # look for relationship fields that have queryset= argument
-                # and transform those filters into annotations based on FilteredRelation
-                out_key = None
-                if settings.ENABLE_FILTERED_RELATION:
-                    for i, serializer_field in enumerate(serializer_fields):
-                        qs = getattr(serializer_field, "queryset", None)
-                        if qs:
-                            annotation_name = f"_f{num_annotations}"
-                            num_annotations += 1
-                            rel_key = "__".join([
-                                Meta.get_query_name(f) for f in model_fields[0 : i + 1]
-                            ])
-                            out_key = "__".join(
-                                [annotation_name]
-                                + [Meta.get_query_name(f) for f in model_fields[i + 1 :]]
-                            )
-                            q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
-                            condition = Q(**q_kwargs)
-                            out.insert(
-                                (rel or []) + ["_annotations", annotation_name],
-                                FilteredRelation(rel_key, condition=condition),
-                            )
-                            # if there are multiple relationship fields in the path that have querysets
-                            # this approach breaks down because FilteredRelation cannot be nested :(
-                            # for now, transform the first filtered relation in the path and stop
-                            break
+                    # look for relationship fields that have queryset= argument
+                    # and transform those filters into annotations based on FilteredRelation
+                    out_key = None
+                    if settings.ENABLE_FILTERED_RELATION:
+                        for i, serializer_field in enumerate(serializer_fields):
+                            qs = getattr(serializer_field, "queryset", None)
+                            if qs:
+                                annotation_name = f"_f{num_annotations}"
+                                num_annotations += 1
+                                rel_key = "__".join([
+                                    Meta.get_query_name(f) for f in model_fields[0 : i + 1]
+                                ])
+                                out_key = "__".join(
+                                    [annotation_name]
+                                    + [Meta.get_query_name(f) for f in model_fields[i + 1 :]]
+                                )
+                                q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
+                                condition = Q(**q_kwargs)
+                                out.insert(
+                                    (rel or []) + ["_annotations", annotation_name],
+                                    FilteredRelation(rel_key, condition=condition),
+                                )
+                                # if there are multiple relationship fields in the path that have querysets
+                                # this approach breaks down because FilteredRelation cannot be nested :(
+                                # for now, transform the first filtered relation in the path and stop
+                                break
 
-                if not out_key:
-                    out_key = "__".join([Meta.get_query_name(f) for f in model_fields])
+                    if not out_key:
+                        out_key = "__".join([Meta.get_query_name(f) for f in model_fields])
 
                 key = out_key
             else:
+                # Ensure field_reference is defined even if serializer resolution failed
                 if field_reference and value:
                     # assume that it is a model reference
                     value = F("__".join(value.split(".")))
@@ -260,11 +330,14 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 if annotation_name:
                     # count an annotation e.g. _f0 as Count("_f0")
                     ref = annotation_name
-                else:
+                elif model_fields:
                     # count a path e.g. groups__location
                     ref = "__".join(
                         Meta.get_query_name(f) for f in model_fields
                     )
+                else:
+                    # fallback when model_fields is not available
+                    ref = "__".join(terms)
 
                 annotation_name = f"_c{num_annotations}"
                 out.insert(
@@ -275,8 +348,15 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # out_key = count annotation name, e.g. _c0
                 key = annotation_name
 
+            # Process JSON operators if present
             if operator:
-                key += "__%s" % operator
+                if operator in self.JSON_OPERATORS:
+                    # For JSON operators, we need to handle them specially
+                    # The key should already be the field path, so we just add the operator
+                    key += "__%s" % operator
+                else:
+                    # Not a JSON operator, handle as regular operator
+                    key += "__%s" % operator
 
             # insert into output tree
             path = rel if rel else []
@@ -313,6 +393,9 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         op = self.request.query_params.get("filter", "and") if self.request else "and"
         key = op.lower()
         op = (lambda a, b: a | b) if key in {"or", "|"} else (lambda a, b: a & b)
+        
+
+
         if includes:
             for k, v in includes.items():
                 n = Q(**{k: v})
@@ -320,6 +403,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     q = n
                 else:
                     q = op(q, n)
+                    
         if excludes:
             for k, v in excludes.items():
                 n = ~Q(**{k: v})
@@ -327,6 +411,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     q = n
                 else:
                     q = op(q, n)
+
+
 
         return q if q is not None else Q()
 
@@ -538,7 +624,9 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             except Exception as e:
                 # Some other Django error in parsing the filter.
                 # Very likely a bad query, so throw a ValidationError.
-                err_msg = getattr(e, "message", "")
+                err_msg = getattr(e, "message", str(e))
+                if not err_msg:
+                    err_msg = f"Invalid filter: {str(e)}"
                 raise ValidationError(err_msg)
 
         # A serializer can have this optional function

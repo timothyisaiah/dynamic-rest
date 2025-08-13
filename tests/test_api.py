@@ -1936,6 +1936,69 @@ class TestFilters(APITestCase):
         self.assertEqual(len(content["officers"]), 1)
         self.assertEqual(content["officers"][0]["display_name"], "display mismatch")
 
+    def test_json_filters(self):
+        """Test JSON field filtering functionality."""
+        # Create users with different JSON data
+        user1_data = {
+            "name": "user1",
+            "last_name": "test1",
+            "data": {"enquiry": {"status": "active"}, "tags": ["important"]}
+        }
+        response = self.client.post(
+            "/users/", json.dumps(user1_data), content_type="application/json"
+        )
+        self.assertEqual(201, response.status_code, response.content)
+
+        user2_data = {
+            "name": "user2", 
+            "last_name": "test2",
+            "data": {"enquiry": {"status": "inactive"}, "tags": ["normal"]}
+        }
+        response = self.client.post(
+            "/users/", json.dumps(user2_data), content_type="application/json"
+        )
+        self.assertEqual(201, response.status_code, response.content)
+
+        user3_data = {
+            "name": "user3",
+            "last_name": "test3", 
+            "data": {"other": "data"}
+        }
+        response = self.client.post(
+            "/users/", json.dumps(user3_data), content_type="application/json"
+        )
+        self.assertEqual(201, response.status_code, response.content)
+
+        # Test has_key filter
+        url = "/users/?filter{data__has_key}=enquiry"
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(len(content["users"]), 2)  # user1 and user2 have enquiry key
+
+        # Test path_eq filter
+        url = "/users/?filter{data__path_eq}=enquiry.status:active"
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(len(content["users"]), 1)  # only user1 has active status
+        self.assertEqual(content["users"][0]["name"], "user1")
+
+        # Test length_gt filter
+        url = "/users/?filter{data__length_gt}=1"
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(len(content["users"]), 2)  # user1 and user2 have more than 1 key
+
+        # Test array_contains filter
+        url = "/users/?filter{data__array_contains}=tags:important"
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(len(content["users"]), 1)  # only user1 has important tag
+        self.assertEqual(content["users"][0]["name"], "user1")
+
 
 class TestNestedWrites(APITestCase):
     def test_nested_writes(self):
