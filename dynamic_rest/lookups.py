@@ -23,7 +23,7 @@ class HasKeyLookup(Lookup):
         lhs, lhs_params = self.process_lhs(compiler, connection)
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = lhs_params + rhs_params
-        return "%s ? %s", [lhs, rhs]
+        return f"{lhs} ? {rhs}", params
     
     def get_prep_lookup(self):
         return self.rhs
@@ -55,7 +55,7 @@ class HasKeysLookup(Lookup):
             array_str = '{' + ','.join(keys) + '}'
             return f"{lhs} ?& %s", [array_str]
         
-        return "%s ?& %s", [lhs, rhs]
+        return f"{lhs} ?& {rhs}", params
     
     def get_prep_lookup(self):
         return self.rhs
@@ -87,23 +87,10 @@ class HasAnyKeysLookup(Lookup):
             array_str = '{' + ','.join(keys) + '}'
             return f"{lhs} ?| %s", [array_str]
         
-        return "%s ?| %s", [lhs, rhs]
+        return f"{lhs} ?| {rhs}", params
     
     def get_prep_lookup(self):
         return self.rhs
-
-
-class JSONLengthTransform(Transform):
-    """
-    Transform to get the length of a JSON field.
-    
-    Usage: Model.objects.filter(data__length__gt=3)
-    """
-    lookup_name = 'length'
-    
-    def as_sql(self, compiler, connection):
-        lhs, params = compiler.compile(self.lhs)
-        return "jsonb_array_length(%s)", [lhs]
 
 
 class JSONIsEmptyLookup(Lookup):
@@ -176,106 +163,35 @@ class JSONPathEqLookup(Lookup):
         # Split the path and value by ':'
         if ':' in rhs_params[0]:
             path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "(%s #>> %s) = %s", [lhs, json_path, value]
-        json_path = "{" + rhs_params[0] + "}"
-        return "(%s #>> %s) = %s", [lhs, json_path, rhs_params[0]]
-    
-    def get_prep_lookup(self):
-        return self.rhs
-
-
-class JSONPathGtLookup(Lookup):
-    """
-    Custom lookup for checking if a JSON path is greater than a value.
-    
-    Usage: Model.objects.filter(data__path_gt='enquiry.priority:3')
-    """
-    lookup_name = 'path_gt'
-    
-    def as_sql(self, compiler, connection):
-        lhs, lhs_params = self.process_lhs(compiler, connection)
-        rhs, rhs_params = self.process_rhs(compiler, connection)
-        params = lhs_params + rhs_params
-        # Split the path and value by ':'
-        if ':' in rhs_params[0]:
-            path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "(%s #>> %s)::numeric > %s", [lhs, json_path, value]
-        json_path = "{" + rhs_params[0] + "}"
-        return "(%s #>> %s)::numeric > %s", [lhs, json_path, rhs_params[0]]
-    
-    def get_prep_lookup(self):
-        return self.rhs
-
-
-class JSONPathGteLookup(Lookup):
-    """
-    Custom lookup for checking if a JSON path is greater than or equal to a value.
-    
-    Usage: Model.objects.filter(data__path_gte='enquiry.priority:3')
-    """
-    lookup_name = 'path_gte'
-    
-    def as_sql(self, compiler, connection):
-        lhs, lhs_params = self.process_lhs(compiler, connection)
-        rhs, rhs_params = self.process_rhs(compiler, connection)
-        params = lhs_params + rhs_params
-        # Split the path and value by ':'
-        if ':' in rhs_params[0]:
-            path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "(%s #>> %s)::numeric >= %s", [lhs, json_path, value]
-        json_path = "{" + rhs_params[0] + "}"
-        return "(%s #>> %s)::numeric >= %s", [lhs, json_path, rhs_params[0]]
-    
-    def get_prep_lookup(self):
-        return self.rhs
-
-
-class JSONPathLtLookup(Lookup):
-    """
-    Custom lookup for checking if a JSON path is less than a value.
-    
-    Usage: Model.objects.filter(data__path_lt='enquiry.priority:3')
-    """
-    lookup_name = 'path_lt'
-    
-    def as_sql(self, compiler, connection):
-        lhs, lhs_params = self.process_lhs(compiler, connection)
-        rhs, rhs_params = self.process_rhs(compiler, connection)
-        params = lhs_params + rhs_params
-        # Split the path and value by ':'
-        if ':' in rhs_params[0]:
-            path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "(%s #>> %s)::numeric < %s", [lhs, json_path, value]
-        json_path = "{" + rhs_params[0] + "}"
-        return "(%s #>> %s)::numeric < %s", [lhs, json_path, rhs_params[0]]
-    
-    def get_prep_lookup(self):
-        return self.rhs
-
-
-class JSONPathLteLookup(Lookup):
-    """
-    Custom lookup for checking if a JSON path is less than or equal to a value.
-    
-    Usage: Model.objects.filter(data__path_lte='enquiry.priority:3')
-    """
-    lookup_name = 'path_lte'
-    
-    def as_sql(self, compiler, connection):
-        lhs, lhs_params = self.process_lhs(compiler, connection)
-        rhs, rhs_params = self.process_rhs(compiler, connection)
-        params = lhs_params + rhs_params
-        # Split the path and value by ':'
-        if ':' in rhs_params[0]:
-            path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "(%s #>> %s)::numeric <= %s", [lhs, json_path, value]
-        json_path = "{" + rhs_params[0] + "}"
-        return "(%s #>> %s)::numeric <= %s", [lhs, json_path, rhs_params[0]]
+            # Convert dot notation to PostgreSQL JSON path array
+            path_elements = path.split('.')
+            json_path = "{" + ",".join(f'"{element}"' for element in path_elements) + "}"
+            
+            # Try to determine the type of the value
+            try:
+                # Try to convert to integer
+                int_value = int(value)
+                sql_template = f"({lhs} #>> %s::text[])::integer = %s::integer"
+                final_params = [json_path, int_value]
+            except ValueError:
+                try:
+                    # Try to convert to float
+                    float_value = float(value)
+                    sql_template = f"({lhs} #>> %s::text[])::float = %s::float"
+                    final_params = [json_path, float_value]
+                except ValueError:
+                    # Treat as string/text
+                    sql_template = f"({lhs} #>> %s::text[]) = %s::text"
+                    final_params = [json_path, value]
+            
+            return sql_template, final_params
+        
+        # Handle case where no value is provided (just path)
+        path_elements = rhs_params[0].split('.')
+        json_path = "{" + ",".join(f'"{element}"' for element in path_elements) + "}"
+        sql_template = f"({lhs} #>> %s::text[]) IS NOT NULL"
+        final_params = [json_path]
+        return sql_template, final_params
     
     def get_prep_lookup(self):
         return self.rhs
@@ -283,7 +199,7 @@ class JSONPathLteLookup(Lookup):
 
 class JSONPathContainsLookup(Lookup):
     """
-    Custom lookup for checking if a JSON path contains a value.
+    Custom lookup for case-insensitive contains on a JSON path.
     
     Usage: Model.objects.filter(data__path_contains='enquiry.tags:important')
     """
@@ -296,34 +212,14 @@ class JSONPathContainsLookup(Lookup):
         # Split the path and value by ':'
         if ':' in rhs_params[0]:
             path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "(%s #>> %s) LIKE %s", [lhs, json_path, f'%{value}%']
-        json_path = "{" + rhs_params[0] + "}"
-        return "(%s #>> %s) LIKE %s", [lhs, json_path, f'%{rhs_params[0]}%']
-    
-    def get_prep_lookup(self):
-        return self.rhs
-
-
-class JSONPathIcontainsLookup(Lookup):
-    """
-    Custom lookup for case-insensitive contains on a JSON path.
-    
-    Usage: Model.objects.filter(data__path_icontains='enquiry.tags:important')
-    """
-    lookup_name = 'path_icontains'
-    
-    def as_sql(self, compiler, connection):
-        lhs, lhs_params = self.process_lhs(compiler, connection)
-        rhs, rhs_params = self.process_rhs(compiler, connection)
-        params = lhs_params + rhs_params
-        # Split the path and value by ':'
-        if ':' in rhs_params[0]:
-            path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "LOWER(%s #>> %s) LIKE %s", [lhs, json_path, f'%{value.lower()}%']
-        json_path = "{" + rhs_params[0] + "}"
-        return "LOWER(%s #>> %s) LIKE %s", [lhs, json_path, f'%{rhs_params[0].lower()}%']
+            # Convert dot notation to PostgreSQL JSON path array
+            path_elements = path.split('.')
+            json_path = "{" + ",".join(f'"{element}"' for element in path_elements) + "}"
+            return f"LOWER({lhs} #>> %s::text[]) LIKE %s", [json_path, f'%{value.lower()}%']
+        # Handle case where no value is provided (just path)
+        path_elements = rhs_params[0].split('.')
+        json_path = "{" + ",".join(f'"{element}"' for element in path_elements) + "}"
+        return f"LOWER({lhs} #>> %s::text[]) LIKE %s", [json_path, f'%{rhs_params[0].lower()}%']
     
     def get_prep_lookup(self):
         return self.rhs
@@ -341,15 +237,35 @@ class JSONPathInLookup(Lookup):
         lhs, lhs_params = self.process_lhs(compiler, connection)
         rhs, rhs_params = self.process_rhs(compiler, connection)
         params = lhs_params + rhs_params
-        # Split the path and values by ':'
-        if ':' in rhs_params[0]:
-            path, values = rhs_params[0].split(':', 1)
-            value_list = values.split(',')
-            placeholders = ','.join(['%s'] * len(value_list))
-            json_path = "{" + path + "}"
-            return "(%s #>> %s) IN (%s)", [lhs, json_path, placeholders] + value_list
-        json_path = "{" + rhs_params[0] + "}"
-        return "(%s #>> %s) IN (%s)", [lhs, json_path, rhs_params[0]]
+        
+        # Handle multiple path-value pairs separated by commas
+        pairs = rhs_params[0].split(',')
+        conditions = []
+        all_params = []
+        
+        for pair in pairs:
+            if ':' in pair:
+                path, value = pair.split(':', 1)
+                # Convert dot notation to PostgreSQL JSON path array
+                path_elements = path.split('.')
+                json_path = "{" + ",".join(f'"{element}"' for element in path_elements) + "}"
+                conditions.append(f"({lhs} #>> %s::text[]) = %s")
+                all_params.extend([json_path, value])
+            else:
+                # Handle case where no value is provided (just path)
+                path_elements = pair.split('.')
+                json_path = "{" + ",".join(f'"{element}"' for element in path_elements) + "}"
+                conditions.append(f"({lhs} #>> %s::text[]) IS NOT NULL")
+                all_params.append(json_path)
+        
+        if len(conditions) == 1:
+            sql_template = conditions[0]
+            final_params = all_params
+        else:
+            sql_template = " OR ".join(conditions)
+            final_params = all_params
+        
+        return sql_template, final_params
     
     def get_prep_lookup(self):
         return self.rhs
@@ -370,25 +286,14 @@ class JSONArrayContainsLookup(Lookup):
         # Split the array path and value by ':'
         if ':' in rhs_params[0]:
             path, value = rhs_params[0].split(':', 1)
-            json_path = "{" + path + "}"
-            return "(%s #>> %s)::jsonb @> %s::jsonb", [lhs, json_path, f'["{value}"]']
-        return "(%s)::jsonb @> %s::jsonb", [lhs, f'["{rhs_params[0]}"]']
+            # Convert dot notation to PostgreSQL JSON path array
+            path_elements = path.split('.')
+            json_path = "{" + ",".join(f'"{element}"' for element in path_elements) + "}"
+            return f"({lhs} #>> %s::text[])::jsonb @> %s::jsonb", [json_path, f'["{value}"]']
+        return f"({lhs})::jsonb @> %s::jsonb", [f'["{rhs_params[0]}"]']
     
     def get_prep_lookup(self):
         return self.rhs
-
-
-class JSONArrayLengthTransform(Transform):
-    """
-    Transform to get the length of a JSON array.
-    
-    Usage: Model.objects.filter(data__array_length__gt=3)
-    """
-    lookup_name = 'array_length'
-    
-    def as_sql(self, compiler, connection):
-        lhs, params = compiler.compile(self.lhs)
-        return "jsonb_array_length(%s)", [lhs]
 
 
 # Register the custom lookups with Django
@@ -398,18 +303,9 @@ JSONField.register_lookup(HasAnyKeysLookup)
 JSONField.register_lookup(JSONIsEmptyLookup)
 JSONField.register_lookup(JSONPathExistsLookup)
 JSONField.register_lookup(JSONPathEqLookup)
-JSONField.register_lookup(JSONPathGtLookup)
-JSONField.register_lookup(JSONPathGteLookup)
-JSONField.register_lookup(JSONPathLtLookup)
-JSONField.register_lookup(JSONPathLteLookup)
 JSONField.register_lookup(JSONPathContainsLookup)
-JSONField.register_lookup(JSONPathIcontainsLookup)
 JSONField.register_lookup(JSONPathInLookup)
 JSONField.register_lookup(JSONArrayContainsLookup)
-
-# Register transforms
-JSONField.register_lookup(JSONLengthTransform)
-JSONField.register_lookup(JSONArrayLengthTransform)
 
 # Also register with PostgresJSONField for backward compatibility
 if hasattr(PostgresJSONField, 'register_lookup'):
@@ -419,13 +315,6 @@ if hasattr(PostgresJSONField, 'register_lookup'):
     PostgresJSONField.register_lookup(JSONIsEmptyLookup)
     PostgresJSONField.register_lookup(JSONPathExistsLookup)
     PostgresJSONField.register_lookup(JSONPathEqLookup)
-    PostgresJSONField.register_lookup(JSONPathGtLookup)
-    PostgresJSONField.register_lookup(JSONPathGteLookup)
-    PostgresJSONField.register_lookup(JSONPathLtLookup)
-    PostgresJSONField.register_lookup(JSONPathLteLookup)
     PostgresJSONField.register_lookup(JSONPathContainsLookup)
-    PostgresJSONField.register_lookup(JSONPathIcontainsLookup)
     PostgresJSONField.register_lookup(JSONPathInLookup)
     PostgresJSONField.register_lookup(JSONArrayContainsLookup)
-    PostgresJSONField.register_lookup(JSONLengthTransform)
-    PostgresJSONField.register_lookup(JSONArrayLengthTransform)
