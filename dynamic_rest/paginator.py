@@ -30,6 +30,23 @@ class BasePaginator(Paginator):
     def __init__(self, *args, **kwargs):
         self.exclude_count = kwargs.pop('exclude_count', False)
         self.order_by = kwargs.pop('order_by', '-created')
+        
+        if args and hasattr(args[0], 'order_by'):
+            queryset = args[0]
+            if not queryset.ordered:
+                model = queryset.model
+                try:
+                    if hasattr(model._meta, 'ordering') and model._meta.ordering:
+                        args = (queryset.order_by(*model._meta.ordering),) + args[1:]
+                    else:
+                        try:
+                            model._meta.get_field('id')
+                            args = (queryset.order_by('id'),) + args[1:]
+                        except:
+                            args = (queryset.order_by(self.order_by),) + args[1:]
+                except Exception:
+                    args = (queryset.order_by(self.order_by),) + args[1:]
+        
         super().__init__(*args, **kwargs)
 
     @cached_property
