@@ -197,6 +197,7 @@ class UserSerializer(DynamicModelSerializer):
             'favorite_pet_id',
             'favorite_pet',
             'is_dead',
+            'data',
         )
         deferred_fields = (
             'last_name',
@@ -207,6 +208,7 @@ class UserSerializer(DynamicModelSerializer):
             'favorite_pet_id',
             'favorite_pet',
             'is_dead',
+            'data',
         )
         read_only_fields = ('profile',)
 
