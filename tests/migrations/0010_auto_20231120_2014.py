@@ -3,54 +3,84 @@
 from django.db import migrations, models
 import django.db.models.deletion
 import django.utils.timezone
+from django.contrib.postgres.fields import JSONField
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tests', '0009_location_document'),
+        ("tests", "0009_location_document"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='dog',
-            name='created',
-            field=models.DateTimeField(auto_now_add=True, default=django.utils.timezone.now),
+            model_name="dog",
+            name="created",
+            field=models.DateTimeField(auto_now_add=True),
+            preserve_default=False,
+        ),
+        migrations.AddField(
+            model_name="user",
+            name="data",
+            field=JSONField(default=None, blank=True),
             preserve_default=False,
         ),
         migrations.AlterField(
-            model_name='car',
-            name='country',
-            field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, to='tests.country'),
+            model_name="car",
+            name="country",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="tests.country",
+            ),
         ),
         migrations.AlterField(
-            model_name='cat',
-            name='hunting_grounds',
-            field=models.ManyToManyField(related_name='annoying_cats', related_query_name='getoffmylawn', to='tests.Location'),
+            model_name="cat",
+            name="hunting_grounds",
+            field=models.ManyToManyField(
+                related_name="annoying_cats",
+                related_query_name="getoffmylawn",
+                to="tests.Location",
+            ),
         ),
         migrations.AlterField(
-            model_name='cat',
-            name='parent',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='kittens', to='tests.cat'),
+            model_name="cat",
+            name="parent",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="kittens",
+                to="tests.cat",
+            ),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='location',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='tests.location'),
+            model_name="event",
+            name="location",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="tests.location",
+            ),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='status',
-            field=models.TextField(default='current'),
+            model_name="event",
+            name="status",
+            field=models.TextField(default="current"),
         ),
         migrations.AlterField(
-            model_name='location',
-            name='document',
-            field=models.FileField(null=True, upload_to=''),
+            model_name="location",
+            name="document",
+            field=models.FileField(null=True, upload_to=""),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='location',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to='tests.location'),
+            model_name="user",
+            name="location",
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="tests.location",
+            ),
         ),
     ]

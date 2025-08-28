@@ -54,7 +54,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         VALID_FILTER_OPERATORS: A list of filter operators.
     """
 
-    COUNT_OPERATOR = '$count'
+    COUNT_OPERATOR = "$count"
     VALID_FILTER_OPERATORS = (
         "in",
         "any",
@@ -99,28 +99,28 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         "array_length",
         None,
     )
-    
+
     JSON_OPERATORS = {
-        'has_key': 'has_key',
-        'has_keys': 'has_keys', 
-        'has_any_keys': 'has_any_keys',
-        'length': 'length',
-        'length_gt': 'length__gt',
-        'length_gte': 'length__gte',
-        'length_lt': 'length__lt',
-        'length_lte': 'length__lte',
-        'is_empty': 'is_empty',
-        'path_exists': 'path_exists',
-        'path_eq': 'path_eq',
-        'path_gt': 'path_gt',
-        'path_gte': 'path_gte',
-        'path_lt': 'path_lt',
-        'path_lte': 'path_lte',
-        'path_contains': 'path_contains',
-        'path_icontains': 'path_icontains',
-        'path_in': 'path_in',
-        'array_contains': 'array_contains',
-        'array_length': 'array_length',
+        "has_key": "has_key",
+        "has_keys": "has_keys",
+        "has_any_keys": "has_any_keys",
+        "length": "length",
+        "length_gt": "length__gt",
+        "length_gte": "length__gte",
+        "length_lt": "length__lt",
+        "length_lte": "length__lte",
+        "is_empty": "is_empty",
+        "path_exists": "path_exists",
+        "path_eq": "path_eq",
+        "path_gt": "path_gt",
+        "path_gte": "path_gte",
+        "path_lt": "path_lt",
+        "path_lte": "path_lte",
+        "path_contains": "path_contains",
+        "path_icontains": "path_icontains",
+        "path_in": "path_in",
+        "array_contains": "array_contains",
+        "array_length": "array_length",
     }
 
     def filter_queryset(self, request, queryset, view):
@@ -185,12 +185,12 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             else:
                 # Use dot notation
                 terms = key.split(".")
-            
+
             # Last part could be operator, e.g. "events.capacity.gte" or "data__has_key"
             # 2nd to last term could be $count e.g. "events.$count.gte"
             last = terms[-1]
             if last == self.COUNT_OPERATOR:
-                key = f'{key}.eq'
+                key = f"{key}.eq"
                 terms = key.split(".")
                 last = terms[-1]
 
@@ -198,8 +198,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             is_count = penultimate == self.COUNT_OPERATOR
             if is_count:
                 # remove the count from the terms, handle it separately
-                key = key.replace(f'.{self.COUNT_OPERATOR}', '')
-                terms = key.split('.')
+                key = key.replace(f".{self.COUNT_OPERATOR}", "")
+                terms = key.split(".")
 
             # Initialize field_reference at the beginning of each loop iteration
             field_reference = False
@@ -253,13 +253,17 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     rel = [Meta.get_query_name(f) for f in model_fields]
 
                 # Check if this is a JSON operator before doing field resolution
-                is_json_operator = operator in self.JSON_OPERATORS if operator else False  
+                is_json_operator = (
+                    operator in self.JSON_OPERATORS if operator else False
+                )
                 if is_json_operator:
                     field_terms = terms
                     if field_terms:
                         try:
                             model_fields, serializer_fields = s.resolve(field_terms)
-                            out_key = "__".join([Meta.get_query_name(f) for f in model_fields])
+                            out_key = "__".join([
+                                Meta.get_query_name(f) for f in model_fields
+                            ])
                         except ValidationError:
                             # If field resolution fails, try to use the original field path
                             out_key = "__".join(field_terms)
@@ -294,11 +298,15 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                                 annotation_name = f"_f{num_annotations}"
                                 num_annotations += 1
                                 rel_key = "__".join([
-                                    Meta.get_query_name(f) for f in model_fields[0 : i + 1]
+                                    Meta.get_query_name(f)
+                                    for f in model_fields[0 : i + 1]
                                 ])
                                 out_key = "__".join(
                                     [annotation_name]
-                                    + [Meta.get_query_name(f) for f in model_fields[i + 1 :]]
+                                    + [
+                                        Meta.get_query_name(f)
+                                        for f in model_fields[i + 1 :]
+                                    ]
                                 )
                                 q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
                                 condition = Q(**q_kwargs)
@@ -312,7 +320,9 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                                 break
 
                     if not out_key:
-                        out_key = "__".join([Meta.get_query_name(f) for f in model_fields])
+                        out_key = "__".join([
+                            Meta.get_query_name(f) for f in model_fields
+                        ])
 
                 key = out_key
             else:
@@ -332,9 +342,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     ref = annotation_name
                 elif model_fields:
                     # count a path e.g. groups__location
-                    ref = "__".join(
-                        Meta.get_query_name(f) for f in model_fields
-                    )
+                    ref = "__".join(Meta.get_query_name(f) for f in model_fields)
                 else:
                     # fallback when model_fields is not available
                     ref = "__".join(terms)
@@ -342,7 +350,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 annotation_name = f"_c{num_annotations}"
                 out.insert(
                     (rel or []) + ["_annotations", annotation_name],
-                    Count(ref, distinct=True)
+                    Count(ref, distinct=True),
                 )
                 num_annotations += 1
                 # out_key = count annotation name, e.g. _c0
@@ -393,8 +401,6 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         op = self.request.query_params.get("filter", "and") if self.request else "and"
         key = op.lower()
         op = (lambda a, b: a | b) if key in {"or", "|"} else (lambda a, b: a & b)
-        
-
 
         if includes:
             for k, v in includes.items():
@@ -403,7 +409,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     q = n
                 else:
                     q = op(q, n)
-                    
+
         if excludes:
             for k, v in excludes.items():
                 n = ~Q(**{k: v})
@@ -411,8 +417,6 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     q = n
                 else:
                     q = op(q, n)
-
-
 
         return q if q is not None else Q()
 
@@ -578,7 +582,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         if filters is None:
             filters = self._get_requested_filters()
 
-        filter_annotations = filters.get('_annotations')
+        filter_annotations = filters.get("_annotations")
         if filter_annotations:
             queryset = queryset.annotate(**filter_annotations)
 

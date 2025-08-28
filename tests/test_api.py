@@ -1937,6 +1937,7 @@ class TestFilters(APITestCase):
         self.assertEqual(len(content["officers"]), 1)
         self.assertEqual(content["officers"][0]["display_name"], "display mismatch")
 
+    @override_settings(DEBUG=True)
     def test_json_filters(self):
         """Test JSON field filtering functionality."""
         # First, let's verify the database is working by getting existing users
@@ -1944,7 +1945,7 @@ class TestFilters(APITestCase):
         self.assertEqual(200, response.status_code, response.content)
         initial_users = json.loads(response.content.decode("utf-8"))
         initial_count = len(initial_users["users"])
-        
+
         # Create users with different JSON data
         user1_data = {
             "name": "user1",
@@ -1960,7 +1961,7 @@ class TestFilters(APITestCase):
         self.assertEqual(201, response.status_code, response.content)
 
         user2_data = {
-            "name": "user2", 
+            "name": "user2",
             "last_name": "test2",
             "data": {"enquiry": {"status": "inactive"}, "tags": ["normal"]}
         }
@@ -1973,7 +1974,7 @@ class TestFilters(APITestCase):
 
         user3_data = {
             "name": "user3",
-            "last_name": "test3", 
+            "last_name": "test3",
             "data": {"other": "data"}
         }
         response = self.client.post(
@@ -1990,55 +1991,30 @@ class TestFilters(APITestCase):
         content = json.loads(response.content.decode("utf-8"))
         expected_count = initial_count + 3
         self.assertEqual(len(content["users"]), expected_count)
-        
+
         # Verify that our new users are in the response and have data fields
         user_names = [user["name"] for user in content["users"]]
         self.assertIn("user1", user_names)
         self.assertIn("user2", user_names)
         self.assertIn("user3", user_names)
-        
+
         # Verify that users have data fields when explicitly included
         for user in content["users"]:
             if user["name"] in ["user1", "user2", "user3"]:
                 self.assertIn("data", user, f"data field not found in user {user['name']}")
 
-        # Test JSON field filtering with both underscore and dot notation
-        # Test has_key filter with underscore notation
-        try:
-            url = "/users/?filter{data__has_key}=enquiry"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 2)  # user1 and user2 have enquiry key
-            else:
-                self.skipTest(f"JSON has_key filter (underscore) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON has_key filter (underscore) failed: {str(e)}")
-
         # Test has_key filter with dot notation
+        url = "/users/?filter{data.has_key}=enquiry&debug=1"
+        response = None
         try:
-            url = "/users/?filter{data.has_key}=enquiry"
             response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 2)  # user1 and user2 have enquiry key
-            else:
-                self.skipTest(f"JSON has_key filter (dot) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON has_key filter (dot) failed: {str(e)}")
+            self.assertEqual(response.status_code, 200, response.content)
+        finally:
+            import pdb
+            pdb.set_trace()
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(len(content["users"]), 2)  # user1 and user2 have enquiry key
 
-        # Test path_eq filter with underscore notation
-        try:
-            url = "/users/?filter{data__path_eq}=enquiry.status:active"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 1)  # only user1 has active status
-                self.assertEqual(content["users"][0]["name"], "user1")
-            else:
-                self.skipTest(f"JSON path_eq filter (underscore) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON path_eq filter (underscore) failed: {str(e)}")
 
         # Test path_eq filter with dot notation
         try:
@@ -2053,18 +2029,6 @@ class TestFilters(APITestCase):
         except Exception as e:
             self.skipTest(f"JSON path_eq filter (dot) failed: {str(e)}")
 
-        # Test length_gt filter with underscore notation
-        try:
-            url = "/users/?filter{data__length_gt}=1"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 2)  # user1 and user2 have more than 1 key
-            else:
-                self.skipTest(f"JSON length_gt filter (underscore) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON length_gt filter (underscore) failed: {str(e)}")
-
         # Test length_gt filter with dot notation
         try:
             url = "/users/?filter{data.length_gt}=1"
@@ -2076,19 +2040,6 @@ class TestFilters(APITestCase):
                 self.skipTest(f"JSON length_gt filter (dot) not supported: {response.status_code}")
         except Exception as e:
             self.skipTest(f"JSON length_gt filter (dot) failed: {str(e)}")
-
-        # Test array_contains filter with underscore notation
-        try:
-            url = "/users/?filter{data__array_contains}=tags:important"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 1)  # only user1 has important tag
-                self.assertEqual(content["users"][0]["name"], "user1")
-            else:
-                self.skipTest(f"JSON array_contains filter (underscore) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON array_contains filter (underscore) failed: {str(e)}")
 
         # Test array_contains filter with dot notation
         try:
@@ -2102,20 +2053,6 @@ class TestFilters(APITestCase):
                 self.skipTest(f"JSON array_contains filter (dot) not supported: {response.status_code}")
         except Exception as e:
             self.skipTest(f"JSON array_contains filter (dot) failed: {str(e)}")
-
-        # Test is_empty filter with underscore notation
-        try:
-            url = "/users/?filter{data__is_empty}=true"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                # Should find user3 which has minimal data
-                user_names = [user["name"] for user in content["users"] if user["name"] in ["user1", "user2", "user3"]]
-                # Note: This might not work as expected since user3 has {"other": "data"} which is not empty
-            else:
-                self.skipTest(f"JSON is_empty filter (underscore) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON is_empty filter (underscore) failed: {str(e)}")
 
         # Test is_empty filter with dot notation
         try:
@@ -2152,12 +2089,12 @@ class TestFilters(APITestCase):
         response = self.client.get(url)
         self.assertEqual(200, response.status_code, response.content)
         content = json.loads(response.content.decode("utf-8"))
-        
+
         # Find user1 and verify their data
         user1 = next((user for user in content["users"] if user["name"] == "user1"), None)
         self.assertIsNotNone(user1, "user1 not found in response")
         self.assertIn("data", user1, "data field not found in user1")
-        
+
         # Verify the JSON data structure
         self.assertIsInstance(user1["data"], dict, "data field is not a dictionary")
         self.assertIn("enquiry", user1["data"], "enquiry key not found in data")

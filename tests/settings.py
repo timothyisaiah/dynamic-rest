@@ -10,7 +10,7 @@ STATIC_ROOT = os.environ.get('STATIC_ROOT', INSTALL_DIR + 'www/static')
 
 ENABLE_INTEGRATION_TESTS = os.environ.get('ENABLE_INTEGRATION_TESTS', False)
 
-DEBUG = True
+DEBUG = os.environ.get("DYNAMIC_REST_DEBUG", "false").lower() == "true"
 
 DATABASES = {}
 SQLITE = False
@@ -71,5 +71,5 @@ TEMPLATES = [
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,
     'ENABLE_SELF_LINKS': True,
-    'DEBUG': os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true'
+    'DEBUG': DEBUG is True
 }
