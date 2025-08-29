@@ -497,7 +497,7 @@ class WithDynamicViewSetBase(object):
         """
 
         primary_serializer = self.get_serializer(include_fields='*')
-        instance = self.get_queryset().get(pk=pk)
+        instance = self.get_queryset().distinct().get(pk=pk)
         related_field = primary_serializer.fields.get(field_name)
         if not related_field:
             raise exceptions.ValidationError('"%s" is not a valid field' % field_name)
