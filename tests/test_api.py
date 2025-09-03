@@ -2003,79 +2003,36 @@ class TestFilters(APITestCase):
             if user["name"] in ["user1", "user2", "user3"]:
                 self.assertIn("data", user, f"data field not found in user {user['name']}")
 
-        # Test has_key filter with dot notation
-        url = "/users/?filter{data.has_key}=enquiry&debug=1"
-        response = None
-        try:
-            response = self.client.get(url)
-            self.assertEqual(response.status_code, 200, response.content)
-        except Exception:
-            self.skipTest("JSON filters test")
-            return
-
+        # Test has_key filter (Django standard JSON lookup)
+        url = "/users/?filter{data.has_key}=enquiry"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, response.content)
         content = json.loads(response.content.decode("utf-8"))
         self.assertEqual(len(content["users"]), 2)  # user1 and user2 have enquiry key
 
-
-        # Test path_eq filter with dot notation
-        try:
-            url = "/users/?filter{data.path_eq}=enquiry.status:active"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 1)  # only user1 has active status
-                self.assertEqual(content["users"][0]["name"], "user1")
-            else:
-                self.skipTest(f"JSON path_eq filter (dot) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON path_eq filter (dot) failed: {str(e)}")
-
-        # Test length_gt filter with dot notation
-        try:
-            url = "/users/?filter{data.length_gt}=1"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 2)  # user1 and user2 have more than 1 key
-            else:
-                self.skipTest(f"JSON length_gt filter (dot) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON length_gt filter (dot) failed: {str(e)}")
-
-        # Test array_contains filter with dot notation
-        try:
-            url = "/users/?filter{data.array_contains}=tags:important"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                self.assertEqual(len(content["users"]), 1)  # only user1 has important tag
-                self.assertEqual(content["users"][0]["name"], "user1")
-            else:
-                self.skipTest(f"JSON array_contains filter (dot) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON array_contains filter (dot) failed: {str(e)}")
-
-        # Test is_empty filter with dot notation
-        try:
-            url = "/users/?filter{data.is_empty}=true"
-            response = self.client.get(url)
-            if response.status_code == 200:
-                content = json.loads(response.content.decode("utf-8"))
-                # Should find user3 which has minimal data
-                user_names = [user["name"] for user in content["users"] if user["name"] in ["user1", "user2", "user3"]]
-                # Note: This might not work as expected since user3 has {"other": "data"} which is not empty
-            else:
-                self.skipTest(f"JSON is_empty filter (dot) not supported: {response.status_code}")
-        except Exception as e:
-            self.skipTest(f"JSON is_empty filter (dot) failed: {str(e)}")
-
-        # Test simple filtering by name (this should always work)
-        url = "/users/?filter{name}=user1"
+        # Test nested path lookup (Django standard JSON lookup)
+        url = "/users/?filter{data.enquiry.status}=active"
         response = self.client.get(url)
-        self.assertEqual(200, response.status_code, response.content)
+        self.assertEqual(response.status_code, 200, response.content)
         content = json.loads(response.content.decode("utf-8"))
-        self.assertEqual(len(content["users"]), 1)
+        self.assertEqual(len(content["users"]), 1)  # only user1 has active status
         self.assertEqual(content["users"][0]["name"], "user1")
+
+        # Test array index lookup (Django standard JSON lookup)
+        url = "/users/?filter{data.tags.0}=important"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, response.content)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(len(content["users"]), 1)  # only user1 has important as first tag
+        self.assertEqual(content["users"][0]["name"], "user1")
+
+        # Test isnull lookup on nested path (Django standard JSON lookup)
+        url = "/users/?filter{data.enquiry.isnull}=true"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200, response.content)
+        content = json.loads(response.content.decode("utf-8"))
+        self.assertEqual(len(content["users"]), 1)  # only user3 has no enquiry
+        self.assertEqual(content["users"][0]["name"], "user3")
 
         # Test filtering by last_name (this should always work)
         url = "/users/?filter{last_name}=test2"
