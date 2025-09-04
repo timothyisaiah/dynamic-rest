@@ -623,7 +623,20 @@ class WithDynamicSerializerMixin(
             api_field = None
 
         if other:
-            if not (api_field and isinstance(api_field, _fields.DynamicRelationField)):
+            # Check if this is a JSON field path
+            is_json_field = False
+            if api_field and hasattr(api_field, 'source'):
+                source = api_field.source or api_name
+                try:
+                    model_field = meta.get_field(source)
+                    # Check if it's a JSONField
+                    from django.db.models import JSONField
+                    if isinstance(model_field, JSONField):
+                        is_json_field = True
+                except AttributeError:
+                    pass
+
+            if not (api_field and isinstance(api_field, _fields.DynamicRelationField)) and not is_json_field:
                 raise ValidationError(
                     {
                         api_name: 'Could not resolve "%s": '
@@ -632,24 +645,42 @@ class WithDynamicSerializerMixin(
                     }
                 )
 
-            source = api_field.source or api_name
-            related = api_field.serializer_class()
-            other = ".".join(other)
-            model_fields, api_fields = related.resolve(other, sort=sort)
+            if is_json_field:
+                # For JSON fields, we don't need to resolve further
+                # Django's ORM will handle the path directly
+                source = api_field.source or api_name
+                try:
+                    model_field = meta.get_field(source)
+                except AttributeError:
+                    raise ValidationError(
+                        {
+                            api_name: 'Could not resolve "%s": '
+                            '"%s.%s" is not a model field'
+                            % (query, meta.get_name(), source)
+                        }
+                    )
+                model_fields.append(model_field)
+                api_fields.append(api_field)
+            else:
+                # Handle regular relations
+                source = api_field.source or api_name
+                related = api_field.serializer_class()
+                other = ".".join(other)
+                model_fields, api_fields = related.resolve(other, sort=sort)
 
-            try:
-                model_field = meta.get_field(source)
-            except AttributeError:
-                raise ValidationError(
-                    {
-                        api_name: 'Could not resolve "%s": '
-                        '"%s.%s" is not a model relation'
-                        % (query, meta.get_name(), source)
-                    }
-                )
+                try:
+                    model_field = meta.get_field(source)
+                except AttributeError:
+                    raise ValidationError(
+                        {
+                            api_name: 'Could not resolve "%s": '
+                            '"%s.%s" is not a model relation'
+                            % (query, meta.get_name(), source)
+                        }
+                    )
 
-            model_fields.insert(0, model_field)
-            api_fields.insert(0, api_field)
+                model_fields.insert(0, model_field)
+                api_fields.insert(0, api_field)
         else:
             if api_name == "pk":
                 # pk is an alias for the id field

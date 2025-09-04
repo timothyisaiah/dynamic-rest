@@ -15,7 +15,6 @@ from dynamic_rest import fields as dfields
 from dynamic_rest.meta import Meta, get_related_model
 
 from dynamic_rest.django_utils import get_filter_kwargs
-from dynamic_rest import lookups
 
 
 class WithGetSerializerClass(object):
@@ -80,48 +79,14 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         "has_key",
         "has_keys",
         "has_any_keys",
-        "length",
-        "length_gt",
-        "length_gte",
-        "length_lt",
-        "length_lte",
-        "is_empty",
-        "path_exists",
-        "path_eq",
-        "path_gt",
-        "path_gte",
-        "path_lt",
-        "path_lte",
-        "path_contains",
-        "path_icontains",
-        "path_in",
-        "array_contains",
-        "array_length",
+        "contained_by",
         None,
     )
 
-    JSON_OPERATORS = {
-        "has_key": "has_key",
-        "has_keys": "has_keys",
-        "has_any_keys": "has_any_keys",
-        "length": "length",
-        "length_gt": "length__gt",
-        "length_gte": "length__gte",
-        "length_lt": "length__lt",
-        "length_lte": "length__lte",
-        "is_empty": "is_empty",
-        "path_exists": "path_exists",
-        "path_eq": "path_eq",
-        "path_gt": "path_gt",
-        "path_gte": "path_gte",
-        "path_lt": "path_lt",
-        "path_lte": "path_lte",
-        "path_contains": "path_contains",
-        "path_icontains": "path_icontains",
-        "path_in": "path_in",
-        "array_contains": "array_contains",
-        "array_length": "array_length",
-    }
+    # Django's standard JSON field lookups are supported automatically
+    # These include: has_key, has_keys, has_any_keys, contained_by
+    # Plus standard lookups like: isnull, contains, etc.
+    # Path lookups like: data__owner__name, data__owner__other_pets__0__name
 
     def filter_queryset(self, request, queryset, view):
         """Filter the queryset.
@@ -252,74 +217,90 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     s = getattr(s, "serializer", s)
                     rel = [Meta.get_query_name(f) for f in model_fields]
 
-                # Check if this is a JSON operator before doing field resolution
-                is_json_operator = (
-                    operator in self.JSON_OPERATORS if operator else False
-                )
-                if is_json_operator:
-                    field_terms = terms
-                    if field_terms:
-                        try:
-                            model_fields, serializer_fields = s.resolve(field_terms)
-                            out_key = "__".join([
-                                Meta.get_query_name(f) for f in model_fields
-                            ])
-                        except ValidationError:
-                            # If field resolution fails, try to use the original field path
-                            out_key = "__".join(field_terms)
-                    else:
-                        out_key = ""
+                # Check if this is a JSON field path
+                is_json_field_path = False
+                if len(terms) > 1:
+                    # Check if the first term is a JSON field
+                    try:
+                        first_field = s.get_field(terms[0])
+                        if first_field and hasattr(first_field, 'source'):
+                            source = first_field.source or terms[0]
+                            try:
+                                # Get the meta object from the serializer
+                                model = s.get_model()
+                                if model:
+                                    meta = Meta(model)
+                                    model_field = meta.get_field(source)
+                                    from django.db.models import JSONField
+                                    if isinstance(model_field, JSONField):
+                                        is_json_field_path = True
+                            except AttributeError:
+                                pass
+                    except AttributeError:
+                        pass
+
+                if is_json_field_path:
+                    # For JSON field paths, we don't need to resolve further
+                    # Django's ORM will handle the path directly
+                    out_key = "__".join(terms)
+                    model_fields = []
+                    serializer_fields = []
                 else:
-                    # perform model-field resolution for non-JSON operators
+                    # perform model-field resolution for regular fields
                     model_fields, serializer_fields = s.resolve(terms)
-                    field = serializer_fields[-1] if serializer_fields else None
-                    if (
-                        not field_reference
-                        and field
-                        and isinstance(
-                            field,
-                            (
-                                serializers.BooleanField,
-                                # serializers.NullBooleanField
-                            ),
-                        )
-                    ):
-                        # if the field is a boolean and it is a simple reference,
-                        # coerce the value
-                        value = is_truthy(value)
+                
+                field = serializer_fields[-1] if serializer_fields else None
+                if (
+                    not field_reference
+                    and field
+                    and isinstance(
+                        field,
+                        (
+                            serializers.BooleanField,
+                            # serializers.NullBooleanField
+                        ),
+                    )
+                ):
+                    # if the field is a boolean and it is a simple reference,
+                    # coerce the value
+                    value = is_truthy(value)
 
-                    # look for relationship fields that have queryset= argument
-                    # and transform those filters into annotations based on FilteredRelation
-                    out_key = None
-                    if settings.ENABLE_FILTERED_RELATION:
-                        for i, serializer_field in enumerate(serializer_fields):
-                            qs = getattr(serializer_field, "queryset", None)
-                            if qs:
-                                annotation_name = f"_f{num_annotations}"
-                                num_annotations += 1
-                                rel_key = "__".join([
+                # look for relationship fields that have queryset= argument
+                # and transform those filters into annotations based on FilteredRelation
+                out_key = None
+                if settings.ENABLE_FILTERED_RELATION:
+                    for i, serializer_field in enumerate(serializer_fields):
+                        qs = getattr(serializer_field, "queryset", None)
+                        if qs:
+                            annotation_name = f"_f{num_annotations}"
+                            num_annotations += 1
+                            rel_key = "__".join([
+                                Meta.get_query_name(f)
+                                for f in model_fields[0 : i + 1]
+                            ])
+                            out_key = "__".join(
+                                [annotation_name]
+                                + [
                                     Meta.get_query_name(f)
-                                    for f in model_fields[0 : i + 1]
-                                ])
-                                out_key = "__".join(
-                                    [annotation_name]
-                                    + [
-                                        Meta.get_query_name(f)
-                                        for f in model_fields[i + 1 :]
-                                    ]
-                                )
-                                q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
-                                condition = Q(**q_kwargs)
-                                out.insert(
-                                    (rel or []) + ["_annotations", annotation_name],
-                                    FilteredRelation(rel_key, condition=condition),
-                                )
-                                # if there are multiple relationship fields in the path that have querysets
-                                # this approach breaks down because FilteredRelation cannot be nested :(
-                                # for now, transform the first filtered relation in the path and stop
-                                break
+                                    for f in model_fields[i + 1 :]
+                                ]
+                            )
+                            q_kwargs = get_filter_kwargs(qs, prefix=rel_key)
+                            condition = Q(**q_kwargs)
+                            out.insert(
+                                (rel or []) + ["_annotations", annotation_name],
+                                FilteredRelation(rel_key, condition=condition),
+                            )
+                            # if there are multiple relationship fields in the path that have querysets
+                            # this approach breaks down because FilteredRelation cannot be nested :(
+                            # for now, transform the first filtered relation in the path and stop
+                            break
 
-                    if not out_key:
+                if not out_key:
+                    if is_json_field_path:
+                        # For JSON field paths, use the original terms
+                        out_key = "__".join(terms)
+                    else:
                         out_key = "__".join([
                             Meta.get_query_name(f) for f in model_fields
                         ])
@@ -356,16 +337,10 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # out_key = count annotation name, e.g. _c0
                 key = annotation_name
 
-            # Process JSON operators if present
+            # Process operators (works for both regular and JSON field operators)
             if operator:
-                if operator in self.JSON_OPERATORS:
-                    # For JSON operators, we need to handle them specially
-                    # The key should already be the field path, so we just add the operator
-                    key += "__%s" % operator
-                else:
-                    # Not a JSON operator, handle as regular operator
-                    key += "__%s" % operator
-
+                key += "__%s" % operator
+            
             # insert into output tree
             path = rel if rel else []
             path += [category, key]
