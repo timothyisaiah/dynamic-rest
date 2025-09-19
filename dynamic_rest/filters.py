@@ -1,5 +1,6 @@
 """This module contains custom filter backends."""
 
+import json
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models
@@ -87,6 +88,59 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
     # These include: has_key, has_keys, has_any_keys, contained_by
     # Plus standard lookups like: isnull, contains, etc.
     # Path lookups like: data__owner__name, data__owner__other_pets__0__name
+
+    def __init__(self):
+        super().__init__()
+        self._json_field_cache = {}
+
+    def _is_likely_date(self, value):
+        """Check if a value looks like a date string."""
+        if not isinstance(value, str) or len(value) < 8:
+            return False
+        
+        # YYYY-MM-DD
+        if len(value) == 10 and value[4] == '-' and value[7] == '-':
+            return value[:4].isdigit() and value[5:7].isdigit() and value[8:10].isdigit()
+        
+        if len(value) >= 19 and 'T' in value:  # ISO datetime
+            return value[:4].isdigit() and value[5:7].isdigit() and value[8:10].isdigit()
+        
+        return False
+
+    def _is_json_field(self, model, field_name):
+        """Check if field is JSONField with caching."""
+        cache_key = f"{model._meta.label}.{field_name}"
+        
+        if cache_key not in self._json_field_cache:
+            try:
+                field = model._meta.get_field(field_name)
+                from django.db.models import JSONField
+                self._json_field_cache[cache_key] = isinstance(field, JSONField)
+            except Exception:
+                self._json_field_cache[cache_key] = False
+        
+        return self._json_field_cache[cache_key]
+
+    def _process_filter_value(self, value):
+        """Process filter value with optimal type conversion."""
+        if not isinstance(value, str):
+            return value
+        
+        if self._is_likely_date(value):
+            return value
+        
+        # Numeric conversion
+        if value.isdigit():
+            return int(value)
+        
+        # Float conversion (but not dates)
+        if '.' in value and value.replace('.', '').replace('-', '').isdigit():
+            try:
+                return float(value)
+            except ValueError:
+                return value
+        
+        return value
 
     def filter_queryset(self, request, queryset, view):
         """Filter the queryset.
@@ -229,11 +283,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                                 # Get the meta object from the serializer
                                 model = s.get_model()
                                 if model:
-                                    meta = Meta(model)
-                                    model_field = meta.get_field(source)
-                                    from django.db.models import JSONField
-                                    if isinstance(model_field, JSONField):
-                                        is_json_field_path = True
+                                    # Use the cached JSON field detection
+                                    is_json_field_path = self._is_json_field(model, source)
                             except AttributeError:
                                 pass
                     except AttributeError:
@@ -245,6 +296,26 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     out_key = "__".join(terms)
                     model_fields = []
                     serializer_fields = []
+                    
+                    # Enhanced value processing for JSON fields
+                    if not field_reference:
+                        # Process the value for optimal type conversion
+                        if isinstance(value, list) and len(value) == 1:
+                            value = self._process_filter_value(value[0])
+                        elif isinstance(value, str):
+                            # Handle complex JSON objects
+                            if value.startswith('{') and value.endswith('}'):
+                                try:
+                                    json_value = json.loads(value)
+                                    # For complex JSON, we'll use contains lookup
+                                    if operator is None:
+                                        operator = "contains"
+                                    value = json_value
+                                except json.JSONDecodeError:
+                                    # If JSON parsing fails, process as regular value
+                                    value = self._process_filter_value(value)
+                            else:
+                                value = self._process_filter_value(value)
                 else:
                     # perform model-field resolution for regular fields
                     model_fields, serializer_fields = s.resolve(terms)
@@ -379,7 +450,15 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
         if includes:
             for k, v in includes.items():
-                n = Q(**{k: v})
+                # Enhanced numeric OR handling for JSON fields
+                # Skip special operators that don't work with numeric OR
+                if (isinstance(v, (int, float)) and 
+                    not k.endswith(('__in', '__range', '__contains', '__isnull', '__regex'))):
+                    # For numeric values, create OR condition for both int and string
+                    n = Q(**{k: v}) | Q(**{k: str(v)})
+                else:
+                    n = Q(**{k: v})
+                
                 if q is None:
                     q = n
                 else:
@@ -387,7 +466,15 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
         if excludes:
             for k, v in excludes.items():
-                n = ~Q(**{k: v})
+                # Enhanced numeric OR handling for JSON fields
+                # Skip special operators that don't work with numeric OR
+                if (isinstance(v, (int, float)) and 
+                    not k.endswith(('__in', '__range', '__contains', '__isnull', '__regex'))):
+                    # For numeric values, create OR condition for both int and string
+                    n = ~(Q(**{k: v}) | Q(**{k: str(v)}))
+                else:
+                    n = ~Q(**{k: v})
+                
                 if q is None:
                     q = n
                 else:
