@@ -1657,7 +1657,7 @@ class TestCatsAPI(APITestCase):
             'SELECT "tests_country"."name" AS "_country_name", COUNT("tests_car"."name") AS "_count(name)" '
             'FROM "tests_car" '
             'LEFT OUTER JOIN "tests_country" ON ("tests_car"."country_id" = "tests_country"."id") '
-            "GROUP BY 1",  # "tests_country"."name"',
+            'GROUP BY "tests_country"."name"', # 1",
             data["meta"]["query"],
         )
 
