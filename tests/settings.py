@@ -5,6 +5,9 @@ BASE_DIR = os.path.dirname(__file__)
 SECRET_KEY = 'test'
 INSTALL_DIR = '/usr/local/altschool/dynamic-rest/'
 
+# Django 5 compatibility
+USE_TZ = False
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.environ.get('STATIC_ROOT', INSTALL_DIR + 'www/static')
 

@@ -1652,12 +1652,15 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(data["data"]["China"]["count(name)"], 1)
         self.assertEqual(data["data"][""]["count(name)"], 1)
         # self.maxDiff = 9999999
-        self.assertEqual(
-            data["meta"]["query"],
+        expected_query = (
             'SELECT "tests_country"."name" AS "_country_name", COUNT("tests_car"."name") AS "_count(name)" '
             'FROM "tests_car" '
             'LEFT OUTER JOIN "tests_country" ON ("tests_car"."country_id" = "tests_country"."id") '
-            'GROUP BY "tests_country"."name"', # 1",
+            'GROUP BY 1' #"tests_country"."name"',
+        )
+        self.assertEqual(
+            data["meta"]["query"],
+            expected_query,
             data["meta"]["query"],
         )
 
