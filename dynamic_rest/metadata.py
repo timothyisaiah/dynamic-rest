@@ -5,6 +5,11 @@ from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
 
+from dynamic_rest.ephemeral import (
+    get_ephemeral_filter_fields,
+    get_ephemeral_filter_operators,
+    normalize_ephemeral_filter_field,
+)
 from dynamic_rest.fields import DynamicRelationField, DynamicJSONField, DynamicLinkField
 from dynamic_rest.utils import urljoin
 
@@ -49,6 +54,7 @@ class DynamicMetadata(SimpleMetadata):
             if hasattr(serializer, 'get_plural_name'):
                 metadata['name'] = serializer.get_plural_name()
             metadata['fields'] = self.get_serializer_info(serializer)
+            self.apply_ephemeral_filter_metadata(serializer, metadata['fields'])
             metadata['icon'] = serializer.get_icon()
             metadata['search_key'] = serializer.get_search_key()
             metadata['style'] = serializer.get_style()
@@ -76,6 +82,36 @@ class DynamicMetadata(SimpleMetadata):
             metadata['url'] = view._router.base_url
 
         return metadata
+
+    def apply_ephemeral_filter_metadata(self, serializer, fields):
+        filter_fields = get_ephemeral_filter_fields(serializer)
+        get_model = getattr(serializer, 'get_model', None)
+        is_ephemeral = get_model and get_model() is None
+
+        if not filter_fields and not is_ephemeral:
+            return fields
+
+        for field_name, field_info in fields.items():
+            if is_ephemeral:
+                if field_info.get('ui') is None:
+                    field_info['ui'] = True
+                field_info['filterable'] = False
+                field_info['sortable'] = False
+
+            if field_name not in filter_fields:
+                continue
+
+            _queryset_field, field_type, operators = normalize_ephemeral_filter_field(
+                field_name,
+                filter_fields,
+            )
+            field_info['filterable'] = True
+            field_info['filter_type'] = field_type
+            field_info['filter_operators'] = sorted(
+                get_ephemeral_filter_operators(field_type, operators)
+            )
+
+        return fields
 
     def get_field_info(self, field):
         """Adds to the metadata response."""
