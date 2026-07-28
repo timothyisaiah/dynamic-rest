@@ -3,7 +3,8 @@ import csv
 import re
 import json
 import operator as op
-from decimal import Decimal
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 import statistics
 
 from io import StringIO
@@ -15,11 +16,17 @@ from django.db.models.functions import (
     Trunc, Length, Lower, Upper, Cast
 )
 from django.db import models
+from django.utils.dateparse import parse_date, parse_datetime
 from rest_framework import exceptions, status, viewsets
 from rest_framework.mixins import ListModelMixin
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
 
+from dynamic_rest.ephemeral import (
+    EPHEMERAL_FILTER_TYPE_OPERATORS,
+    get_ephemeral_filter_fields,
+    normalize_ephemeral_filter_field,
+)
 from dynamic_rest.permissions import PermissionsViewSetMixin
 from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
@@ -1217,7 +1224,279 @@ class WithDynamicViewSetBase(object):
         return viewset.list(request)
 
 
-class WithDynamicViewSetMixin(PermissionsViewSetMixin, WithDynamicViewSetBase):
+class EphemeralFilterMixin(object):
+    ephemeral_filter_fields = None
+    ephemeral_filter_type_operators = EPHEMERAL_FILTER_TYPE_OPERATORS
+
+    def get_ephemeral_filter_fields(self):
+        if self.ephemeral_filter_fields is not None:
+            return self.ephemeral_filter_fields
+
+        return get_ephemeral_filter_fields(self.get_serializer_class())
+
+    def get_ephemeral_base_queryset(self, queryset=None):
+        if queryset is None:
+            queryset = getattr(self, 'queryset', None)
+            if queryset is not None:
+                queryset = queryset.all()
+            else:
+                queryset = self.model.objects.all()
+
+        permissions = getattr(self, 'permissions', None)
+        if not permissions:
+            return queryset
+
+        access = permissions.list
+        if access.full_access:
+            return queryset
+        if access.no_access:
+            return queryset.none()
+        return queryset.filter(access.filters)
+
+    def filter_ephemeral_queryset(self, queryset, request=None, filter_fields=None):
+        request = request or self.request
+        if filter_fields is None:
+            filter_fields = self.get_ephemeral_filter_fields()
+        filter_specs = self._get_ephemeral_filter_specs(request)
+        query = None
+        combine_with_or = request.query_params.get('filter', 'and').lower() in {
+            'or',
+            '|',
+        }
+
+        for key, values in filter_specs:
+            next_query = self._build_ephemeral_filter(key, values, filter_fields)
+            if query is None:
+                query = next_query
+            elif combine_with_or:
+                query |= next_query
+            else:
+                query &= next_query
+
+        return queryset.filter(query) if query is not None else queryset
+
+    def get_ephemeral_resource_metadata(self, serializer_class=None):
+        serializer_class = serializer_class or self.get_serializer_class()
+        serializer = serializer_class(for_metadata=True)
+        metadata = self.metadata_class()
+        fields = metadata.get_serializer_info(serializer)
+        metadata.apply_ephemeral_filter_metadata(serializer, fields)
+
+        permissions = {'read': True}
+        if getattr(self, 'request', None) is not None:
+            full_permissions = getattr(self, 'full_permissions', None)
+            if full_permissions:
+                permissions = full_permissions.serialize()
+        permissions['fields'] = serializer.get_field_permissions()
+        try:
+            id_field = serializer.get_pk_field()
+        except exceptions.APIException:
+            id_field = 'pk'
+
+        return {
+            'fields': fields,
+            'icon': serializer.get_icon(),
+            'description': serializer.get_description(),
+            'sections': [
+                section.serialize() for section in serializer.get_sections()
+            ],
+            'id_field': id_field,
+            'name_field': serializer.get_name_field(),
+            'permissions': permissions,
+        }
+
+    def _get_ephemeral_filter_specs(self, request):
+        if request is getattr(self, 'request', None):
+            return list(self.get_request_feature(self.FILTER).items())
+
+        original_request = getattr(self, 'request', None)
+        self.request = request
+        try:
+            return list(self.get_request_feature(self.FILTER).items())
+        finally:
+            self.request = original_request
+
+    def _normalize_ephemeral_filter_field(self, field_name, filter_fields):
+        try:
+            queryset_field, field_type, operators = normalize_ephemeral_filter_field(
+                field_name,
+                filter_fields,
+            )
+        except KeyError:
+            raise exceptions.ParseError(
+                '"%s" is not a filterable synthetic resource field.' % field_name
+            )
+        except (IndexError, TypeError, ValueError):
+            raise exceptions.ParseError(
+                '"%s" has an invalid synthetic filter configuration.' % field_name
+            )
+        return queryset_field, field_type, operators
+
+    def _parse_ephemeral_filter_key(self, key, filter_fields):
+        if not key:
+            raise exceptions.ParseError('Synthetic resource filter key cannot be empty.')
+
+        exclude = key.startswith('-')
+        if exclude:
+            key = key[1:]
+
+        valid_operators = {
+            op for op in DynamicFilterBackend.VALID_FILTER_OPERATORS if op
+        }
+        parts = key.split('.')
+        operator = 'eq'
+        if len(parts) > 1 and parts[-1] in valid_operators:
+            operator = parts.pop()
+
+        field = '.'.join(parts)
+        queryset_field, field_type, operators = self._normalize_ephemeral_filter_field(
+            field, filter_fields
+        )
+        supported_operators = (
+            set(operators)
+            if operators is not None
+            else self.ephemeral_filter_type_operators.get(
+                field_type,
+                self.ephemeral_filter_type_operators['string'],
+            )
+        )
+        if operator not in supported_operators:
+            raise exceptions.ParseError(
+                '"%s" does not support the "%s" filter operator.'
+                % (field, operator)
+            )
+
+        return exclude, queryset_field, field_type, operator
+
+    def _normalize_ephemeral_filter_values(self, values, operator):
+        if not isinstance(values, (list, tuple)):
+            values = [values]
+
+        normalized = []
+        for value in values:
+            if operator in {'in', 'range'} and isinstance(value, str) and ',' in value:
+                normalized.extend(v.strip() for v in value.split(','))
+            else:
+                normalized.append(value)
+        return normalized
+
+    def _coerce_ephemeral_filter_value(self, value, field_type, operator=None):
+        if operator == 'isnull':
+            return is_truthy(value)
+
+        if operator in {'day', 'month', 'week_day', 'year'}:
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                raise exceptions.ParseError(
+                    '"%s" must be an integer for the "%s" filter operator.'
+                    % (value, operator)
+                )
+
+        if field_type == 'boolean':
+            return is_truthy(value)
+
+        if field_type == 'date':
+            if isinstance(value, datetime):
+                return value.date()
+            if isinstance(value, date):
+                return value
+
+            parsed_value = parse_date(str(value))
+            if parsed_value is None:
+                parsed_datetime = parse_datetime(str(value))
+                parsed_value = parsed_datetime.date() if parsed_datetime else None
+            if parsed_value is None:
+                raise exceptions.ParseError(
+                    '"%s" is not a valid date filter value.' % value
+                )
+            return parsed_value
+
+        if field_type == 'datetime':
+            if isinstance(value, datetime):
+                return value
+
+            parsed_value = parse_datetime(str(value))
+            if parsed_value is None:
+                raise exceptions.ParseError(
+                    '"%s" is not a valid datetime filter value.' % value
+                )
+            return parsed_value
+
+        if field_type == 'decimal':
+            try:
+                return Decimal(str(value))
+            except (InvalidOperation, TypeError, ValueError):
+                raise exceptions.ParseError(
+                    '"%s" is not a valid decimal filter value.' % value
+                )
+
+        if field_type == 'integer':
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                raise exceptions.ParseError(
+                    '"%s" is not a valid integer filter value.' % value
+                )
+
+        if field_type == 'float':
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                raise exceptions.ParseError(
+                    '"%s" is not a valid numeric filter value.' % value
+                )
+
+        return value
+
+    def _build_ephemeral_filter(self, key, values, filter_fields):
+        exclude, queryset_field, field_type, operator = self._parse_ephemeral_filter_key(
+            key, filter_fields
+        )
+        values = self._normalize_ephemeral_filter_values(values, operator)
+        if not values:
+            raise exceptions.ParseError('"%s" requires a filter value.' % key)
+
+        if operator == 'range':
+            if len(values) < 2:
+                raise exceptions.ParseError(
+                    '"%s.range" requires two filter values.' % key
+                )
+            if values[0] in ('', None):
+                operator = 'lte'
+                value = self._coerce_ephemeral_filter_value(
+                    values[1], field_type, operator
+                )
+            elif values[1] in ('', None):
+                operator = 'gte'
+                value = self._coerce_ephemeral_filter_value(
+                    values[0], field_type, operator
+                )
+            else:
+                value = [
+                    self._coerce_ephemeral_filter_value(item, field_type, operator)
+                    for item in values[:2]
+                ]
+        elif operator == 'in':
+            value = [
+                self._coerce_ephemeral_filter_value(item, field_type, operator)
+                for item in values
+                if item not in ('', None)
+            ]
+        else:
+            value = self._coerce_ephemeral_filter_value(
+                values[0], field_type, operator
+            )
+
+        lookup = queryset_field if operator == 'eq' else '%s__%s' % (
+            queryset_field,
+            operator,
+        )
+        query = Q(**{lookup: value})
+        return ~query if exclude else query
+
+
+class WithDynamicViewSetMixin(PermissionsViewSetMixin, WithDynamicViewSetBase, EphemeralFilterMixin):
     pass
 
 
