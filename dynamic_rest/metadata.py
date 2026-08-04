@@ -1,6 +1,9 @@
 """This module contains custom DRF metadata classes."""
 from collections import OrderedDict
 
+import inflection
+
+from rest_framework.exceptions import ValidationError
 from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
@@ -12,6 +15,68 @@ from dynamic_rest.ephemeral import (
 )
 from dynamic_rest.fields import DynamicRelationField, DynamicJSONField, DynamicLinkField
 from dynamic_rest.utils import urljoin
+
+
+def _unwrap_serializer(serializer):
+    """Return the child serializer when ``serializer`` is a list serializer."""
+    return serializer.child if isinstance(serializer, ListSerializer) else serializer
+
+
+def get_serializer_field_path_info(serializer, path):
+    """Resolve metadata for a dot-separated serializer field path.
+
+    In addition to the leaf field metadata, this records whether any segment
+    crosses a to-many relation. Consumers can use that to expose a projected
+    leaf as a list-valued field (for example ``loans.name`` becomes a list of
+    strings labelled ``Loan Names``).
+    """
+    serializer = _unwrap_serializer(serializer)
+    parts = [part for part in (path or '').split('.') if part]
+    if not parts or '.'.join(parts) != path:
+        raise ValidationError({'path': 'A valid dot-separated field path is required.'})
+
+    metadata = DynamicMetadata()
+    labels = []
+    crosses_many = False
+    leaf_info = None
+
+    for index, part in enumerate(parts):
+        try:
+            field = serializer.get_field(part)
+        except (AttributeError, ValidationError, KeyError):
+            raise ValidationError({path: 'Could not resolve serializer field path.'})
+
+        leaf_info = metadata.get_field_info(field)
+        is_last = index == len(parts) - 1
+        if is_last:
+            crosses_many = crosses_many or leaf_info['type'] == 'many'
+            leaf_label = str(
+                leaf_info.get('label') or inflection.humanize(part)
+            )
+            labels.append(
+                inflection.pluralize(leaf_label) if crosses_many else leaf_label
+            )
+            break
+
+        if not isinstance(field, DynamicRelationField):
+            raise ValidationError({path: 'Only relation fields may have child fields.'})
+
+        crosses_many = crosses_many or field.many
+        relation_label = str(
+            getattr(field, 'label', None) or inflection.humanize(part)
+        )
+        labels.append(inflection.singularize(relation_label))
+        serializer = _unwrap_serializer(field.serializer)
+
+    result = OrderedDict(leaf_info)
+    leaf_type = leaf_info['type']
+    result['path'] = path
+    result['field_name'] = parts[-1]
+    result['label'] = ' '.join(labels)
+    result['many'] = crosses_many
+    result['item_type'] = leaf_type if crosses_many else None
+    result['type'] = 'list' if crosses_many else leaf_type
+    return result
 
 
 def _get_label(x):
