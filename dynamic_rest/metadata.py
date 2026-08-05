@@ -92,11 +92,12 @@ class DynamicMetadata(SimpleMetadata):
             return fields
 
         for field_name, field_info in fields.items():
+            field = serializer.fields.get(field_name)
             if is_ephemeral:
                 if field_info.get('ui') is None:
                     field_info['ui'] = True
                 field_info['filterable'] = False
-                field_info['sortable'] = False
+                field_info['sortable'] = bool(getattr(field, 'sortable', False))
 
             if field_name not in filter_fields:
                 continue
