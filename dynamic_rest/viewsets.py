@@ -1574,15 +1574,14 @@ class EphemeralFilterMixin(object):
         if exclude:
             key = key[1:]
 
-        valid_operators = {
-            op for op in DynamicFilterBackend.VALID_FILTER_OPERATORS if op
-        }
-        parts = key.split('.')
         operator = 'eq'
-        if len(parts) > 1 and parts[-1] in valid_operators:
-            operator = parts.pop()
+        field = key
+        if key not in filter_fields and '.' in key:
+            candidate_field, candidate_operator = key.rsplit('.', 1)
+            if candidate_field in filter_fields:
+                field = candidate_field
+                operator = candidate_operator
 
-        field = '.'.join(parts)
         queryset_field, field_type, operators = self._normalize_ephemeral_filter_field(
             field, filter_fields
         )

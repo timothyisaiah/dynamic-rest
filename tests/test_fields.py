@@ -29,7 +29,7 @@ class FileFieldTestCase(TestCase):
         with self.assertRaises(ValidationError):
             file_field.to_internal_value('foo')
 
-        self.assertEquals(
+        self.assertEqual(
             file_field.to_internal_value('bar'),
             'bar'
         )

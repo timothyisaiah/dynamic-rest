@@ -185,7 +185,7 @@ class ViewSetTestCase(TestCase):
             for renderer in self.get_renderers(view):
                 url = '%s?format=%s' % (url, renderer.format)
                 response = self.api_client.get(url)
-                self.assertEquals(
+                self.assertEqual(
                     response.status_code,
                     200,
                     'GET %s failed with %d: %s' % (
@@ -222,7 +222,7 @@ class ViewSetTestCase(TestCase):
             for renderer in self.get_renderers(view):
                 url = '%s?format=%s' % (url, renderer.format)
                 response = self.api_client.get(url)
-                self.assertEquals(
+                self.assertEqual(
                     response.status_code,
                     status,
                     'GET %s failed with %d:\n%s' % (
