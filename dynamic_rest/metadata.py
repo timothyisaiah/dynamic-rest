@@ -110,7 +110,7 @@ class DynamicMetadata(SimpleMetadata):
         self.apply_ephemeral_filter_metadata(serializer, fields)
         try:
             id_field = serializer.get_pk_field()
-        except exceptions.APIException:
+        except APIException:
             id_field = 'pk'
 
         resource = {
