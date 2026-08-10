@@ -6,7 +6,7 @@ from rest_framework import exceptions
 
 from dynamic_rest import fields
 from dynamic_rest.ephemeral import build_ephemeral_serializer
-from dynamic_rest.serializers import DynamicEphemeralSerializer
+from dynamic_rest.serializers import DynamicEphemeralSerializer, EphemeralObject
 from dynamic_rest.viewsets import DynamicModelViewSet
 
 
@@ -42,7 +42,10 @@ class TestEphemeralFilterMixin(SimpleTestCase):
         request = type(
             'Request',
             (),
-            {'query_params': QueryDict(query_string)},
+            {
+                'query_params': QueryDict(query_string),
+                'accepted_renderer': None,
+            },
         )()
         view = SyntheticReportViewSet()
         view.request = request
@@ -123,6 +126,9 @@ class TestEphemeralFilterMixin(SimpleTestCase):
             description='Rows imported from a user dataset',
             id_field='id',
             name_field='row_number',
+            meta_options={
+                'default_fields': ('row_number', 'amount'),
+            },
             fields={
                 'id': {'type': 'integer', 'sortable': False},
                 'row_number': {'type': 'integer', 'sortable': True},
@@ -142,6 +148,17 @@ class TestEphemeralFilterMixin(SimpleTestCase):
         metadata = view.get_ephemeral_resource_metadata(serializer_class)
         fields_metadata = metadata['fields']
 
+        self.assertEqual(metadata['type'], 'resource')
+        self.assertEqual(metadata['name'], 'uploaded_dataset_rows')
+        self.assertEqual(metadata['singular'], 'uploaded_dataset_row')
+        self.assertEqual(metadata['default_fields'], ['row_number', 'amount'])
+        self.assertEqual(
+            metadata['default_view']['data']['fields'],
+            {
+                'row_number': True,
+                'amount': True,
+            },
+        )
         self.assertEqual(
             serializer_class.Meta.filter_fields['amount']['source'],
             '_dataset_amount',
@@ -174,6 +191,32 @@ class TestEphemeralFilterMixin(SimpleTestCase):
             ),
             {'cohort_month_date', 'cases_assigned'},
         )
+
+    def test_list_can_include_ephemeral_resource_metadata(self):
+        view, request = self.get_view()
+        view.filter_ephemeral_queryset = lambda queryset, **kwargs: queryset
+        view.get_ephemeral_ordering = lambda **kwargs: []
+        view.get_ephemeral_requested_queryset_fields = lambda **kwargs: set()
+        view.paginate_queryset = lambda queryset: None
+
+        response = view.list_ephemeral_queryset(
+            [
+                EphemeralObject({
+                    'pk': '2026-01',
+                    'cohort_month': date(2026, 1, 1),
+                    'cases_assigned': 2,
+                    'officer_name': 'Jane Doe',
+                    'unfilterable': 'value',
+                }),
+            ],
+            serializer_class=SyntheticReportSerializer,
+            request=request,
+            include_resource_metadata=True,
+        )
+
+        self.assertIn('resource', response.data)
+        self.assertEqual(response.data['resource']['name'], 'synthetic_reports')
+        self.assertIn('cohort_month', response.data['resource']['fields'])
 
     def test_rejects_unknown_ephemeral_ordering_fields(self):
         view, request = self.get_view('sort%5B%5D=unfilterable')

@@ -1369,8 +1369,10 @@ class EphemeralFilterMixin(object):
         serializer_class = serializer_class or self.get_serializer_class()
         serializer = serializer_class(for_metadata=True)
         metadata = self.metadata_class()
-        fields = metadata.get_serializer_info(serializer)
-        metadata.apply_ephemeral_filter_metadata(serializer, fields)
+        resource = metadata.get_resource_info(
+            serializer,
+            features=getattr(self, 'features', []),
+        )
 
         permissions = {'read': True}
         if getattr(self, 'request', None) is not None:
@@ -1378,22 +1380,12 @@ class EphemeralFilterMixin(object):
             if full_permissions:
                 permissions = full_permissions.serialize()
         permissions['fields'] = serializer.get_field_permissions()
-        try:
-            id_field = serializer.get_pk_field()
-        except exceptions.APIException:
-            id_field = 'pk'
-
-        return {
-            'fields': fields,
-            'icon': serializer.get_icon(),
-            'description': serializer.get_description(),
-            'sections': [
-                section.serialize() for section in serializer.get_sections()
-            ],
-            'id_field': id_field,
-            'name_field': serializer.get_name_field(),
+        resource.update({
+            'label': serializer.get_plural_name(),
             'permissions': permissions,
-        }
+            'actions': [],
+        })
+        return resource
 
     def get_ephemeral_sort_fields(self, serializer_class=None, filter_fields=None):
         serializer_class = serializer_class or self.get_serializer_class()
@@ -1491,6 +1483,7 @@ class EphemeralFilterMixin(object):
         prepare_queryset=None,
         object_builder=None,
         resource_name=None,
+        include_resource_metadata=False,
     ):
         request = request or self.request
         serializer_class = serializer_class or self.get_serializer_class()
@@ -1535,6 +1528,10 @@ class EphemeralFilterMixin(object):
         serialized = {
             resource_name or serializer_class.get_plural_name(): serialized_rows
         }
+        if include_resource_metadata:
+            serialized['resource'] = self.get_ephemeral_resource_metadata(
+                serializer_class
+            )
         if page is not None:
             return self.get_paginated_response(serialized)
         return Response(serialized)
