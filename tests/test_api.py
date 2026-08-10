@@ -5,10 +5,16 @@ from unittest.mock import patch
 from django.db import connection
 from urllib.parse import quote
 from django.test import override_settings
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase
 
+from dynamic_rest.metadata import get_serializer_field_path_info
 from tests.models import Cat, Group, Location, Permission, Profile, User, Car, Country
-from tests.serializers import NestedEphemeralSerializer, PermissionSerializer
+from tests.serializers import (
+    NestedEphemeralSerializer,
+    PermissionSerializer,
+    UserSerializer,
+)
 from tests.setup import create_fixture
 
 UNICODE_STRING = chr(9629)  # unicode heart
@@ -21,6 +27,31 @@ class TestUsersAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
         self.maxDiff = None
+
+    def test_serializer_field_path_info(self):
+        serializer = UserSerializer(for_metadata=True)
+
+        one = get_serializer_field_path_info(serializer, "location.name")
+        self.assertEqual("Location Name", one["label"])
+        self.assertEqual("string", one["type"])
+        self.assertFalse(one["many"])
+
+        many = get_serializer_field_path_info(serializer, "groups.name")
+        self.assertEqual("Group Names", many["label"])
+        self.assertEqual("list", many["type"])
+        self.assertEqual("string", many["item_type"])
+        self.assertTrue(many["many"])
+
+        deep_many = get_serializer_field_path_info(
+            serializer, "groups.permissions.code"
+        )
+        self.assertEqual("Group Permission Codes", deep_many["label"])
+        self.assertEqual("list", deep_many["type"])
+        self.assertEqual("integer", deep_many["item_type"])
+        self.assertTrue(deep_many["many"])
+
+        with self.assertRaises(ValidationError):
+            get_serializer_field_path_info(serializer, "name.first")
 
     def _get_json(self, url, expected_status=200):
         response = self.client.get(url)
