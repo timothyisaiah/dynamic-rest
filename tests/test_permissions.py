@@ -28,12 +28,12 @@ class TestPermissionsUsersAPI(APITestCase):
         self.client.force_authenticate(user=self.default_user)
         response = self.client.get('/p/users/')
         # no list
-        self.assertEquals(403, response.status_code)
+        self.assertEqual(403, response.status_code)
         # read
         response = self.client.get(
             '/p/users/%s/' % self.default_user.id
         )
-        self.assertEquals(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         content = json.loads(response.content)
         self.assertTrue(len(content['user']), 1)
         # superuser flag is hidden
@@ -46,7 +46,7 @@ class TestPermissionsUsersAPI(APITestCase):
             data,
             format='json'
         )
-        self.assertEquals(404, response.status_code)
+        self.assertEqual(404, response.status_code)
         # no create
         data['username'] = 'foobar'
         data.pop('id', None)
@@ -55,18 +55,18 @@ class TestPermissionsUsersAPI(APITestCase):
             data,
             format='json'
         )
-        self.assertEquals(403, response.status_code, response.content)
+        self.assertEqual(403, response.status_code, response.content)
         # no delete
         response = self.client.delete(
             '/p/users/%s/' % self.default_user.id
         )
-        self.assertEquals(404, response.status_code)
+        self.assertEqual(404, response.status_code)
 
     def test_officer_user(self):
         self.client.force_authenticate(user=self.officer_user)
         response = self.client.get('/p/users/')
         # list
-        self.assertEquals(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         content = json.loads(response.content)
         self.assertTrue(len(content['users']), 3)
         # read
@@ -83,14 +83,14 @@ class TestPermissionsUsersAPI(APITestCase):
             data=data,
             format='json'
         )
-        self.assertEquals(404, response.status_code)
+        self.assertEqual(404, response.status_code)
 
         response = self.client.put(
             '/p/users/%s/' % self.officer_user.id,
             data=data,
             format='json'
         )
-        self.assertEquals(200, response.status_code, response.content)
+        self.assertEqual(200, response.status_code, response.content)
         # no create
         data.pop('id', None)
         data['username'] = 'newbar'
@@ -99,7 +99,7 @@ class TestPermissionsUsersAPI(APITestCase):
             data,
             format='json'
         )
-        self.assertEquals(403, response.status_code, response.content)
+        self.assertEqual(403, response.status_code, response.content)
         # no delete
         response = self.client.delete(
             '/p/users/%s/' % self.default_user.id
@@ -109,7 +109,7 @@ class TestPermissionsUsersAPI(APITestCase):
         self.client.force_authenticate(user=self.manager_user)
         response = self.client.get('/p/users/')
         # list
-        self.assertEquals(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         content = json.loads(response.content)
         self.assertTrue(len(content['users']), 3)
         # read
@@ -126,14 +126,14 @@ class TestPermissionsUsersAPI(APITestCase):
             data=data,
             format='json'
         )
-        self.assertEquals(200, response.status_code, response.content)
+        self.assertEqual(200, response.status_code, response.content)
         data['username'] = 'twobar'
         response = self.client.put(
             '/p/users/%s/' % self.officer_user.id,
             data=data,
             format='json'
         )
-        self.assertEquals(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         # create
         data.pop('id', None)
         data['username'] = 'newbar'
@@ -142,22 +142,22 @@ class TestPermissionsUsersAPI(APITestCase):
             data=data,
             format='json'
         )
-        self.assertEquals(201, response.status_code, response.content)
+        self.assertEqual(201, response.status_code, response.content)
         # partial delete
         response = self.client.delete(
             '/p/users/%s/' % self.default_user.id
         )
-        self.assertEquals(204, response.status_code)
+        self.assertEqual(204, response.status_code)
         response = self.client.delete(
             '/p/users/%s/' % self.admin_user.id
         )
-        self.assertEquals(404, response.status_code)
+        self.assertEqual(404, response.status_code)
 
     def test_admin_user(self):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.get('/p/users/')
         # list
-        self.assertEquals(200, response.status_code)
+        self.assertEqual(200, response.status_code)
         content = json.loads(response.content)
         self.assertTrue(len(content['users']), 4)
         # read
@@ -176,9 +176,9 @@ class TestPermissionsUsersAPI(APITestCase):
             data=data,
             format='json'
         )
-        self.assertEquals(200, response.status_code, response.content)
+        self.assertEqual(200, response.status_code, response.content)
         content = json.loads(response.content)
-        self.assertEquals(content['user']['is_superuser'], True)
+        self.assertEqual(content['user']['is_superuser'], True)
         # create
         data.pop('id', None)
         data['username'] = 'newbar'
@@ -187,9 +187,9 @@ class TestPermissionsUsersAPI(APITestCase):
             data=data,
             format='json'
         )
-        self.assertEquals(201, response.status_code, response.content)
+        self.assertEqual(201, response.status_code, response.content)
         # delete
         response = self.client.delete(
             '/p/users/%s/' % self.admin_user.id
         )
-        self.assertEquals(204, response.status_code)
+        self.assertEqual(204, response.status_code)

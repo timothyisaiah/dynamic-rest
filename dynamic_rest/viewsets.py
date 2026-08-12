@@ -1369,8 +1369,10 @@ class EphemeralFilterMixin(object):
         serializer_class = serializer_class or self.get_serializer_class()
         serializer = serializer_class(for_metadata=True)
         metadata = self.metadata_class()
-        fields = metadata.get_serializer_info(serializer)
-        metadata.apply_ephemeral_filter_metadata(serializer, fields)
+        resource = metadata.get_resource_info(
+            serializer,
+            features=getattr(self, 'features', []),
+        )
 
         permissions = {'read': True}
         if getattr(self, 'request', None) is not None:
@@ -1378,22 +1380,161 @@ class EphemeralFilterMixin(object):
             if full_permissions:
                 permissions = full_permissions.serialize()
         permissions['fields'] = serializer.get_field_permissions()
-        try:
-            id_field = serializer.get_pk_field()
-        except exceptions.APIException:
-            id_field = 'pk'
-
-        return {
-            'fields': fields,
-            'icon': serializer.get_icon(),
-            'description': serializer.get_description(),
-            'sections': [
-                section.serialize() for section in serializer.get_sections()
-            ],
-            'id_field': id_field,
-            'name_field': serializer.get_name_field(),
+        resource.update({
+            'label': serializer.get_plural_name(),
             'permissions': permissions,
+            'actions': [],
+        })
+        return resource
+
+    def get_ephemeral_sort_fields(self, serializer_class=None, filter_fields=None):
+        serializer_class = serializer_class or self.get_serializer_class()
+        filter_fields = filter_fields or get_ephemeral_filter_fields(serializer_class)
+        serializer = serializer_class(for_metadata=True)
+        sort_fields = {}
+
+        for field_name, field in serializer.fields.items():
+            if not getattr(field, 'sortable', False):
+                continue
+
+            if field_name in filter_fields:
+                queryset_field, _field_type, _operators = (
+                    self._normalize_ephemeral_filter_field(
+                        field_name,
+                        filter_fields,
+                    )
+                )
+            else:
+                queryset_field = (
+                    getattr(field, 'sort_by', None)
+                    or getattr(field, 'source', None)
+                    or field_name
+                )
+                if queryset_field == '*':
+                    continue
+
+            sort_fields[field_name] = queryset_field
+
+        return sort_fields
+
+    def get_ephemeral_ordering(
+        self,
+        serializer_class=None,
+        request=None,
+        filter_fields=None,
+        default_ordering=None,
+    ):
+        request = request or self.request
+        serializer_class = serializer_class or self.get_serializer_class()
+        sort_fields = self.get_ephemeral_sort_fields(
+            serializer_class=serializer_class,
+            filter_fields=filter_fields,
+        )
+        ordering = []
+
+        for value in request.query_params.getlist(self.SORT):
+            for requested in value.split(','):
+                requested = requested.strip()
+                if not requested:
+                    continue
+
+                descending = requested.startswith('-')
+                field_name = requested[1:] if descending else requested
+                queryset_field = sort_fields.get(field_name)
+                if queryset_field is None:
+                    raise exceptions.ParseError(
+                        '"%s" is not a sortable synthetic resource field.'
+                        % field_name
+                    )
+                ordering.append(
+                    '-%s' % queryset_field if descending else queryset_field
+                )
+
+        return ordering or list(default_ordering or [])
+
+    def get_ephemeral_requested_queryset_fields(
+        self,
+        request=None,
+        filter_fields=None,
+        ordering=None,
+    ):
+        request = request or self.request
+        filter_fields = filter_fields or self.get_ephemeral_filter_fields()
+        queryset_fields = set()
+
+        for key, _values in self._get_ephemeral_filter_specs(request):
+            _exclude, queryset_field, _field_type, _operator = (
+                self._parse_ephemeral_filter_key(key, filter_fields)
+            )
+            queryset_fields.add(queryset_field)
+
+        for order in ordering or []:
+            queryset_fields.add(order.lstrip('-'))
+
+        return queryset_fields
+
+    def list_ephemeral_queryset(
+        self,
+        queryset,
+        serializer_class=None,
+        request=None,
+        filter_fields=None,
+        default_ordering=None,
+        prepare_queryset=None,
+        object_builder=None,
+        resource_name=None,
+        include_resource_metadata=False,
+    ):
+        request = request or self.request
+        serializer_class = serializer_class or self.get_serializer_class()
+        filter_fields = filter_fields or get_ephemeral_filter_fields(serializer_class)
+        self.ephemeral_filter_fields = filter_fields
+
+        ordering = self.get_ephemeral_ordering(
+            serializer_class=serializer_class,
+            request=request,
+            filter_fields=filter_fields,
+            default_ordering=default_ordering,
+        )
+        requested_queryset_fields = self.get_ephemeral_requested_queryset_fields(
+            request=request,
+            filter_fields=filter_fields,
+            ordering=ordering,
+        )
+
+        if prepare_queryset:
+            queryset = prepare_queryset(queryset, requested_queryset_fields)
+
+        queryset = self.filter_ephemeral_queryset(
+            queryset,
+            request=request,
+            filter_fields=filter_fields,
+        )
+        if ordering:
+            queryset = queryset.order_by(*ordering)
+
+        page = self.paginate_queryset(queryset)
+        rows = page if page is not None else list(queryset)
+        if object_builder:
+            rows = [object_builder(row) for row in rows]
+
+        request_fields = self.get_request_fields()
+        serialized_rows = serializer_class(
+            rows,
+            many=True,
+            context={'request': request, 'view': self},
+            request_fields=request_fields,
+        ).data
+        serialized = {
+            resource_name or serializer_class.get_plural_name(): serialized_rows
         }
+        if include_resource_metadata:
+            serialized['resource'] = self.get_ephemeral_resource_metadata(
+                serializer_class
+            )
+        if page is not None:
+            return self.get_paginated_response(serialized)
+        return Response(serialized)
 
     def _get_ephemeral_filter_specs(self, request):
         if request is getattr(self, 'request', None):
@@ -1430,15 +1571,14 @@ class EphemeralFilterMixin(object):
         if exclude:
             key = key[1:]
 
-        valid_operators = {
-            op for op in DynamicFilterBackend.VALID_FILTER_OPERATORS if op
-        }
-        parts = key.split('.')
         operator = 'eq'
-        if len(parts) > 1 and parts[-1] in valid_operators:
-            operator = parts.pop()
+        field = key
+        if key not in filter_fields and '.' in key:
+            candidate_field, candidate_operator = key.rsplit('.', 1)
+            if candidate_field in filter_fields:
+                field = candidate_field
+                operator = candidate_operator
 
-        field = '.'.join(parts)
         queryset_field, field_type, operators = self._normalize_ephemeral_filter_field(
             field, filter_fields
         )

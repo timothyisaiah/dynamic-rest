@@ -92,6 +92,7 @@ class DynamicField(fields.Field, DynamicBase):
                 saving related objects.
                 If source is '*', this will default to 'set_$FIELD_NAME'.
             ui: should this field appear in user interfaces?
+            sortable: whether this field should be advertised as sortable.
         """
         self.resource_field = kwargs.pop('resource_field', None)
         self.api_type = kwargs.pop('api_type', None)
@@ -110,6 +111,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.style = kwargs.pop('style', None) or {}
         self.long = kwargs.pop('long', False)
         self.sort_by = kwargs.pop('sort_by', None)
+        self.sortable = kwargs.pop('sortable', None)
         self.bound = False
         self.ui = kwargs.pop('ui', True)
         self.extra = kwargs.pop('extra', None)

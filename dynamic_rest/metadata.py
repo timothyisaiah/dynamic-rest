@@ -3,7 +3,7 @@ from collections import OrderedDict
 
 import inflection
 
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
@@ -104,31 +104,64 @@ class DynamicMetadata(SimpleMetadata):
         """Prevent displaying action-specific details."""
         return None
 
+    def get_resource_info(self, serializer, features=None):
+        """Build metadata shared by model-backed and ephemeral resources."""
+        fields = self.get_serializer_info(serializer)
+        self.apply_ephemeral_filter_metadata(serializer, fields)
+        try:
+            id_field = serializer.get_pk_field()
+        except APIException:
+            id_field = 'pk'
+
+        resource = {
+            'type': 'resource',
+            'name': serializer.get_plural_name(),
+            'singular': serializer.get_name(),
+            'features': features if features is not None else [],
+            'section': serializer.get_section(),
+            'fields': fields,
+            'icon': serializer.get_icon(),
+            'search_key': serializer.get_search_key(),
+            'style': serializer.get_style(),
+            'description': serializer.get_description(),
+            'sections': [
+                section.serialize() for section in serializer.get_sections()
+            ],
+            'id_field': id_field,
+            'name_field': serializer.get_name_field(),
+        }
+
+        meta = serializer.get_meta()
+        default_fields = getattr(meta, 'default_fields', None)
+        default_view = getattr(meta, 'default_view', None)
+        if default_fields is not None:
+            resource['default_fields'] = list(default_fields)
+        if default_view is not None:
+            resource['default_view'] = default_view
+        elif default_fields is not None:
+            resource['default_view'] = {
+                'resource': serializer.get_plural_name(),
+                'data': {
+                    'fields': {
+                        field_name: True
+                        for field_name in default_fields
+                    },
+                },
+            }
+        return resource
+
     def determine_metadata(self, request, view):
         """Adds `fields` and `features` to the metadata response."""
         metadata = super(DynamicMetadata, self).determine_metadata(request, view)
         metadata['label'] = metadata['name']
         if hasattr(view, 'get_serializer'):
-            metadata['type'] = 'resource'
-            metadata['features'] = getattr(view, 'features', [])
             serializer = view.get_serializer(for_metadata=True)
-            if hasattr(serializer, 'get_section'):
-                metadata['section'] = serializer.get_section()
-            if hasattr(serializer, 'get_name'):
-                metadata['singular'] = serializer.get_name()
-            if hasattr(serializer, 'get_plural_name'):
-                metadata['name'] = serializer.get_plural_name()
-            metadata['fields'] = self.get_serializer_info(serializer)
-            self.apply_ephemeral_filter_metadata(serializer, metadata['fields'])
-            metadata['icon'] = serializer.get_icon()
-            metadata['search_key'] = serializer.get_search_key()
-            metadata['style'] = serializer.get_style()
-            metadata['description'] = serializer.get_description()
-            metadata['sections'] = [
-                section.serialize() for section in serializer.get_sections()
-            ]
-            metadata['id_field'] = serializer.get_pk_field()
-            metadata['name_field'] = serializer.get_name_field()
+            metadata.update(
+                self.get_resource_info(
+                    serializer,
+                    features=getattr(view, 'features', []),
+                )
+            )
             permissions = view.full_permissions
             metadata['permissions'] = permissions.serialize() if permissions else {}
             metadata['permissions']['fields'] = serializer.get_field_permissions()
@@ -157,11 +190,12 @@ class DynamicMetadata(SimpleMetadata):
             return fields
 
         for field_name, field_info in fields.items():
+            field = serializer.fields.get(field_name)
             if is_ephemeral:
                 if field_info.get('ui') is None:
                     field_info['ui'] = True
                 field_info['filterable'] = False
-                field_info['sortable'] = False
+                field_info['sortable'] = bool(getattr(field, 'sortable', False))
 
             if field_name not in filter_fields:
                 continue
